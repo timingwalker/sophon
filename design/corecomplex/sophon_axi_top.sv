@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2023-12-27 14:46:01
+// Last Modified : 2024-03-22 17:10:18
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -53,6 +53,9 @@ module SOPHON_AXI_TOP #(
     ,input  logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_in_val_i
     ,output logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_out_val_o
 `endif
+`ifdef PROBE
+    ,output logic [149:0]                           probe_o
+`endif
 );
 
 
@@ -85,6 +88,7 @@ module SOPHON_AXI_TOP #(
         ,.irq_mti_i               ( irq_mti_i               )
         ,.irq_msi_i               ( irq_msi_i               )
         ,.dm_req_i                ( dm_req_i                )
+        ,.dummy_o                 (                         )
         `ifdef SOPHON_EXT_INST
         ,.inst_ext_req_o          ( ext_inst_inst_req.req   )
         ,.inst_ext_addr_o         ( ext_inst_inst_req.addr  )
@@ -107,6 +111,7 @@ module SOPHON_AXI_TOP #(
         `ifdef SOPHON_EXT_ACCESS
         ,.ext_req_i               ( ext_access_req.req      )
         ,.ext_we_i                ( ext_access_req.we       )
+        ,.ext_strb_i              ( ext_access_req.strb     )
         ,.ext_addr_i              ( ext_access_req.addr     )
         ,.ext_wdata_i             ( ext_access_req.wdata    )
         ,.ext_ack_o               ( ext_access_ack.ack      )
@@ -127,7 +132,10 @@ module SOPHON_AXI_TOP #(
         ,.gpio_dir_o              ( gpio_dir_o              )
         ,.gpio_in_val_i           ( gpio_in_val_i           )
         ,.gpio_out_val_o          ( gpio_out_val_o          )
-    `endif
+        `endif
+        `ifdef PROBE
+           ,.probe_o              (probe_o                  )
+        `endif
     
     );
 
@@ -257,17 +265,17 @@ module SOPHON_AXI_TOP #(
     CC_ITF_PKG::reqrsp_resps_t [1:0]   slv_resp_mux;
 
     `ifdef SOPHON_EXT_INST
-        assign slv_req_mux[1]   = ext_inst_req;
-        assign ext_inst_rsp = slv_resp_mux[1];
-    `elsif
+        assign slv_req_mux[1] = ext_inst_req;
+        assign ext_inst_rsp   = slv_resp_mux[1];
+    `else
         assign slv_req_mux[1].q_valid=1'b0;
         assign slv_req_mux[1].p_ready=1'b1;
     `endif
 
     `ifdef SOPHON_EXT_DATA
-        assign slv_req_mux[0]   = ext_data_req;
-        assign ext_data_rsp = slv_resp_mux[0];
-    `elsif
+        assign slv_req_mux[0] = ext_data_req;
+        assign ext_data_rsp   = slv_resp_mux[0];
+    `else
         assign slv_req_mux[0].q_valid=1'b0;
         assign slv_req_mux[0].p_ready=1'b1;
     `endif
@@ -406,7 +414,7 @@ module SOPHON_AXI_TOP #(
         .mem_gnt   ( axi_mem_gnt     ) , // AXI ports has highest priority
         .mem_cs    ( axi_mem_cs      ) ,
         .mem_we    ( axi_mem_we      ) ,
-        .mem_be    (                 ) ,
+        .mem_be    ( axi_mem_be      ) ,
         .mem_addr  ( axi_addr        ) ,
         .mem_wdata ( axi_mem_wdata   ) ,
         .mem_rdata ( axi_mem_rdata   ) 
@@ -414,6 +422,7 @@ module SOPHON_AXI_TOP #(
 
     assign ext_access_req.req   = axi_mem_req;
     assign ext_access_req.we    = axi_mem_we;
+    assign ext_access_req.strb  = axi_mem_be;
     assign ext_access_req.addr  = axi_addr;
     assign ext_access_req.wdata = axi_mem_wdata;
     assign axi_mem_gnt          = ext_access_ack.ack;

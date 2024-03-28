@@ -7,7 +7,7 @@ SECTIONS
   .text.init : { *(.text.init) }
   . = ALIGN(0x1000);
   .text : { *(.text) }
-  . = 0x00008000;
+  . = 0x00011000;
   .tohost : { *(.tohost) }
   . = ALIGN(0x1000);
   .data : { *(.data) }

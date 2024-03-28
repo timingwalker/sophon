@@ -33,6 +33,7 @@ int main( int argc, char* argv[] )
   }
 #endif
 
+  printstr("multiply start:\n");
   setStats(1);
   for (i = 0; i < DATA_SIZE; i++)
   {

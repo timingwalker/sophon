@@ -70,6 +70,7 @@ bmarks_riscv_hex  = $(addsuffix .riscv.hex,  $(bmarks))
 
 $(bmarks_riscv_hex): %.riscv.hex: %.riscv
 	$(RISCV_OBJCOPY) $< $(RISCV_OBJCOPY_OPTS)  $@
+	sed -i 's/@800/@000/g' $@
 
 $(bmarks_riscv_dump): %.riscv.dump: %.riscv
 	$(RISCV_OBJDUMP) $< > $@

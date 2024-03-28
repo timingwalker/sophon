@@ -75,6 +75,5 @@ if __name__ == "__main__":
         file.write( end_time )
 
     os.system("cat " + f_result )
-    # os.system("cp " + f_result + " ./regress/"+regress_time+"/"+f_result)
 
 

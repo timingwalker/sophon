@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 16:52:34
-// Last Modified : 2023-12-27 12:44:28
+// Last Modified : 2024-03-22 16:42:29
 // Description   : Custom execution units
 // ----------------------------------------------------------------------
 
@@ -129,7 +129,7 @@ module CUST(
 				end
 			`endif
 			`ifdef SOPHON_EEI_SREG
-				else if ( sreg_req ) begin
+				if ( sreg_req ) begin
 					eei_ack   = sreg_ack;
 					eei_error = sreg_error;
 				end
@@ -145,7 +145,7 @@ module CUST(
 							eei_rd_val[i] = fgpio_rd_val;
 					`endif
 					`ifdef SOPHON_EEI_SREG
-						else if ( sreg_req )
+						if ( sreg_req )
 							eei_rd_val[i] = sreg_rd_val[i];
 					`endif
 				end
@@ -169,7 +169,7 @@ module CUST(
 					eei_rd_op = 2'd1;
 			`endif
 			`ifdef SOPHON_EEI_SREG
-				else if (sreg_req ) begin
+				if (sreg_req ) begin
 					if (eei_funct7[6]==1'b1) begin
 						eei_rd_op = 2'd2;
 						eei_rd_len = eei_batch_len;

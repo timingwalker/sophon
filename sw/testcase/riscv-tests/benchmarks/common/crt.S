@@ -125,8 +125,9 @@ _start:
   li a1, 1
 1:bgeu a0, a1, 1b
 
-  # give each core 128KB of stack + TLS
-#define STKSHIFT 17
+  // Modify(hz) 11/01/24 11:02:03
+  # give each core 16KB of stack + TLS
+#define STKSHIFT 14
   add sp, a0, 1
   sll sp, sp, STKSHIFT
   add sp, sp, tp

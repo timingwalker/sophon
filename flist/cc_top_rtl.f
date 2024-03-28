@@ -2,9 +2,8 @@
 +incdir+../../design/open-source/common_cells/include/
 +incdir+../../design/open-source/reqrsp_interface/include/
 
--f ../../flist/sophon.f
-../../design/common/sp_ram.sv
-
+-f ../../flist/sophon_top.f
+../../design/common/bw_sp_ram.sv
 
 ../../design/open-source/axi/src/axi_pkg.sv
 ../../design/open-source/reqrsp_interface/src/reqrsp_pkg.sv

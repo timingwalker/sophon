@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2023-12-20 19:47:31
+// Last Modified : 2024-03-26 22:09:49
 // Description   : Demux inst interface    
 // ----------------------------------------------------------------------
 
@@ -51,15 +51,10 @@ module INST_ITF_DEMUX #(
 );
 
 
-
-
     logic        inst_pos_ack_toneg;
     logic [31:0] inst_pos_data_toneg;
     logic [31:0] inst_pos_error_toneg;
     logic [31:0] inst_core_addr_topos;
-
-
-    // TODO:check if neg_req & pos_req overlap
 
 
     // ----------------------------------------------------------------------
@@ -87,9 +82,7 @@ module INST_ITF_DEMUX #(
             inst_pos_req_o <= 1'b0;
     end
 
-
     assign inst_neg_addr_o = inst_core_addr_i;
-
 
     always @(posedge clk_i or negedge rst_ni) begin
     	if(~rst_ni) 
@@ -98,8 +91,6 @@ module INST_ITF_DEMUX #(
             inst_core_addr_topos <= inst_core_addr_i;
     end
     assign inst_pos_addr_o = inst_core_addr_topos;
-
-
 
 
     // ----------------------------------------------------------------------
@@ -123,7 +114,6 @@ module INST_ITF_DEMUX #(
         end
     end
 
-
     // -----------------------------------
     //  mux 
     // -----------------------------------
@@ -141,7 +131,17 @@ module INST_ITF_DEMUX #(
     end
 
 
+`ifndef VERILATOR
 
+    inst_pos_req_overlap: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
+                                       ((inst_pos_req_o==1'b1) |=> (inst_neg_req_o!=1'b1)) ) 
+                            else $fatal(1,"neg_req overwrite pos_req");
+
+    inst_neg_req_overlap: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
+                                       ((inst_neg_req_o==1'b1) |=> (inst_pos_req_o!=1'b1)) ) 
+                            else $fatal(1,"pos_req overwrite neg_req");
+
+`endif
 
 endmodule
 

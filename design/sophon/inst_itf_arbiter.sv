@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-08 15:56:49
-// Last Modified : 2023-12-26 16:40:23
+// Last Modified : 2024-03-26 22:05:32
 // Description   : Arbiter of IRAM interface
 // ----------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ module INST_ITF_ARBITER(
     assign iram_addr  = ext_iram_cs ? ext_iram_req.addr  : core_iram_req.addr ; 
     assign iram_wdata = ext_iram_cs ? ext_iram_req.wdata : '0                 ; 
     assign iram_we    = ext_iram_cs ? ext_iram_req.we    : '0                 ; 
-    assign iram_be    = ext_iram_cs ? '1                 : '1                 ; // TODO: be of ext itf?
+    assign iram_be    = ext_iram_cs ? ext_iram_req.strb  : '1                 ;
     
     logic [1:0] cnt_ext_iram_req;
     always @(posedge clk_i or negedge rst_ni) begin

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-10 11:37:09
-// Last Modified : 2023-12-27 14:44:23
+// Last Modified : 2024-03-20 01:59:12
 // Description   : CoreComplex interface define
 // ----------------------------------------------------------------------
 
@@ -173,8 +173,8 @@ package CC_ITF_PKG;
     addr_t                  addr;
     logic                   write;
     reqrsp_pkg::amo_op_e    amo;
-    logic [31:0]                  data;
-    strb_t                  strb;
+    logic [31:0]            data;
+    logic [3:0]             strb;
     reqrsp_pkg::size_t      size;
   } req_q_d32_t;
 

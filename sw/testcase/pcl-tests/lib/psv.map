@@ -1,0 +1,82 @@
+
+Discarded input sections
+
+ .text          0x0000000000000000        0x0 startup.s.o
+ .data          0x0000000000000000        0x0 startup.s.o
+ .bss           0x0000000000000000        0x0 startup.s.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD startup.s.o
+                0x0000000000010000                . = 0x10000
+
+.text.init      0x0000000000010000       0xe0
+ *(.text.init)
+ .text.init     0x0000000000010000       0xe0 startup.s.o
+                0x0000000000010000                _prog_start
+                0x00000000000100d0                handle_trap
+
+.rela.dyn       0x00000000000100e0        0x0
+ .rela.text.init
+                0x00000000000100e0        0x0 startup.s.o
+
+.text
+ *(.text)
+                0x0000000000100000                . = 0x100000
+                0x0000000000100000                . = ALIGN (0x1000)
+
+.data
+ *(.data)
+
+.sdata          0x0000000000100000        0x0
+                0x0000000000100800                __global_pointer$ = (. + 0x800)
+ *(.srodata.cst16)
+ *(.srodata.cst8)
+ *(.srodata.cst4)
+ *(.srodata.cst2)
+ *(.srodata*)
+ *(.sdata .sdata.* .gnu.linkonce.s.*)
+
+.sbss
+ *(.sbss .sbss.* .gnu.linkonce.sb.*)
+ *(.scommon)
+
+.bss
+ *(.bss)
+
+.tdata          0x0000000000100000        0x0
+                0x0000000000100000                _tdata_begin = .
+ *(.tdata)
+                0x0000000000100000                _tdata_end = .
+
+.tbss           0x0000000000100000        0x0
+ *(.tbss)
+                0x0000000000100000                _tbss_end = .
+                0x0000000000100000                _end = .
+OUTPUT(NONE.elf elf32-littleriscv)
+
+.riscv.attributes
+                0x0000000000000000       0x1f
+ .riscv.attributes
+                0x0000000000000000       0x1f startup.s.o
+
+.debug_line     0x0000000000000000      0x134
+ .debug_line    0x0000000000000000      0x134 startup.s.o
+
+.debug_info     0x0000000000000000       0x26
+ .debug_info    0x0000000000000000       0x26 startup.s.o
+
+.debug_abbrev   0x0000000000000000       0x14
+ .debug_abbrev  0x0000000000000000       0x14 startup.s.o
+
+.debug_aranges  0x0000000000000000       0x20
+ .debug_aranges
+                0x0000000000000000       0x20 startup.s.o
+
+.debug_str      0x0000000000000000       0x51
+ .debug_str     0x0000000000000000       0x51 startup.s.o

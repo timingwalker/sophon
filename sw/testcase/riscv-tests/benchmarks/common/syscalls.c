@@ -57,6 +57,7 @@ void setStats(int enable)
 void __attribute__((noreturn)) tohost_exit(uintptr_t code)
 {
   tohost = (code << 1) | 1;
+  asm volatile("ecall\n");
   while (1);
 }
 
@@ -130,8 +131,8 @@ void _init(int cid, int nc)
   for (int i = 0; i < NUM_COUNTERS; i++)
     if (counters[i])
       pbuf += sprintf(pbuf, "%s = %d\n", counter_names[i], counters[i]);
-  // if (pbuf != buf)
-  //   printstr(buf);
+   if (pbuf != buf)
+     printstr(buf);
 
   // main(0, 0);
   // for (int i = 0; i < NUM_COUNTERS; i++)

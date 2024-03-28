@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-23 16:21:07
-// Last Modified : 2023-12-27 14:43:21
+// Last Modified : 2024-01-13 16:43:19
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ module APB_SYSCFG_REG
 
     always_ff @(posedge PCLK, negedge PRESETn) begin
         if(~PRESETn) begin
-            cfg_cc0_boot  <= 32'h0001_0000;
+            cfg_cc0_boot  <= SOPHON_PKG::ITCM_BASE;
         end
         else if ( wr_en && (PADDR==`REG_CC0_BOOT) )begin
             cfg_cc0_boot  <= PWDATA;
@@ -68,7 +68,7 @@ module APB_SYSCFG_REG
 
     always_ff @(posedge PCLK, negedge PRESETn) begin
         if(~PRESETn) begin
-            cfg_cc1_boot  <= 32'h0001_0000;
+            cfg_cc1_boot  <= SOPHON_PKG::ITCM_BASE;
         end
         else if ( wr_en && (PADDR==`REG_CC1_BOOT) )begin
             cfg_cc1_boot  <= PWDATA;

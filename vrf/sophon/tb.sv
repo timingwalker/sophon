@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2023-12-24 16:06:22
+// Last Modified : 2024-03-27 11:23:53
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -108,8 +108,8 @@ module tb(
     // ----------------------------------------------------------------------
 
     `ifndef SMIC55LL
-        `define ITCM(bankaddr) u_dut.U_ITCM.gen_spilt_ram[``bankaddr``].sp_ram_i.mem
-        `define DTCM(bankaddr) u_dut.U_DTCM.gen_spilt_ram[``bankaddr``].sp_ram_i.mem
+        `define ITCM(bankaddr) u_dut.U_ITCM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
+        `define DTCM(bankaddr) u_dut.U_DTCM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
     `else
         //`define ITCM(addr) u_dut.u_itcm.gen_spilt_ram[0].u_tcm_ram.mem_array[``addr``]
         //`define DTCM(addr) u_dut.u_dtcm.gen_spilt_ram[0].u_tcm_ram.mem_array[``addr``]
@@ -140,7 +140,7 @@ module tb(
                 // 512*32bit=2KB
                 for ( i = 0; i < 512; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `ITCM(k)[i][by] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
+                        `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
                     end
                 end
             end
@@ -151,7 +151,7 @@ module tb(
                 // 512*32bit=2KB
                 for ( i = 0; i < 512; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `DTCM(k)[i][by] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
+                        `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
                     end
                 end
             end

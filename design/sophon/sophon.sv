@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2023-12-27 14:41:55
+// Last Modified : 2024-03-25 15:18:12
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -22,13 +22,12 @@ module SOPHON (
      input  logic                        clk_i
     ,input  logic                        clk_neg_i
     ,input  logic                        rst_ni
-
     ,input  logic [31:0]                 bootaddr_i
     ,input  logic [31:0]                 hart_id_i
     // irq
-    ,input  logic                        irq_mei
-    ,input  logic                        irq_mti
-    ,input  logic                        irq_msi
+    ,input  logic                        irq_mei_i
+    ,input  logic                        irq_mti_i
+    ,input  logic                        irq_msi_i
     // debug halt request
     ,input  logic                        dm_req_i
     // instruction fetch interface
@@ -50,359 +49,271 @@ module SOPHON (
     ,input  logic [31:0]                 lsu_rdata_i
 `ifdef SOPHON_EEI
     // enhanced extension interface
-    ,output logic                        eei_req
-    ,output logic                        eei_ext
-    ,output logic [2:0]                  eei_funct3
-    ,output logic [6:0]                  eei_funct7
-    ,output logic [4:0]                  eei_batch_start
-    ,output logic [4:0]                  eei_batch_len
-    ,output logic [31:0]                 eei_rs_val[SOPHON_PKG::EEI_RS_MAX-1:0]
-    ,input  logic                        eei_ack  //nedege
-    ,input  logic [1:0]                  eei_rd_op
-    ,input  logic [4:0]                  eei_rd_len
-    ,input  logic                        eei_error
-    ,input  logic [31:0]                 eei_rd_val[SOPHON_PKG::EEI_RD_MAX-1:0]
+    ,output logic                        eei_req_o
+    ,output logic                        eei_ext_o
+    ,output logic [2:0]                  eei_funct3_o
+    ,output logic [6:0]                  eei_funct7_o
+    ,output logic [4:0]                  eei_batch_start_o
+    ,output logic [4:0]                  eei_batch_len_o
+    ,output logic [31:0]                 eei_rs_val_o[SOPHON_PKG::EEI_RS_MAX-1:0]
+    ,input  logic                        eei_ack_i  //nedege
+    ,input  logic [1:0]                  eei_rd_op_i
+    ,input  logic [4:0]                  eei_rd_len_i
+    ,input  logic                        eei_error_i
+    ,input  logic [31:0]                 eei_rd_val_i[SOPHON_PKG::EEI_RD_MAX-1:0]
 `endif
 `ifdef SOPHON_CLIC
     // CLIC interface
-    ,input  logic                        clic_irq_req
-    ,input  logic                        clic_irq_shv
-    ,input  logic [4:0]                  clic_irq_id
-    ,input  logic [7:0]                  clic_irq_level
-    ,output logic                        clic_irq_ack
-    ,output logic [7:0]                  clic_irq_intthresh
-    ,output logic                        clic_mnxti_clr
-    ,output logic [4:0]                  clic_mnxti_id
+    ,input  logic                        clic_irq_req_i
+    ,input  logic                        clic_irq_shv_i
+    ,input  logic [4:0]                  clic_irq_id_i
+    ,input  logic [7:0]                  clic_irq_level_i
+    ,output logic                        clic_irq_ack_o
+    ,output logic [7:0]                  clic_irq_intthresh_o
+    ,output logic                        clic_mnxti_clr_o
+    ,output logic [4:0]                  clic_mnxti_id_o
+`endif
+`ifdef PROBE
+    // Debug signal
+    ,output logic [79:0]                 probe_sophon_o
 `endif
 );
 
 
+    // ----------------------------------------------------------------------
+    //  SIGNAL DEFINE
+    // ----------------------------------------------------------------------
+    logic        is_add, is_addi, is_sub, 
+                 is_slt, is_slti, is_sltiu, is_sltu,
+                 is_and, is_andi, is_or, is_ori, is_xor, is_xori, 
+                 is_sll, is_slli, is_srl, is_srli, is_sra, is_srai,
+                 is_lui, is_auipc, is_nop;
+    logic        is_jal, is_jalr,
+                 is_beq, is_bne, is_blt, is_bltu, is_bge, is_bgeu;
+    logic        is_lw, is_lh, is_lhu, is_lb, is_lbu, 
+                 is_sw, is_sh, is_sb;
+    logic        is_csrrw, is_csrrs, is_csrrc, is_csrrwi, is_csrrsi, is_csrrci;
+    logic        is_ecall, is_ebreak, is_wfi;
+    logic        is_fence, is_fence_i;
+    logic        is_mret, is_dret;
+    logic        op_is_branch, op_is_store, op_is_load, op_is_jal, op_is_jalr,
+                 op_is_alui, op_is_alu, op_is_csr, op_is_lui, op_is_auipc, op_is_fence ;
+    logic        rvi_other, rvi_jump, rvi_branch, rvi_load, rvi_store,
+                 `ifdef SOPHON_EEI rvi_cust, `endif
+                 rvi_alui, rvi_alu, rvi_system, rvi_fence, rvi_csr;
+
+    logic        mstatus_mie, mstatus_mpie;
+    logic [1:0]  mstatus_mpp;
+    logic [31:0] mie, mscratch, mtval,
+                 mtvec,mepc,mcause;
+    logic [63:0] mcycle, minstret;
+`ifdef SOPHON_CLIC
+    logic [7:0]  mpil;
+    logic        minhv;
+    logic [31:0] mintthresh, mnxti, mtvt;
+`endif
+
+    logic        ex_inst_access, ex_illg_instr, ex_load_store,
+                 ex_branch, ex_csr_addr;
+    logic        mei_en_pending, mti_en_pending, msi_en_pending;
+    logic        ex_vld, irq_vld, irq_ex_vld;
+    logic        clint_irq_vld;
+
+    logic [31:0] jump_branch_target;
+    logic        branch_taken;
+    logic        lsu_valid;
+    logic        debug_mode, dm_start;
+    logic        ebreakm;
+`ifdef SOPHON_CLIC
+    logic        clic_hard_ack; 
+    logic        clic_npc_load, clic_npc_load_1d;
+    logic [4:0]  clic_irq_id_i_1d;
+`endif
 
 
     // ----------------------------------------------------------------------
-    //  signal define
+    //  ==== INSTRUCTION FETCH
     // ----------------------------------------------------------------------
-    logic        [6:0]     opcode;
-    logic        [2:0]     funct3;
-    logic        [6:0]     funct7;
-    logic        [4:0]     rs1_idx;
-    logic        [4:0]     rs2_idx;
-    logic        [4:0]     rd_idx;
-    logic        [32:0]    s_j_imm;
-    logic        [32:0]    s_i_imm;
-    logic        [32:0]    s_s_imm;
-    logic        [32:0]    s_b_imm;
-    logic        [32:0]    u_i_imm;
-    logic        [32:0]    u_u_imm;
-    logic                  clk_neg ;
-    logic                  rst_dly_neg;
-    logic                  rst_dly_neg_1d;
-    logic        [2:0]     rst_cnt;
-    logic                  if_vld;
-    logic                  if_vld_pos;
-    logic                  if_vld_neg;
-    logic        [31:0]    inst_data_1d;
-    logic                  inst_data_1d_vld;
-    logic        [31:0]    pc;
-    logic        [31:0]    npc;
-    logic        [31:0]    jump_branch_target;
-    logic                  if_stall;
-    logic                  wb_stall;
-    logic                  wb_stall_lsu;
-    logic                  lsu_valid;
-    logic                  lsu_error;
-    logic                  if_stall_lsu;
-    logic        [31:0]    lsu_result;
-    logic                  store_access_fault;
-    logic                  load_access_fault;
-    logic                  store_addr_misalign;
-    logic                  load_addr_misalign;
-    logic                  ex_lsu;
-    logic                  ex_csr_addr;
-    logic                  ex_illg_instr;
-    logic                  ex_branch;
-    logic                  ex_inst_access;
-    logic                  ex_vld;
-    logic                  irq_vld;
-    logic                  irq_ex_vld;
-    logic                  clint_irq_vld;
-    logic                  clint_direct;
-    logic                  clint_vector;
-    logic signed [32:0]    adder_result;
-    logic signed [32:0]    adder_op1;
-    logic signed [32:0]    adder_op2;
-    logic signed [32:0]    cmp_op1;
-    logic signed [32:0]    cmp_op2;
-    logic        [31:0]    bit_result;
-    logic        [32:0]    and_op1;
-    logic        [32:0]    and_op2;
-    logic        [31:0]    shifter_result;
-    logic        [32:0]    shifter_operand;
-    logic        [32:0]    shifter_right_result_ext;
-    logic        [31:0]    shifter_right_result;
-    logic        [31:0]    shifter_left_result;
-    logic        [31:0]    rs1_value_reverse;
-    logic        [4:0]     shamt;
-    logic                  cmp_result;
-    logic                  rs1_equal_rs2;
-    logic                  branch_taken;
-    logic                  mei_en_pending;
-    logic                  mti_en_pending;
-    logic                  msi_en_pending;
-    logic        [1:0]     curr_priv;
-    logic        [11:0]    csr_addr;
-    logic        [31:0]    csr_wdata;
-    logic        [31:0]    csr_rdata;
-    logic                  mstatus_mie;
-    logic                  mstatus_mpie;
-    logic        [1:0]     mstatus_mpp;
-    logic        [63:0]    mcycle;
-    logic        [63:0]    minstret;
-    logic        [31:0]    mie;
-    logic        [31:0]    mtvec;
-    logic        [31:0]    mscratch;
-    logic        [31:0]    mcause;
-    logic        [31:0]    mtval;
-    logic        [31:0]    mepc;
-    logic        [31:0]    rs1_val;
-    logic        [31:0]    rs2_val;
-    logic        [31:0]    rd_val;
-    logic        [31:0]    rs1_val_org;
-    logic        [31:0]    regfile[31:0];
-    logic                  wb_adder;
-    logic                  wb_cmp;
-    logic                  wb_bit;
-    logic                  wb_shifter;
-    logic                  wb_lsu;
-    logic                  wb_csr;
-    logic                  wr_regfile;
-    logic                  retire_wr_rd;
-    logic                  retire_no_rd;
-    logic                  retire_vld;
-    logic                  retire_eei;
-    logic                  retire_store;
-    logic                  retire_ecall;
-    logic                  retire_ebreak;
-    logic                  debug_mode;
-    logic                  dm_start;
-    logic        [2:0]     dm_cause_d;
-    logic        [2:0]     dm_cause;
-    logic                  dm_npc_vld;
-    logic        [3:0]     xdebugver;
-    logic        [2:0]     cause;
-    logic        [1:0]     prv;
-    logic                  ebreakm;
-    logic                  step;
-    logic        [31:0]    dpc;
-    logic        [31:0]    dscratch0;
-    logic        [31:0]    dscratch1;
-    logic        [31:0]    dscratch2;
-    logic        [31:0]    csr_rdata_dm;
-    logic                  is_csr_rvi;
-    logic                  is_csr_dm;
-    logic        [31:0]    csr_rdata_rvi;
-    logic                  dm_req_neg;
-    logic                  csr_wr;
-    logic                  csr_rd_clic;
-    logic                  csr_rd;
-    // ------------- EEI signal -----------------------
-    `ifdef SOPHON_EEI
-        logic              rvi_cust;
-        logic              wr_regfile_eei;
-        logic    [31:0]    eei_rd_idx_bit;
-        logic    [4:0]     eei_rd_start, eei_rd_len_inner;
-        logic              if_stall_eei;
-    `endif
-    // --------------CLIC signla-----------------------
-    logic                  is_clic;
-    `ifdef SOPHON_CLIC
-        logic    [7:0]     curr_clic_level;
-        logic    [31:0]    clic_npc_vector;
-        logic              clic_npc_load;
-        logic              clic_npc_load_1d;
-        logic              clic_en_pending;
-        logic              clic_npc_load_error;
-        logic              if_stall_clic;
-        logic    [31:0]    mtvt;
-        logic    [31:0]    mintthresh;
-        logic    [7:0]     mpil;
-        logic              minhv;
-        logic    [31:0]    mnxti;
-        logic              mnxti_vld;
-        logic              csr_cs_mnxti;
-        logic              csr_wr_mnxti;
-        logic              clic_hard_ack;
-        logic              clic_npc_vector_vld;
-        logic              clic_npc_direct_vld;
-        logic              clic_irq_direct_vld;
-        logic              clic_irq_vector_vld;
-        logic              clic_irq_vld;
-        logic              is_csr_clic;
-        logic [31:0]       csr_rdata_clic;
-        logic              mnxti_clr;
-        logic [4:0]        mnxti_id;
-        logic              csr_wr_mnxti_pos;
-        logic              csr_wr_mnxti_pos_1d;
-        logic [4:0]        clic_irq_id_1d;
-        logic              wb_stall_clic;
-    `endif
+    logic [2:0]  rst_cnt;
+    logic        rst_dly_neg;
+    logic        if_vld, if_vld_pos, if_vld_neg;
+    logic        retire_vld;
+    logic [31:0] inst_data_1d;
+    logic        inst_data_1d_vld;
+    logic        if_stall, if_stall_dm, if_stall_lsu
+    `ifdef SOPHON_EEI  ,if_stall_eei  `endif
+    `ifdef SOPHON_CLIC ,if_stall_clic `endif ;
+    logic        npc_sel_bootaddr, npc_sel_transfer;
+    logic        npc_sel_dm_halt, npc_sel_dm_ex, npc_sel_dm_exit;
+    logic        npc_sel_ex, npc_sel_ex_exit;
+    logic        npc_sel_clint_direct, npc_sel_clint_vector;
+    logic [31:0] pc, npc, dpc;
 
-
-
-    // ----------------------------------------------------------------------
-    //  Signal Polarity Transform
-    // ----------------------------------------------------------------------
-
+    // ------------------------------------------------
+    //  Delay reset signal inside the core
+    //   1. Wait the default value of bootaddr_i takes
+    //      effect if it comes from a registers.
+    //   2. Align the instruction fetching request to 
+    //      the negedge clock.
+    // ------------------------------------------------
+    assign rst_dly_neg = &rst_cnt;
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if(~rst_ni) begin
-            dm_req_neg <= 1'b0;
-        end
-        else begin
-            dm_req_neg <= dm_req_i;
-        end
-    end
-
-
-
-    // ----------------------------------------------------------------------
-    //  Instruction Fetch
-    // ----------------------------------------------------------------------
-    logic           is_jalr_pre;
-    logic           is_add, is_addi, is_sub, 
-                    is_slt, is_slti, is_sltiu, is_sltu,
-                    is_and, is_andi, is_or, is_ori, is_xor, is_xori, 
-                    is_sll, is_slli, is_srl, is_srli, is_sra, is_srai,
-                    is_lui, is_auipc, is_nop;
-    logic           is_jal, is_jalr,
-                    is_beq, is_bne, is_blt, is_bltu, is_bge, is_bgeu;
-    logic           is_lw, is_lh, is_lhu, is_lb, is_lbu, 
-                    is_sw, is_sh, is_sb;
-    logic           is_csrrw, is_csrrs, is_csrrc, is_csrrwi, is_csrrsi, is_csrrci;
-    logic           is_ecall, is_ebreak, is_mret, is_wfi;
-    logic           is_fence;
-    logic           op_is_branch, op_is_store, op_is_load, op_is_jal, op_is_jalr,
-                    op_is_alui, op_is_alu, op_is_csr, op_is_lui, op_is_auipc, op_is_fence ;
-    logic           rvi_other, rvi_jump, rvi_branch, rvi_load, rvi_store,
-                    rvi_alui, rvi_alu, rvi_system, rvi_fence, rvi_csr;
-    logic           rvi_lsu;
-    logic           is_fence_i;
-    logic           is_dret;
-
-
-    // -----------------------------------
-    //  reset delay
-    //  align fetch req to negedge clock
-    // -----------------------------------
-
-    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if(~rst_ni) begin
+        if (~rst_ni) begin
             rst_cnt <= 3'd0;
         end
-        else if (rst_cnt < 3'd7) begin
+        else if (rst_cnt<3'd7) begin
             rst_cnt <= rst_cnt + 3'd1;
         end
     end
-    assign rst_dly_neg = &rst_cnt;
 
+    // ------------------------------------------------
+    //  npc select signal:
+    //   1. change at negedge clock
+    //   2. TODO stable when inst_req & ~inst_ack?
+    // ------------------------------------------------
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if(~rst_ni) begin
-            rst_dly_neg_1d <= 1'b0;
-        end
-        else begin
-            rst_dly_neg_1d <= rst_dly_neg;
-        end
+        if ( ~rst_ni ) 
+            npc_sel_bootaddr <= 1'b1;
+        else if ( if_vld & npc_sel_bootaddr )
+            npc_sel_bootaddr <= 1'b0;
     end
 
-    // -----------------------------------
+    // TODO: dm_start should only ariase when there is no pending instruction fetch 
+    //       request, i.e. wait a complete instruction fetching. Then can use if_vld
+    //       to clear npc_sel_dm_halt without considering the value of npc
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            npc_sel_dm_halt <= 1'b0;
+        else if ( dm_start )
+            npc_sel_dm_halt <= 1'b1;
+        else if ( if_vld && ( npc==SOPHON_PKG::DM_HALT) )
+            npc_sel_dm_halt <= 1'b0;
+    end
+
+    // TODO: why use this patch? It seems that is_dret should be stable until if_vld
+    logic  fetching_dpc;
+    assign npc_sel_dm_exit = is_dret | fetching_dpc;
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            fetching_dpc <= 1'b0;
+        else if ( if_vld )
+            fetching_dpc <= 1'b0;
+        else if ( is_dret )
+            fetching_dpc <= 1'b1;
+    end
+
+    assign npc_sel_dm_ex        = ex_vld & debug_mode;
+    assign npc_sel_ex           = ex_vld;
+    assign npc_sel_ex_exit      = is_mret;
+
+    assign npc_sel_clint_direct = clint_irq_vld && (mtvec[1:0]==2'd0);
+    assign npc_sel_clint_vector = clint_irq_vld && (mtvec[1:0]==2'd1);
+
+    assign npc_sel_transfer     = rvi_jump | branch_taken;
+
+`ifdef SOPHON_CLIC
+    logic [31:0] clic_npc_vector;
+    logic        npc_sel_clic_vector;
+    logic        npc_sel_clic_direct;
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            npc_sel_clic_direct <= 1'b0;
+        else if ( clic_irq_req_i & clic_hard_ack & (~clic_irq_shv_i) ) 
+            npc_sel_clic_direct <= 1'b1;
+        else if ( if_vld ) 
+            npc_sel_clic_direct <= 1'b0;
+    end
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            npc_sel_clic_vector <= 1'b0;
+        else if ( clic_npc_load & lsu_valid ) 
+            npc_sel_clic_vector <= 1'b1;
+        else if ( if_vld ) 
+            npc_sel_clic_vector <= 1'b0;
+    end
+`endif
+
+    // ------------------------------------------------
     //  npc/pc change at negedge
-    // -----------------------------------
-
-
-    assign clint_direct = mtvec[1:0]==2'd0;
-    assign clint_vector = mtvec[1:0]==2'd1;
-
+    // ------------------------------------------------
     always_comb begin
-        // wait _1d to sent the first fetch request
-        if ( ~rst_dly_neg_1d ) 
+        if ( npc_sel_bootaddr ) 
             npc = bootaddr_i;
-
-        // debug module
-         else if ( dm_npc_vld )
+        // DEBUG MODE: 
+        //   1. entering
+        else if ( npc_sel_dm_halt )
             npc = SOPHON_PKG::DM_HALT;
-        else if ( debug_mode & ex_vld ) 
+        //   2. exception occurs
+        else if ( npc_sel_dm_ex ) 
             npc = is_ebreak ? SOPHON_PKG::DM_HALT : SOPHON_PKG::DM_EXCEPTION;
-        else if ( is_dret ) 
+        //   3. exiting
+        else if ( npc_sel_dm_exit ) 
             npc = dpc;
-
-        // all synchronous exception redirect to mtvec-base
-        else if ( ex_vld ) 
+        // EXCEPTION and Interrupt: 
+        //   1. exception outside the debug mode, all redirect to mtvec-base
+        else if ( npc_sel_ex ) 
             npc = {mtvec[31:2], 2'b0}; 
-
-        // clint mode irq
-        else if ( clint_irq_vld )  begin
-            if ( clint_direct )
-                npc = {mtvec[31:2], 2'b0}; 
-            else
-                npc = {mtvec[31:2], 2'b0} + ({1'b0,mcause[30:0]}<<2); 
-        end
-
-        // CLIC mode irq
-        `ifdef SOPHON_CLIC
-            else if ( clic_npc_direct_vld ) 
-                npc = {mtvec[31:6], 6'd0};
-            else if ( clic_npc_vector_vld ) 
-                npc = {clic_npc_vector[31:1], 1'b0};
-        `endif
-
-        // control transfer instructions
-        else if ( rvi_jump | branch_taken ) 
-            npc = jump_branch_target;
-
-        else if ( is_mret   ) 
+        //   2. CLINT irq: direct mode
+        else if ( npc_sel_clint_direct ) 
+            npc = {mtvec[31:2], 2'b0}; 
+        //   3. CLINT irq: vector mode
+        else if ( npc_sel_clint_vector ) 
+            npc = {mtvec[31:2], 2'b0} + ({1'b0,mcause[30:0]}<<2); 
+        //   4. CLIC irq
+    `ifdef SOPHON_CLIC
+        else if ( npc_sel_clic_direct ) 
+            npc = {mtvec[31:6], 6'd0};
+        else if ( npc_sel_clic_vector ) 
+            npc = {clic_npc_vector[31:1], 1'b0};
+    `endif
+        //   5. exiting
+        else if ( npc_sel_ex_exit )
             npc = mepc;
-
+        // TRANSFER INSTRUCTIONS:
+        else if ( npc_sel_transfer ) 
+            npc = jump_branch_target;
         else 
             npc = pc+ 32'd4;
     end
 
-
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if ( ~rst_ni ) begin
-            pc <= bootaddr_i;
-        end
-        else if ( if_vld ) begin 
+        if ( ~rst_ni ) 
+            pc <= 32'd0;
+        else if ( if_vld ) 
             pc <= npc;
-        end
     end
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  IF interface
-    // -----------------------------------
-
+    // ------------------------------------------------
     assign inst_addr_o = npc;
-    assign inst_req_o  = rst_dly_neg & (~if_stall) ;
+    assign inst_req_o  = rst_dly_neg & (~if_stall);
+    assign if_vld      = inst_req_o & inst_ack_i;
 
-    assign if_vld  = inst_req_o & inst_ack_i;
-
-    assign if_stall    =                    dm_start
-                                          | if_stall_lsu            
-                         `ifdef SOPHON_EEI  | if_stall_eei  `endif
-                         `ifdef SOPHON_CLIC | if_stall_clic `endif
-                        ;
+    assign if_stall    = if_stall_dm
+                       | if_stall_lsu            
+    `ifdef SOPHON_EEI  | if_stall_eei  `endif
+    `ifdef SOPHON_CLIC | if_stall_clic `endif
+                       ;
 
     // capture inst_data_i at negedge clk 
     // may add pre-decode logic before 1d to balance timing
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if (~rst_ni) begin
+        if (~rst_ni)
             inst_data_1d <= 32'd0;
-            inst_data_1d_vld <= 1'b0;
-            ex_inst_access <= 1'b0;
-        end
-        else if (if_vld) begin
+        else if (if_vld)
             inst_data_1d <= inst_data_i;
+    end
+
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if (~rst_ni)
+            inst_data_1d_vld <= 1'b0;
+        else if (if_vld)
             inst_data_1d_vld <= 1'b1;
-            ex_inst_access <= inst_error_i;
-        end
+        // clear when the current instruction is retired
+        // and the next one is not fetched
+        else if (retire_vld)
+            inst_data_1d_vld <= 1'b0;
     end
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
@@ -421,12 +332,18 @@ module SOPHON (
 
 
     // ----------------------------------------------------------------------
-    //  Instruction decode
+    //  ==== INSTRUCTION DECODE
     // ----------------------------------------------------------------------
+    logic [6:0]     opcode;
+    logic [2:0]     funct3;
+    logic [6:0]     funct7;
+    logic [4:0]     rs1_idx,rs2_idx,rd_idx;
+    logic [32:0]    s_j_imm,s_i_imm,s_s_imm,
+                    s_b_imm,u_i_imm,u_u_imm;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  common decode
-    // -----------------------------------
+    // ------------------------------------------------
     assign opcode  = inst_data_1d[6:0];
     assign funct3  = inst_data_1d[14:12];
     assign funct7  = inst_data_1d[31:25];
@@ -455,14 +372,9 @@ module SOPHON (
     assign op_is_auipc  = opcode==7'b0010111;
     assign op_is_fence  = opcode==7'b0001111;
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  RV32I instruction
-    // -----------------------------------
-
-    // pre decode
-    assign is_jalr_pre = if_vld_pos && (inst_data_i[6:0]==7'b1100111) && (inst_data_i[14:12]==3'b000);
-
+    // ------------------------------------------------
     // jump
     assign is_jal    = op_is_jal;
     assign is_jalr   = op_is_jalr   && (funct3==3'b000);
@@ -473,7 +385,6 @@ module SOPHON (
     assign is_bge    = op_is_branch && (funct3==3'b101) ;
     assign is_bltu   = op_is_branch && (funct3==3'b110) ;
     assign is_bgeu   = op_is_branch && (funct3==3'b111) ;
-
     // load
     assign is_lb     = op_is_load   && (funct3==3'b000) ;
     assign is_lh     = op_is_load   && (funct3==3'b001) ;
@@ -484,7 +395,6 @@ module SOPHON (
     assign is_sb     = op_is_store  && (funct3==3'b000) ;
     assign is_sh     = op_is_store  && (funct3==3'b001) ;
     assign is_sw     = op_is_store  && (funct3==3'b010) ;
-
     // alu - imediate
     assign is_addi   = op_is_alui   && (funct3==3'b000) ;
     assign is_slti   = op_is_alui   && (funct3==3'b010) ;
@@ -506,7 +416,6 @@ module SOPHON (
     assign is_sra    = op_is_alu    && (funct3==3'b101) && (funct7==7'b0100000) ;
     assign is_or     = op_is_alu    && (funct3==3'b110) && (funct7==7'b0000000) ;
     assign is_and    = op_is_alu    && (funct3==3'b111) && (funct7==7'b0000000) ;
-
     // CSR
     assign is_csrrw  = op_is_csr    && (funct3==3'b001) ;
     assign is_csrrs  = op_is_csr    && (funct3==3'b010) ;
@@ -514,33 +423,29 @@ module SOPHON (
     assign is_csrrwi = op_is_csr    && (funct3==3'b101) ;
     assign is_csrrsi = op_is_csr    && (funct3==3'b110) ;
     assign is_csrrci = op_is_csr    && (funct3==3'b111) ;
-
     // others
     assign is_lui    = op_is_lui;
     assign is_auipc  = op_is_auipc;
     assign is_fence  = op_is_fence & (funct3==3'b000) ;
-
     // system
     assign is_ecall  = inst_data_1d==32'b000000000000_00000_000_00000_1110011 ;
     assign is_ebreak = inst_data_1d==32'b000000000001_00000_000_00000_1110011 ;
     assign is_mret   = inst_data_1d==32'b001100000010_00000_000_00000_1110011 ;
     assign is_wfi    = inst_data_1d==32'b000100000101_00000_000_00000_1110011 ;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  zifencei
-    // -----------------------------------
+    // ------------------------------------------------
     assign is_fence_i= op_is_fence & (funct3==3'b001) ;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  debug
-    // -----------------------------------
+    // ------------------------------------------------
     assign is_dret   = debug_mode & (inst_data_1d==32'h7b200073);
 
-
-    // -----------------------------------
-    //  exception: illegal instruction
-    // -----------------------------------
-
+    // ------------------------------------------------
+    //  Instruction type
+    // ------------------------------------------------
     assign rvi_jump   = is_jal|is_jalr;
     assign rvi_branch = is_beq|is_bne|is_blt|is_bge|is_bltu|is_bgeu;
     assign rvi_load   = is_lb|is_lh|is_lw|is_lbu|is_lhu;
@@ -552,24 +457,31 @@ module SOPHON (
     assign rvi_fence  = is_fence|is_fence_i;
     assign rvi_other  = is_lui|is_auipc;
 
-    assign rvi_lsu    = rvi_load|rvi_store;
-
-    assign ex_illg_instr = inst_data_1d_vld & ~( | rvi_csr     | rvi_branch  | rvi_jump   
-                                                 | rvi_load    | rvi_store   | rvi_alui    
-                                                 | rvi_alu     | rvi_system  | rvi_other  
-                                                 | rvi_fence
-                                               `ifdef SOPHON_EEI | rvi_cust      `endif 
-                                               );
-
-
 
     // ----------------------------------------------------------------------
-    //  ALU // TODO: optimize ALU data path
+    //  ==== ALU // TODO: optimize ALU data path
     // ----------------------------------------------------------------------
+    logic signed [32:0]    adder_op1, adder_op2, adder_result;
+    logic signed [32:0]    cmp_op1, cmp_op2;
+    logic                  cmp_result;
+    logic        [32:0]    and_op1, and_op2;
+    logic        [31:0]    bit_result;
+    logic        [31:0]    shifter_result;
+    logic        [32:0]    shifter_operand;
+    logic        [31:0]    shifter_right_result;
+    logic        [32:0]    shifter_right_result_ext;
+    logic        [31:0]    shifter_left_result;
+    logic        [31:0]    rs1_value_reverse;
+    logic        [4:0]     shamt;
+    logic                  rs1_equal_rs2;
+    logic        [31:0]    rs1_val, rs2_val, rd_val, rs1_val_org;
+    logic        [31:0]    regfile[31:0];
+    logic                  wb_adder, wb_cmp, wb_bit,
+                           wb_shifter, wb_lsu, wb_csr;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  ADDER
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         unique case (1)
             // use pc as op1
@@ -609,9 +521,9 @@ module SOPHON (
     assign adder_result = adder_op1 + adder_op2;
     assign wb_adder     = is_add | is_addi | is_sub | is_auipc;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  COMPARE
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         unique case (1)
             is_slt  , 
@@ -652,9 +564,9 @@ module SOPHON (
                             | (  cmp_result     & (is_blt|is_bltu) ) 
                             | ( ~cmp_result     & (is_bge|is_bgeu) ) ;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  BIT PROCESS
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         unique case (1)
             is_and  : bit_result = rs1_val & rs2_val;
@@ -669,9 +581,9 @@ module SOPHON (
 
     assign wb_bit = is_and | is_andi | is_or | is_ori | is_xor | is_xori;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  SHIFTER
-    // -----------------------------------
+    // ------------------------------------------------
     for (genvar i=0; i<32; i++) begin:gen_shifter_reverse
         assign rs1_value_reverse[i] = rs1_val[31-i];
         assign shifter_left_result[i] = shifter_right_result[31-i];
@@ -697,14 +609,18 @@ module SOPHON (
     assign shifter_result = (is_sll|is_slli) ? shifter_left_result : shifter_right_result;
     assign wb_shifter = is_sll | is_slli | is_srl | is_srli | is_sra | is_srai;
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  Branch
-    // -----------------------------------
+    // ------------------------------------------------
+    logic pre_dec_jalr;
+
+    // pre decode jalr to calculate target address
+    assign pre_dec_jalr = if_vld_pos && (inst_data_i[6:0]==7'b1100111) && (inst_data_i[14:12]==3'b000);
+
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             rs1_val_org <= 32'd0;
-        else if ( is_jalr_pre )
+        else if ( pre_dec_jalr )
             rs1_val_org <= regfile [ inst_data_i[19:15] ];
     end
 
@@ -715,15 +631,19 @@ module SOPHON (
     assign jump_branch_target = {adder_result[31:1], adder_result[0] & ~is_jalr};
 
 
-
-
     // ----------------------------------------------------------------------
-    //  Load Store Unit
+    //  ==== LOAD STORE UNIT
     // ----------------------------------------------------------------------
+    logic        lsu_error;
+    logic [31:0] lsu_result;
+    logic        store_access_fault, load_access_fault;
+    logic        store_addr_misalign, load_addr_misalign;
+    logic        inst_lsu;
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  LSU interface
-    // -----------------------------------
+    // ------------------------------------------------
+    assign inst_lsu    = rvi_load|rvi_store;
 
     // send lsu request one by one, align to posedge clock
     always_ff @(posedge clk_i, negedge rst_ni) begin
@@ -732,29 +652,28 @@ module SOPHON (
         else if (lsu_ack_i)
             lsu_req_o <= 1'b0;
         // keep if_vld_pos to make sure this is a effective l/d instruction
-        else if ( if_vld_pos & rvi_lsu & ~irq_ex_vld )
+        else if ( if_vld_pos & inst_lsu & ~irq_ex_vld )
             lsu_req_o <= 1'b1;
-        `ifdef SOPHON_CLIC
-            // clic load npc
-            else if ( clic_hard_ack & clic_irq_shv )
-                lsu_req_o <= 1'b1;
-        `endif
+   `ifdef SOPHON_CLIC
+        // clic load npc
+        else if ( clic_hard_ack & clic_irq_shv_i )
+            lsu_req_o <= 1'b1;
+    `endif
     end
 
     always_comb begin
-        //if ( lsu_req_o ) begin
-        if ( rvi_lsu ) begin
+        if ( inst_lsu ) begin
         `ifdef SOPHON_CLIC
             if ( clic_npc_load )
-                lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id_1d<<2);
+                lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id_i_1d<<2);
             else
         `endif
                 lsu_addr_o = adder_result[31:0];
         end
-        `ifdef SOPHON_CLIC
-            else if ( clic_npc_load )
-                lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id_1d<<2);
-        `endif
+    `ifdef SOPHON_CLIC
+        else if ( clic_npc_load )
+            lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id_i_1d<<2);
+    `endif
         else 
             lsu_addr_o = 32'd0;
     end
@@ -779,8 +698,7 @@ module SOPHON (
     end
 
     assign lsu_we_o   = `ifdef SOPHON_CLIC clic_npc_load ? 1'b0: `endif (lsu_req_o&rvi_store) ? 1'b1 : 1'b0 ;
-    assign lsu_amo_o  = 4'd0; // TODO
-
+    assign lsu_amo_o  = 4'd0; 
 
     // capture at negedge to align lsu_stall & npc
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -799,15 +717,14 @@ module SOPHON (
         end
     end
 
-    assign if_stall_lsu =     ( if_vld_neg & rvi_lsu & ~irq_ex_vld )
+    assign if_stall_lsu =     ( if_vld_neg & inst_lsu & ~irq_ex_vld )
                             | ( lsu_req_o & ~lsu_valid );
 
     assign wb_lsu  = lsu_valid & rvi_load;
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  load result
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         lsu_result = 32'd0;
         if ( is_lw ) begin
@@ -847,10 +764,9 @@ module SOPHON (
         end
     end
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  store data
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         lsu_strb_o = 4'b0000;
         lsu_wdata_o = 32'd0;
@@ -894,12 +810,9 @@ module SOPHON (
         end
     end
 
-
-    // -----------------------------------
-    //  LSU exception
-    // -----------------------------------
-
-    // LSU address misalign
+    // ------------------------------------------------
+    //  LSU address misalign
+    // ------------------------------------------------
     always_comb begin
         unique case (1)
             is_lw   : load_addr_misalign = |lsu_addr_o[1:0] ;
@@ -920,7 +833,9 @@ module SOPHON (
         endcase
     end
 
+    // ------------------------------------------------
     // LSU access fault: decide by platform
+    // ------------------------------------------------
     assign store_access_fault = rvi_store & lsu_valid & lsu_error;
     assign load_access_fault  =                   (  rvi_load
                                  `ifdef SOPHON_CLIC  | clic_npc_load `endif
@@ -928,19 +843,36 @@ module SOPHON (
                                                    & lsu_valid 
                                                    & lsu_error;
 
-    // lsu_addr_o may change in the last half cycle if rs1=rd and cause a wrong exception, mask it using lsu_valid
-    assign ex_lsu =   ( ~lsu_valid & ( load_addr_misalign | store_addr_misalign )) 
-                    | ( load_access_fault | store_access_fault );
-
 
     // ----------------------------------------------------------------------
-    //  CSR register
+    //  ==== CSR REGISTER
     // ----------------------------------------------------------------------
+    logic        csr_wr, csr_rd;
+    logic [11:0] csr_addr;
+    logic [31:0] csr_wdata, csr_rdata;
+    logic [31:0] csr_rdata_dm, csr_rdata_rvi `ifdef SOPHON_CLIC ,csr_rdata_clic `endif ;
+
+    logic [1:0]  curr_priv;
+    logic        is_clic;
+    logic        is_csr_rvi, is_csr_dm `ifdef SOPHON_CLIC ,is_csr_clic `endif ;
+
+`ifdef SOPHON_CLIC
+    logic [7:0]  curr_clic_level;
+    logic        clic_en_pending;
+    logic        mnxti_vld, mnxti_clr;
+    logic        csr_cs_mnxti, csr_wr_mnxti;
+    logic        clic_irq_direct_vld, clic_irq_vector_vld;
+    logic        clic_irq_vld;
+    logic [4:0]  mnxti_id;
+    logic        csr_wr_mnxti_pos, csr_wr_mnxti_pos_1d;
+    logic        wb_stall_clic;
+    logic        clic_npc_load_error;
+`endif
+
 
     // only support m mode
     assign curr_priv = 2'b11;
     assign csr_addr  = inst_data_1d[31:20];
-    //assign wb_csr    = rvi_csr & csr_wr;
     assign wb_csr    = rvi_csr;
 
     always_comb begin
@@ -956,7 +888,6 @@ module SOPHON (
         endcase
     end
 
-
     always_comb begin
         csr_wr = 1'b0;
         csr_rd = 1'b0;
@@ -971,11 +902,9 @@ module SOPHON (
         end
     end
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  CSR Register Write Logic
-    // -----------------------------------
-
+    // ------------------------------------------------
     // MSTATUS
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
@@ -1027,10 +956,8 @@ module SOPHON (
         `endif
     end
 
-
     // MIP
     // Sophon only support M mode, MSIP/MTIP/MEIP are read-only register
-
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
@@ -1043,7 +970,6 @@ module SOPHON (
                      csr_wdata[SOPHON_PKG::BIT_MSI] , 3'd0 };
         end
     end
-
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
@@ -1063,7 +989,6 @@ module SOPHON (
             `endif
         end
     end
-
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
@@ -1105,8 +1030,8 @@ module SOPHON (
         else if (mti_en_pending             ) mcause <= {1'b1, 31'd7};
         else if (mei_en_pending             ) mcause <= {1'b1, 31'd11};
         `ifdef SOPHON_CLIC
-        else if (clic_irq_vld               ) mcause <= {1'b1, mcause[30:5], clic_irq_id};
-        else if (csr_wr_mnxti               ) mcause <= {1'b1, mcause[30:5], clic_irq_id};
+        else if (clic_irq_vld               ) mcause <= {1'b1, mcause[30:5], clic_irq_id_i};
+        else if (csr_wr_mnxti               ) mcause <= {1'b1, mcause[30:5], clic_irq_id_i};
         `endif
         // software write
         else if ( rvi_csr && csr_wr && (csr_addr==SOPHON_PKG::CSR_MCAUSE) ) 
@@ -1139,7 +1064,6 @@ module SOPHON (
         else if ( rvi_csr && (csr_addr==SOPHON_PKG::CSR_MTVAL) ) mtval <= csr_wdata;
     end
 
-
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) 
             mcycle <= 64'd0;
@@ -1163,7 +1087,7 @@ module SOPHON (
     end
 
 
-    `ifdef SOPHON_CLIC
+`ifdef SOPHON_CLIC
 
         always_ff @(posedge clk_i, negedge rst_ni) begin
             if(~rst_ni) 
@@ -1172,7 +1096,7 @@ module SOPHON (
                 mtvt <= csr_wdata & 32'hFFFF_FFC0; // Align to 64 byte
         end
 
-        assign clic_irq_intthresh = mintthresh;
+        assign clic_irq_intthresh_o = mintthresh;
         always_ff @(posedge clk_i, negedge rst_ni) begin
             if(~rst_ni) begin
                 mintthresh <= 32'd0;
@@ -1204,8 +1128,8 @@ module SOPHON (
 
 
         // mnxti
-        assign mnxti_vld    = is_clic & clic_irq_req & (clic_irq_level>mpil) & (clic_irq_level>mintthresh) & ~clic_irq_shv ;
-        assign mnxti        = mnxti_vld ? ( mtvt + (clic_irq_id<<2) ) : 32'd0;
+        assign mnxti_vld    = is_clic & clic_irq_req_i & (clic_irq_level_i>mpil) & (clic_irq_level_i>mintthresh) & ~clic_irq_shv_i ;
+        assign mnxti        = mnxti_vld ? ( mtvt + (clic_irq_id_i<<2) ) : 32'd0;
         assign csr_cs_mnxti = (csr_addr==SOPHON_PKG::CSR_XNXTI) & ( is_csrrsi | is_csrrci | (is_csrrs&(rs1_idx==5'd0)) );
         assign csr_wr_mnxti = mnxti_vld & csr_cs_mnxti & csr_wr;
 
@@ -1228,42 +1152,40 @@ module SOPHON (
             else if ( mnxti_clr )
                 mnxti_id <= 5'd0;
             else if ( csr_wr_mnxti )
-                mnxti_id <= clic_irq_id;
+                mnxti_id <= clic_irq_id_i;
         end
 
     `endif
 
 
-    // -----------------------------------
+    // ------------------------------------------------
     //  CSR Register Read Logic
-    // -----------------------------------
-
-     always_comb begin
-         csr_rdata   = 32'b0;
-         ex_csr_addr = 1'b0;
-         if ( rvi_csr ) begin
-             unique case ( 1 )
-                 is_csr_rvi  : csr_rdata = csr_rdata_rvi;
-                 is_csr_dm   : csr_rdata = csr_rdata_dm;
-                 `ifdef SOPHON_CLIC
-                     is_csr_clic : csr_rdata = csr_rdata_clic;
-                 `endif
-                 default     : begin 
-                                 csr_rdata   = 32'd0;
-                                 ex_csr_addr = 1'b1; 
-                               end
-             endcase
-         end
-         else begin
-             csr_rdata   = 32'd0;
-             ex_csr_addr = 1'b0; 
-         end
+    // ------------------------------------------------
+    always_comb begin
+        csr_rdata   = 32'b0;
+        ex_csr_addr = 1'b0;
+        if ( rvi_csr ) begin
+            unique case ( 1 )
+                is_csr_rvi  : csr_rdata = csr_rdata_rvi;
+                is_csr_dm   : csr_rdata = csr_rdata_dm;
+            `ifdef SOPHON_CLIC
+                is_csr_clic : csr_rdata = csr_rdata_clic;
+            `endif
+                default     : begin 
+                              csr_rdata   = 32'd0;
+                              ex_csr_addr = 1'b1; 
+                              end
+            endcase
+        end
+        else begin
+            csr_rdata   = 32'd0;
+            ex_csr_addr = 1'b0; 
+        end
      end
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  RV32I CSR register rdata
-    // -----------------------------------
+    // ------------------------------------------------
     always_comb begin
         csr_rdata_rvi   = 32'b0;
         if ( rvi_csr & csr_rd ) begin
@@ -1298,9 +1220,9 @@ module SOPHON (
                                                           mcause ;
                 SOPHON_PKG::CSR_MTVAL     : csr_rdata_rvi = mtval;
                 SOPHON_PKG::CSR_MIP       : csr_rdata_rvi = {32{~is_clic}} & { 19'd0   ,  
-                                                                         irq_mei , 3'b0, 
-                                                                         irq_mti , 3'b0,
-                                                                         irq_msi , 3'd0 };
+                                                                         irq_mei_i , 3'b0, 
+                                                                         irq_mti_i , 3'b0,
+                                                                         irq_msi_i , 3'd0 };
 
                 SOPHON_PKG::CSR_MCYCLE    : csr_rdata_rvi = mcycle[31:0];
                 SOPHON_PKG::CSR_MCYCLEH   : csr_rdata_rvi = mcycle[63:32];
@@ -1320,26 +1242,30 @@ module SOPHON (
                                                   };
 
 
-    // -----------------------------------
-    //  enhanced extension interface
-    // -----------------------------------
+    // ----------------------------------------------------------------------
+    //  ==== ENHANCED EXTENSION INTERFACE
+    // ----------------------------------------------------------------------
     `ifdef SOPHON_EEI
-        logic        op_is_cust0;
-        logic        op_is_cust1;
-        logic  [4:0] rs_idx[1:0];
+        logic        op_is_cust0, op_is_cust1;
+        logic [4:0]  rs_idx[1:0];
+        logic        retire_eei;
+        logic        wr_regfile_eei;
+        logic [31:0] eei_rd_idx_bit;
+        logic [4:0]  eei_rd_start, eei_rd_len_i_inner;
+        logic        wb_stall;
 
         assign op_is_cust0     = opcode==7'b0001011;
         assign op_is_cust1     = opcode==7'b0101011;
         assign rvi_cust        = op_is_cust0|op_is_cust1;
 
-        assign if_stall_eei    = eei_req & (~eei_ack);
+        assign if_stall_eei    = eei_req_o & (~eei_ack_i);
 
-        assign eei_req         = rvi_cust;
-        assign eei_ext         = op_is_cust1 ? 1'b1 : 1'b0;
-        assign eei_funct3      = funct3;
-        assign eei_funct7      = funct7;
-        assign eei_batch_start = op_is_cust0 ? 5'd0 : rs1_idx;
-        assign eei_batch_len   = op_is_cust0 ? 5'd2 : rs2_idx;
+        assign eei_req_o         = rvi_cust;
+        assign eei_ext_o         = op_is_cust1 ? 1'b1 : 1'b0;
+        assign eei_funct3_o      = funct3;
+        assign eei_funct7_o      = funct7;
+        assign eei_batch_start_o = op_is_cust0 ? 5'd0 : rs1_idx;
+        assign eei_batch_len_o   = op_is_cust0 ? 5'd2 : rs2_idx;
 
         
         localparam EXT_RF_LEN  = 32 + SOPHON_PKG::EEI_RS_MAX -1;
@@ -1353,81 +1279,76 @@ module SOPHON (
 
         assign rs_idx[0] = rs1_idx;
         assign rs_idx[1] = rs2_idx;
-        for (genvar i=0; i<SOPHON_PKG::EEI_RS_MAX; i++) begin : gen_eei_rs_val
+        for (genvar i=0; i<SOPHON_PKG::EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
             if ( i<2 ) begin: gen_eei_rs0_rs1
-                assign eei_rs_val[i] = op_is_cust0 ? ext_regfile [ rs_idx[i] ] : ext_regfile[eei_batch_start+i];
+                assign eei_rs_val_o[i] = op_is_cust0 ? ext_regfile [ rs_idx[i] ] : ext_regfile[eei_batch_start_o+i];
             end
             else begin: gen_eei_rs_extent
-                assign eei_rs_val[i] = ext_regfile[eei_batch_start+i];
+                assign eei_rs_val_o[i] = ext_regfile[eei_batch_start_o+i];
             end
         end
 
-        //assign eei_rd_start = op_is_cust0 ? 5'd0 : rs1_idx;
-        //assign eei_rd_len_inner   = op_is_cust0 ? 5'd1 : rs2_idx;
         always_comb begin
             eei_rd_start = 5'd0;
-            eei_rd_len_inner   = 5'd0;
-            if (eei_rd_op==2'd1) begin
+            eei_rd_len_i_inner   = 5'd0;
+            if (eei_rd_op_i==2'd1) begin
                 eei_rd_start = rd_idx;
-                eei_rd_len_inner   = 5'd1;
+                eei_rd_len_i_inner   = 5'd1;
             end
-            else if (eei_rd_op==2'd2) begin
+            else if (eei_rd_op_i==2'd2) begin
                 eei_rd_start = rs1_idx;
-                eei_rd_len_inner   = eei_rd_len;
+                eei_rd_len_i_inner   = eei_rd_len_i;
             end
         end
 
         integer j;
-        assign wr_regfile_eei = ~wb_stall & eei_req & eei_ack & (~eei_error) & (eei_rd_op==2'd1 || eei_rd_op==2'd2);
+        assign wr_regfile_eei = ~wb_stall & eei_req_o & eei_ack_i & (~eei_error_i) & (eei_rd_op_i==2'd1 || eei_rd_op_i==2'd2);
         always_comb begin
             eei_rd_idx_bit = 32'd0;
             for (j=0; j<32; j=j+1)
-                if (eei_rd_op==2'd1)
+                if (eei_rd_op_i==2'd1)
                     eei_rd_idx_bit[j] = ( rd_idx==j ) ? 1'b1 : 1'b0;
                 else
-                    eei_rd_idx_bit[j] = ( (eei_rd_start<=6'(j)) && ((eei_rd_len_inner+eei_rd_start)>6'(j)) ) ? 1'b1 : 1'b0;
+                    eei_rd_idx_bit[j] = ( (eei_rd_start<=6'(j)) && ((eei_rd_len_i_inner+eei_rd_start)>6'(j)) ) ? 1'b1 : 1'b0;
         end
 
-        assign retire_eei   = ~wb_stall & eei_req & eei_ack & (~eei_error);
+        assign retire_eei   = ~wb_stall & eei_req_o & eei_ack_i & (~eei_error_i);
     `endif
 
 
     // ----------------------------------------------------------------------
-    //  CLIC
+    //  ==== CLIC
     // ----------------------------------------------------------------------
     `ifdef SOPHON_CLIC
 
-        assign clic_mnxti_clr  = mnxti_clr;
-        assign clic_mnxti_id   = mnxti_id;
+        assign clic_mnxti_clr_o  = mnxti_clr;
+        assign clic_mnxti_id_o   = mnxti_id;
 
         assign is_clic         = (mtvec[5:0]==6'b0000_11) ? 1'b1 : 1'b0;
         assign if_stall_clic   = clic_npc_load;
-        assign clic_en_pending = is_clic & clic_irq_req && mstatus_mie && (clic_irq_level>curr_clic_level) ;
+        assign clic_en_pending = is_clic & clic_irq_req_i && mstatus_mie && (clic_irq_level_i>curr_clic_level) ;
 
         always_ff @(posedge clk_i, negedge rst_ni) begin
             if (~rst_ni) begin
-                clic_irq_id_1d <= 5'd0;
+                clic_irq_id_i_1d <= 5'd0;
             end
-            else if ( clic_irq_req & clic_irq_ack )
-                clic_irq_id_1d <= clic_irq_id;
+            else if ( clic_irq_req_i & clic_irq_ack_o )
+                clic_irq_id_i_1d <= clic_irq_id_i;
             else if ( is_mret & retire_vld )
-                clic_irq_id_1d <= 5'd0;
+                clic_irq_id_i_1d <= 5'd0;
         end
 
-
-        // -----------------------------------
+        // ------------------------------------------------
         //  CLIC IRQ valid
-        // -----------------------------------
+        // ------------------------------------------------
 
         // hard_ack change npc and update all irq context,
         // last 1 cycle because mie will be cleared in next cycle
         // 1. if there is an outstanding lsu request, wait
         // 2. if the current instrunction is load/store, there is no problem, clic request will
         //    override load/store request in lsu interface
-        assign clic_hard_ack = clic_en_pending & ~lsu_req_o;
-        assign clic_irq_ack  = clic_hard_ack | mnxti_clr;
-
-
+        assign clic_hard_ack  = clic_en_pending & ~lsu_req_o;
+        assign clic_irq_ack_o = clic_hard_ack | mnxti_clr;
 
         // negedge signal, update irq context
         always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -1436,42 +1357,21 @@ module SOPHON (
                 clic_irq_vector_vld <= 1'b0;
             end
             else begin
-                clic_irq_direct_vld <= clic_irq_req & clic_hard_ack & (~clic_irq_shv);
-                clic_irq_vector_vld <= clic_irq_req & clic_hard_ack &   clic_irq_shv ;
+                clic_irq_direct_vld <= clic_irq_req_i & clic_hard_ack & (~clic_irq_shv_i);
+                clic_irq_vector_vld <= clic_irq_req_i & clic_hard_ack &   clic_irq_shv_i ;
             end
         end
 
         assign clic_irq_vld        = clic_irq_direct_vld | clic_irq_vector_vld;
 
-
-        // negedge signal, update npc
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) 
-                clic_npc_direct_vld <= 1'b0;
-            else if ( clic_irq_req & clic_hard_ack & (~clic_irq_shv) ) 
-                clic_npc_direct_vld <= 1'b1;
-            else if ( if_vld ) 
-                clic_npc_direct_vld <= 1'b0;
-        end
-
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) 
-                clic_npc_vector_vld <= 1'b0;
-            else if ( clic_npc_load & lsu_valid ) 
-                clic_npc_vector_vld <= 1'b1;
-            else if ( if_vld ) 
-                clic_npc_vector_vld <= 1'b0;
-        end
-
-        // -----------------------------------
+        // ------------------------------------------------
         //  CLIC vector mode
-        // -----------------------------------
-
+        // ------------------------------------------------
         always_ff @(posedge clk_neg_i, negedge rst_ni) begin
             if(~rst_ni) begin
                 clic_npc_load <= 1'b0;
             end
-            else if ( clic_irq_req & clic_hard_ack & clic_irq_shv ) begin
+            else if ( clic_irq_req_i & clic_hard_ack & clic_irq_shv_i ) begin
                 clic_npc_load <= 1'b1;
             end
             else if ( clic_npc_load & lsu_valid ) begin
@@ -1495,36 +1395,33 @@ module SOPHON (
 
         assign clic_npc_load_error = clic_npc_load & lsu_valid & lsu_error;
 
-
-        // -----------------------------------
-        //  current clic levev
-        // -----------------------------------
-
+        // ------------------------------------------------
+        //  current clic level
+        // ------------------------------------------------
         always_ff @(posedge clk_i, negedge rst_ni) begin
             if(~rst_ni) begin
                 curr_clic_level <= 8'd0;
             end
             else if (clic_hard_ack) begin
-                curr_clic_level <= clic_irq_level;
+                curr_clic_level <= clic_irq_level_i;
             end
             else if (is_mret) begin
                 curr_clic_level <= mpil; 
             end
             else if ( csr_wr_mnxti ) begin
-                curr_clic_level <= clic_irq_level;
+                curr_clic_level <= clic_irq_level_i;
             end
         end
 
-
-        // -----------------------------------
+        // ------------------------------------------------
         //  CLIC CSR register rdata
-        // -----------------------------------
-
-        assign csr_rd_clic = csr_rd & ((csr_addr==SOPHON_PKG::CSR_XNXTI) ? csr_cs_mnxti : 1'b1);
+        // ------------------------------------------------
+        logic  not_rd_mnxti;
+        assign not_rd_mnxti = (csr_addr==SOPHON_PKG::CSR_XNXTI) ? csr_cs_mnxti : 1'b1;
 
         always_comb begin
             csr_rdata_clic = 32'b0;
-            if ( rvi_csr & csr_rd_clic ) begin
+            if ( rvi_csr & & csr_rd & not_rd_mnxti ) begin
                 unique case (csr_addr)
                     SOPHON_PKG::CSR_MTVT       : csr_rdata_clic = mtvt; 
                     SOPHON_PKG::CSR_MINTSTATUS : csr_rdata_clic = {curr_clic_level,24'd0};
@@ -1537,49 +1434,31 @@ module SOPHON (
 
         assign is_csr_clic = rvi_csr & csr_addr inside { SOPHON_PKG::CSR_MTVT, SOPHON_PKG::CSR_MINTSTATUS, 
                                                          SOPHON_PKG::CSR_MINTTHRESH, SOPHON_PKG::CSR_XNXTI };
-
-
     `else
         assign is_clic    = 1'b0;
     `endif
 
 
     // ----------------------------------------------------------------------
-    // exception & interrupt
+    //  ==== DEBUG MODE
     // ----------------------------------------------------------------------
-
-    assign mei_en_pending  = mstatus_mie & irq_mei & mie[SOPHON_PKG::BIT_MEI] & (~is_clic);
-    assign mti_en_pending  = mstatus_mie & irq_mti & mie[SOPHON_PKG::BIT_MTI] & (~is_clic);
-    assign msi_en_pending  = mstatus_mie & irq_msi & mie[SOPHON_PKG::BIT_MSI] & (~is_clic);
+    logic        [3:0]     xdebugver;
+    logic        [1:0]     prv;
+    logic                  step;
+    logic                  dm_req_neg;
+    logic        [2:0]     dm_cause_d, dm_cause;
+    logic        [31:0]    dscratch0, dscratch1, dscratch2;
 
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if(~rst_ni) 
-            clint_irq_vld <= 1'b0;
-        else if ( ~lsu_req_o & (mei_en_pending | mti_en_pending | msi_en_pending) )
-            clint_irq_vld <= 1'b1;
-        else if ( if_vld )
-            clint_irq_vld <= 1'b0;
+        if(~rst_ni) begin
+            dm_req_neg <= 1'b0;
+        end
+        else begin
+            dm_req_neg <= dm_req_i;
+        end
     end
 
-    assign irq_vld =                    clint_irq_vld 
-                     `ifdef SOPHON_CLIC | clic_irq_vld  `endif ;
-
-
-    // branch addr misaligned 
-    assign ex_branch =   ( jump_branch_target[1] & (is_jal|is_jalr) )
-                       | ( jump_branch_target[1] & branch_taken & rvi_branch );
-
-
-    // priority: irq > exception
-    assign ex_vld =   rst_dly_neg_1d & ~irq_vld & ( ex_illg_instr | ex_lsu         | ex_csr_addr |
-                                                    ex_branch     | ex_inst_access | is_ecall    |
-                                                    (is_ebreak & (~ebreakm|debug_mode)) ) ;
-    assign irq_ex_vld = irq_vld | ex_vld;
-
-
-    // ----------------------------------------------------------------------
-    //  debug mode
-    // ----------------------------------------------------------------------
+    assign if_stall_dm = dm_start;
 
     always_comb begin
         if ( ~debug_mode & retire_vld ) begin
@@ -1600,6 +1479,7 @@ module SOPHON (
                 dm_cause_d = 3'd0;
             end
         end
+        // TODO: if inst_ram is empty such as FPGA platform, no retire_vld signal
         else if ( ~debug_mode & dm_req_neg ) begin // priority 1
             dm_start = 1'b1;
             dm_cause_d = 3'd3;
@@ -1625,20 +1505,9 @@ module SOPHON (
         end
     end
 
-    //assign dm_npc_vld = debug_mode_pos | dm_npc_fecting;
-    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if(~rst_ni) 
-            dm_npc_vld <= 1'b0;
-        else if ( dm_start )
-            dm_npc_vld <= 1'b1;
-        else if ( if_vld && ( npc==SOPHON_PKG::DM_HALT ) )
-            dm_npc_vld <= 1'b0;
-    end
-
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  debug mode CSR register write
-    // -----------------------------------
+    // ------------------------------------------------
 
     assign xdebugver = 4'd4;
 
@@ -1685,10 +1554,9 @@ module SOPHON (
         end
     end
 
-
-    // -----------------------------------
+    // ------------------------------------------------
     //  debug mode CSR register rdata
-    // -----------------------------------
+    // ------------------------------------------------
     assign is_csr_dm = debug_mode & rvi_csr & csr_addr inside { SOPHON_PKG::CSR_DCSR, SOPHON_PKG::CSR_DPC, SOPHON_PKG::CSR_DSCRATCH0,
                                                                 SOPHON_PKG::CSR_DSCRATCH1, SOPHON_PKG::CSR_DSCRATCH2
                                                               };
@@ -1708,10 +1576,14 @@ module SOPHON (
     end
 
 
-
     // ----------------------------------------------------------------------
-    //  Instruction Commit
+    //  ==== INSTRUCTION COMMIT
     // ----------------------------------------------------------------------
+    logic       wr_regfile;
+    logic       retire_ebreak;
+    logic       wb_stall_lsu;
+    logic       retire_wr_rd, retire_no_rd;
+    logic       retire_store, retire_ecall;
 
     always_comb begin
         unique case (1)
@@ -1728,28 +1600,20 @@ module SOPHON (
         endcase
     end
 
-
-
     assign wb_stall_lsu  = ~(if_vld_neg|lsu_valid);
 
-    `ifdef SOPHON_CLIC
-        assign wb_stall_clic = clic_npc_load|clic_npc_load_1d;
-    `endif
+`ifdef SOPHON_CLIC
+    assign wb_stall_clic = clic_npc_load|clic_npc_load_1d;
+`endif
 
-    assign wb_stall =                    irq_vld 
-                                       | ex_vld 
-                                       | wb_stall_lsu
-                      `ifdef SOPHON_CLIC | wb_stall_clic `endif ;
+    assign wb_stall    = irq_vld 
+                       | ex_vld 
+                       | wb_stall_lsu
+    `ifdef SOPHON_CLIC | wb_stall_clic `endif ;
 
-    assign wr_regfile = ~wb_stall & ( wb_adder
-                                     |wb_cmp
-                                     |wb_bit
-                                     |wb_shifter
-                                     |wb_lsu
-                                     |wb_csr
-                                     |is_lui
-                                     |is_jal
-                                     |is_jalr);
+    assign wr_regfile = ~wb_stall & ( wb_adder   | wb_cmp | wb_bit
+                                    | wb_shifter | wb_lsu | wb_csr
+                                    | is_lui     | is_jal | is_jalr );
 
     // regfile
     genvar i;
@@ -1763,12 +1627,12 @@ module SOPHON (
                 else if ( wr_regfile && (rd_idx==i) ) begin
                     regfile[i] <= rd_val;
                 end
-                `ifdef SOPHON_EEI
-                    // EEI write port
-                    else if ( wr_regfile_eei && (eei_rd_idx_bit[i]==1) ) begin
-                        regfile[i] <= eei_rd_val[i-eei_rd_start];
-                    end
-                `endif
+            `ifdef SOPHON_EEI
+                // EEI write port
+                else if ( wr_regfile_eei && (eei_rd_idx_bit[i]==1) ) begin
+                    regfile[i] <= eei_rd_val_i[i-eei_rd_start];
+                end
+            `endif
             end
         end
     endgenerate
@@ -1776,7 +1640,6 @@ module SOPHON (
 
     assign rs1_val = regfile[rs1_idx];
     assign rs2_val = regfile[rs2_idx];
-    
 
     // retire instruction
     assign retire_store  = rvi_store & lsu_valid;
@@ -1784,20 +1647,101 @@ module SOPHON (
     assign retire_ebreak = is_ebreak & if_vld_neg & ~irq_vld;
 
     assign retire_wr_rd = wr_regfile;
-    assign retire_no_rd =   retire_ecall
-                          | retire_ebreak
-                          |((rvi_branch
-                            |retire_store
-                            |is_fence
-                            |is_fence_i
-                            |(rvi_csr & ~csr_wr)
-                            |is_dret
-                            |is_mret 
-                            |is_wfi) & ~wb_stall);
+    assign retire_no_rd = retire_ecall 
+                        | retire_ebreak
+                        | ( ~wb_stall & ( rvi_branch | retire_store | is_fence
+                                        | is_fence_i | (rvi_csr & ~csr_wr) | is_dret
+                                        | is_mret | is_wfi) );
 
-    assign retire_vld   =                    retire_wr_rd 
-                                           | retire_no_rd 
-                          `ifdef SOPHON_EEI  | retire_eei    `endif  ;
+    assign retire_vld = retire_wr_rd 
+                      | retire_no_rd 
+    `ifdef SOPHON_EEI | retire_eei    `endif  ;
+
+
+    // ----------------------------------------------------------------------
+    //  ==== EXCEPTION & INTERRUPT
+    // ----------------------------------------------------------------------
+
+    assign irq_ex_vld = irq_vld | ex_vld;
+
+    // ------------------------------------------------
+    //  interrupt
+    // ------------------------------------------------
+    assign mei_en_pending  = mstatus_mie & irq_mei_i & mie[SOPHON_PKG::BIT_MEI] & (~is_clic);
+    assign mti_en_pending  = mstatus_mie & irq_mti_i & mie[SOPHON_PKG::BIT_MTI] & (~is_clic);
+    assign msi_en_pending  = mstatus_mie & irq_msi_i & mie[SOPHON_PKG::BIT_MSI] & (~is_clic);
+
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            clint_irq_vld <= 1'b0;
+        else if ( ~lsu_req_o & (mei_en_pending | mti_en_pending | msi_en_pending) )
+            clint_irq_vld <= 1'b1;
+        else if ( if_vld )
+            clint_irq_vld <= 1'b0;
+    end
+
+    assign irq_vld =                    clint_irq_vld 
+                     `ifdef SOPHON_CLIC | clic_irq_vld  `endif ;
+
+    // ----------------------------------------------------------------------
+    //  Exception
+    // ----------------------------------------------------------------------
+
+    //  exception: instruction access
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if (~rst_ni)
+            ex_inst_access <= 1'b0;
+        else if (if_vld)
+            ex_inst_access <= inst_error_i;
+    end
+
+    // exception: branch addr misaligned 
+    assign ex_branch =   ( jump_branch_target[1] & (is_jal|is_jalr) )
+                       | ( jump_branch_target[1] & branch_taken & rvi_branch );
+
+    //  exception: illegal instruction
+    assign ex_illg_instr = inst_data_1d_vld & ~( | rvi_csr     | rvi_branch  | rvi_jump   
+                                                 | rvi_load    | rvi_store   | rvi_alui    
+                                                 | rvi_alu     | rvi_system  | rvi_other  
+                                                 | rvi_fence
+                                                 `ifdef SOPHON_EEI | rvi_cust `endif 
+                                               );
+
+    // exception: LSU 
+    // lsu_addr_o may change in the last half cycle if rs1=rd and cause a wrong exception, mask it using lsu_valid
+    assign ex_load_store = inst_data_1d_vld & (   ( ~lsu_valid & ( load_addr_misalign | store_addr_misalign )) 
+                                                | ( load_access_fault | store_access_fault ) );
+
+    // priority: irq > exception
+    assign ex_vld = ~npc_sel_bootaddr & ~irq_vld & ( ex_illg_instr | ex_load_store  | ex_csr_addr |
+                                                     ex_branch     | ex_inst_access | is_ecall    |
+                                                     (is_ebreak & (~ebreakm|debug_mode)) ) ;
+
+
+`ifdef PROBE
+    assign probe_sophon_o[31:0]  = pc               ; 
+    assign probe_sophon_o[63:32] = inst_data_1d     ; 
+    assign probe_sophon_o[64]    = rst_dly_neg      ; 
+    assign probe_sophon_o[65]    = if_vld           ; 
+    assign probe_sophon_o[66]    = retire_vld       ; 
+    assign probe_sophon_o[67]    = ex_vld           ; 
+    assign probe_sophon_o[68]    = debug_mode       ; 
+    assign probe_sophon_o[69]    = is_dret          ; 
+    assign probe_sophon_o[70]    = inst_data_1d_vld ; 
+`endif
+    
+
+`ifndef VERILATOR
+
+    inst_itf_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
+                                       ((inst_req_o && !inst_ack_i) |=> $stable(inst_addr_o)) ) 
+                            else $fatal(1,"Instruction fetcing interface unstable!");
+
+    inst_lsu_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
+                                       ((lsu_req_o && !lsu_ack_i) |=> $stable({lsu_we_o, lsu_addr_o, lsu_wdata_o, lsu_amo_o, lsu_size_o, lsu_strb_o})) ) 
+                            else $fatal(1,"LSU interface unstable!");
+
+`endif
 
 
 endmodule

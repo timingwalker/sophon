@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 //  Description : standard cell wrapper
 // ----------------------------------------------------------------------
 
-module std_wrap_ckinv
+module STD_WRAP_CKINV
 (
     input  wire in_i,
     output wire zn_o
@@ -25,7 +25,6 @@ module std_wrap_ckinv
 
 
 `ifdef ASIC
-
   // replace with technolog library
   assign zn_o = ~in_i;
 

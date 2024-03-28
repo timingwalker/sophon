@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-10 11:37:09
-// Last Modified : 2023-12-24 17:33:52
+// Last Modified : 2024-01-12 15:19:52
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -27,8 +27,9 @@ package CC_CFG_PKG;
     localparam EXT_DM_BASE  = 32'h0000_0000;
     localparam EXT_DM_END   = 32'h0000_0fff;
 
+    // 128KB EXT MEM, start from 0x1000
     localparam EXT_MEM_BASE = 32'h0000_1000;
-    localparam EXT_MEM_END  = 32'h0000_ffff;
+    localparam EXT_MEM_END  = 32'h0002_0fff;
 
     localparam APB_BASE     = 32'h0600_0000;
     localparam APB_END      = 32'h0800_0000;

@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // ----------------------------------------------------------------------
-// Create Date : 2022-11-09 16:42:12
-//  Description : TCM wrapper
+// Create Date   : 2022-11-09 16:42:12
+// Last Modified : 2024-03-27 14:37:16
+// Description   : TCM wrapper
 // ----------------------------------------------------------------------
 
 module TCM_WRAP
@@ -64,33 +65,32 @@ module TCM_WRAP
     
             `ifdef ASIC
                 S55NLLGSPH_X64Y8D32_BW u_tcm_ram (
-                    .Q    ( bank_rdata[i] ) ,
-                    .CLK  ( clk_i         ) ,
-                    .CEN  ( ~bank_en[i]   ) ,
-                    .WEN  ( ~we_i         ) ,
-                    .BWEN ( ~bit_wen      ) ,
-                    .A    ( addr[2+:9]    ) , // in word
-                    .D    ( wdata_i       ) 
+                    .Q       ( bank_rdata[i] ) ,
+                    .CLK     ( clk_i         ) ,
+                    .CEN     ( ~bank_en[i]   ) ,
+                    .WEN     ( ~we_i         ) ,
+                    .BWEN    ( ~bit_wen      ) ,
+                    .A       ( addr[2+:9]    ) , // in word
+                    .D       ( wdata_i       ) 
                 );
-
             `else
-                sp_ram
+                BW_SP_RAM
                 #(
-                    .ADDR_WIDTH ( SPILT_ADDR_WIDTH                  ), // in byte
-                    .DATA_WIDTH ( DATA_WIDTH                        ), // 
-                    .NUM_WORDS  ( BANK_DEPTH * (DATA_WIDTH/8)       )  // in byte
+                    // SPILT_ADDR_WIDTH counts in byte, but
+                    // addr of memory counts in DATA_WIDTH
+                    .ADDR_WIDTH ( SPILT_ADDR_WIDTH-2 ), 
+                    .DATA_WIDTH ( DATA_WIDTH         )
                 )
-                sp_ram_i
+                U_BW_SP_RAM
                 (
-                    .clk     ( clk_i                                 ) ,
-                    .en_i    ( bank_en[i]                            ) ,
-                    .addr_i  ( addr                                  ) , 
-                    .wdata_i ( wdata_i                               ) ,
-                    .rdata_o ( bank_rdata[i]                         ) ,
-                    .we_i    ( we_i                                  ) ,
-                    .be_i    ( be_i                                  ) 
+                    .clk_i   ( clk_i            ) ,
+                    .en_i    ( bank_en[i]       ) ,
+                    .addr_i  ( addr[2+:9]       ) , // in DATA_WIDTH
+                    .wdata_i ( wdata_i          ) ,
+                    .rdata_o ( bank_rdata[i]    ) ,
+                    .we_i    ( we_i             ) ,
+                    .be_i    ( be_i             ) 
                 );
-
             `endif
     
         end

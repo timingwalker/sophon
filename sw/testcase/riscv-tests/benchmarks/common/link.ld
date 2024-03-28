@@ -22,14 +22,16 @@ SECTIONS
 {
 
   /* text: test code section */
-  . = 0x00010000;
+  . = 0x80000000;
   .text.init : { *(.text.init) }
   . = ALIGN(0x1000);
   .text : { *(.text) }
-  . = 0x00120000;
+  . = 0x80090000;
   .tohost : { *(.tohost) }
-  . = ALIGN(0x1000);
-
+  . = ALIGN(0x100);
+  .rodata : { *(.rodata) }
+  . = ALIGN(0x100);
+  
   /* data segment */
   .data : { *(.data) }
 

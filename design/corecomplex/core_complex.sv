@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2023-12-27 14:44:43
+// Last Modified : 2024-03-26 22:19:01
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -58,6 +58,9 @@ module CORE_COMPLEX(
     ,output CC_ITF_PKG::xbar_mst_port_d64_req_t     axi_mst_port_req_o
     ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_mst_port_rsp_i
 `endif
+`ifdef PROBE
+    ,output logic [149:0]                           probe_o
+`endif
 
 
 );
@@ -68,8 +71,6 @@ module CORE_COMPLEX(
     // ----------------------------------------------------------------------
     //  AXI INTERCONNECT
     // ----------------------------------------------------------------------
-
-
     CC_ITF_PKG::xbar_slv_port_d64_req_t   [2:0] xbar_slv_port_req;
     CC_ITF_PKG::xbar_slv_port_d64_resps_t [2:0] xbar_slv_port_rsp;
     CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req;
@@ -89,7 +90,6 @@ module CORE_COMPLEX(
        ,.apb_req_o           ( apb_req           )
        ,.apb_rsp_i           ( apb_resp          )
     );
-
 
 
     // ----------------------------------------------------------------------
@@ -132,7 +132,6 @@ module CORE_COMPLEX(
     // ----------------------------------------------------------------------
     //   Sophon Core
     // ----------------------------------------------------------------------
-
     `ifdef SOPHON_EXT_ACCESS
         CC_ITF_PKG::xbar_mst_port_d64_req_t   sophon_axi_slv_d64_req;
         CC_ITF_PKG::xbar_mst_port_d64_resps_t sophon_axi_slv_d64_rsp;
@@ -161,16 +160,21 @@ module CORE_COMPLEX(
         assign xbar_slv_port_req[0].r_valid  = 1'b1;
     `endif
 
-
     logic         cc_rst;
     logic  [31:0] cc_boot;
+
 
     SOPHON_AXI_TOP #( 
         .HART_ID(0) 
     ) U_SOPHON_AXI_TOP (
          .clk_i                                   ( clk_i                  ) 
          ,.rst_ni                                 ( rst_ni                 ) 
+    //`ifndef SOPHON_EXT_ACCESS
+    `ifdef SOPHON_SOFT_RST
          ,.rst_soft_ni                            ( cc_rst                 ) 
+    `else 
+         ,.rst_soft_ni                            ( rst_ni                 ) 
+    `endif
          ,.bootaddr_i                             ( cc_boot                ) 
          ,.hart_id_i                              ( hart_id_i              ) 
          ,.irq_mei_i                              ( irq_mei_i              ) 
@@ -200,20 +204,19 @@ module CORE_COMPLEX(
          ,.gpio_in_val_i                          ( gpio_in_val_i          )
          ,.gpio_out_val_o                         ( gpio_out_val_o         )
     `endif
+     `ifdef PROBE
+        ,.probe_o                                 (probe_o                 )
+     `endif
     );
-
-
 
 
     // ----------------------------------------------------------------------
     //   APB interface
     // ----------------------------------------------------------------------
 
-
     // -----------------------------------
     //  syscfg reg
     // -----------------------------------
-
     APB_SYSCFG_REG
     #(
         .APB_ADDR_WIDTH (12) 
@@ -236,9 +239,8 @@ module CORE_COMPLEX(
         .cfg_cc1_rst  (                        ) 
     );
 
-
     // -----------------------------------
-    //  ICCS UART
+    //  UART
     // -----------------------------------
     apb_uart_sv 
     #(
@@ -259,7 +261,6 @@ module CORE_COMPLEX(
         .tx_o    ( uart_tx_o                        ) ,
         .event_o (                                  ) 
     );
-
 
     // -----------------------------------
     //  CLIC interface

@@ -239,6 +239,8 @@ reset_vector:                                                           \
         li TESTNUM, 1;                                                  \
         li a7, 93;                                                      \
         li a0, 0;                                                       \
+        la t0,tohost;                                                   \
+        sw TESTNUM, 0(t0);                                              \
         ecall
 
 #define TESTNUM gp
@@ -249,6 +251,9 @@ reset_vector:                                                           \
         or TESTNUM, TESTNUM, 1;                                         \
         li a7, 93;                                                      \
         addi a0, TESTNUM, 0;                                            \
+        la t0,tohost;                                                   \
+        li TESTNUM,-1;                                                  \
+        sw TESTNUM, 0(t0);                                              \
         ecall
 
 //-----------------------------------------------------------------------

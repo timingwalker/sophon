@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,75 +14,84 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2023-12-27 14:06:44
+// Last Modified : 2024-03-26 21:55:25
 // Description   : Top module of the SOPHON core        
+//                 - Core
+//                 - L1 Inst RAM
+//                 - L1 Data RAM
+//                 - Custom execution unit
+//                 - External interfaces
 // ----------------------------------------------------------------------
 
 module SOPHON_TOP (
-     input logic                            clk_i
-    ,input logic                            rst_ni
-    ,input logic                            rst_soft_ni
-    ,input logic [31:0]                     bootaddr_i
-    ,input logic [31:0]                     hart_id_i
+     input logic                              clk_i
+    ,input logic                              rst_ni
+    ,input logic                              rst_soft_ni
+    ,input logic [31:0]                       bootaddr_i
+    ,input logic [31:0]                       hart_id_i
     // interupt 
-    ,input logic                            irq_mei_i 
-    ,input logic                            irq_mti_i 
-    ,input logic                            irq_msi_i 
+    ,input logic                              irq_mei_i 
+    ,input logic                              irq_mti_i 
+    ,input logic                              irq_msi_i 
     // debug halt request
-    ,input  logic                           dm_req_i
+    ,input  logic                             dm_req_i
     // dummy output for synthesis compatibility
-    ,output logic                           dummy_o
+    ,output logic                             dummy_o
 `ifdef SOPHON_EXT_INST
-    ,output logic                           inst_ext_req_o
-    ,output logic [31:0]                    inst_ext_addr_o
-    ,input  logic                           inst_ext_ack_i
-    ,input  logic [31:0]                    inst_ext_rdata_i
-    ,input  logic                           inst_ext_error_i
+    ,output logic                             inst_ext_req_o
+    ,output logic [31:0]                      inst_ext_addr_o
+    ,input  logic                             inst_ext_ack_i
+    ,input  logic [31:0]                      inst_ext_rdata_i
+    ,input  logic                             inst_ext_error_i
 `endif
 `ifdef SOPHON_EXT_DATA
-    ,output logic                           data_req_o
-    ,output logic                           data_we_o
-    ,output logic [31:0]                    data_addr_o
-    ,output logic [31:0]                    data_wdata_o
-    ,output logic [3:0]                     data_amo_o
-    ,output logic [3:0]                     data_strb_o
-    ,output logic [1:0]                     data_size_o
-    ,input  logic                           data_valid_i
-    ,input  logic                           data_error_i
-    ,input  logic [31:0]                    data_rdata_i
+    ,output logic                             data_req_o
+    ,output logic                             data_we_o
+    ,output logic [31:0]                      data_addr_o
+    ,output logic [31:0]                      data_wdata_o
+    ,output logic [3:0]                       data_amo_o
+    ,output logic [3:0]                       data_strb_o
+    ,output logic [1:0]                       data_size_o
+    ,input  logic                             data_valid_i
+    ,input  logic                             data_error_i
+    ,input  logic [31:0]                      data_rdata_i
 `endif
 `ifdef SOPHON_EXT_ACCESS
     // external access interface
-    ,input  logic                           ext_req_i
-    ,input  logic                           ext_we_i
-    ,input  logic [31:0]                    ext_addr_i
-    ,input  logic [31:0]                    ext_wdata_i
-    ,output logic                           ext_ack_o
-    ,output logic                           ext_error_o
-    ,output logic [31:0]                    ext_rdata_o
+    ,input  logic                             ext_req_i
+    ,input  logic                             ext_we_i
+    ,input  logic [3:0]                       ext_strb_i
+    ,input  logic [31:0]                      ext_addr_i
+    ,input  logic [31:0]                      ext_wdata_i
+    ,output logic                             ext_ack_o
+    ,output logic                             ext_error_o
+    ,output logic [31:0]                      ext_rdata_o
 `endif
 `ifdef SOPHON_CLIC
-    ,input  logic                           clic_irq_req_i
-    ,input  logic                           clic_irq_shv_i
-    ,input  logic [4:0]                     clic_irq_id_i
-    ,input  logic [7:0]                     clic_irq_level_i
-    ,output logic                           clic_irq_ack_o
-    ,output logic [7:0]                     clic_irq_intthresh_o
-    ,output logic                           clic_mnxti_clr_o
-    ,output logic [4:0]                     clic_mnxti_id_o
+    ,input  logic                             clic_irq_req_i
+    ,input  logic                             clic_irq_shv_i
+    ,input  logic [4:0]                       clic_irq_id_i
+    ,input  logic [7:0]                       clic_irq_level_i
+    ,output logic                             clic_irq_ack_o
+    ,output logic [7:0]                       clic_irq_intthresh_o
+    ,output logic                             clic_mnxti_clr_o
+    ,output logic [4:0]                       clic_mnxti_id_o
 `endif
 `ifdef SOPHON_EEI_GPIO
     ,output logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir_o
     ,input  logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val_i
     ,output logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val_o
 `endif
+`ifdef PROBE
+    ,output logic [149:0]                     probe_o
+`endif
 
 );
 
 
-    logic                 clk_neg;
-    logic                 rst_n;
-    logic                 rst_neg_n;
+    logic                   clk_neg;
+    logic                   rstn_sync;
+    logic                   rstn_neg_sync;
 
     SOPHON_PKG::lsu_req_t   lsu_core_req;
     SOPHON_PKG::lsu_ack_t   lsu_core_ack;
@@ -114,88 +123,95 @@ module SOPHON_TOP (
     // ----------------------------------------------------------------------
     //  clock and reset generator 
     // ----------------------------------------------------------------------
-    std_wrap_ckinv u_clk_inv 
+    STD_WRAP_CKINV U_CLK_INV 
     ( 
-        .in_i ( clk_i   ) ,
-        .zn_o ( clk_neg ) 
+        .in_i         ( clk_i         ) ,
+        .zn_o         ( clk_neg       ) 
     );
 
-    rstgen u_rstgen
+    RST_SYNC U_RST_SYNC
     (
-        .clk_i       ( clk_i  ) ,
-        .rst_ni      ( rst_ni ) ,
-        .test_mode_i ( 1'b0   ) ,
-        .rst_no      ( rst_n  ) ,
-        .init_no     (        )
+        .clk_i        ( clk_i         ) ,
+        .rst_ni       ( rst_ni        ) ,
+        .rstn_sync_o  ( rstn_sync     )
      );
 
-    rstgen u_rst_neg_gen
+    RST_SYNC U_RST_NEG_SYNC
     (
-        .clk_i       ( clk_neg   ) ,
-        .rst_ni      ( rst_ni    ) ,
-        .test_mode_i ( 1'b0      ) ,
-        .rst_no      ( rst_neg_n ) ,
-        .init_no     (           ) 
+        .clk_i        ( clk_neg       ) ,
+        .rst_ni       ( rst_ni        ) ,
+        .rstn_sync_o  ( rstn_neg_sync )
      );
 
     assign dummy_o = 1'b1;
+
+    `ifdef PROBE
+        logic [79:0] probe_sophon_core;
+        assign probe_o[79:0]    = probe_sophon_core;
+        assign probe_o[111:80]  = iram_addr_offset ;
+        assign probe_o[143:112] = iram_wdata       ;
+        assign probe_o[144]     = iram_req         ;
+        assign probe_o[145]     = iram_we          ;
+        assign probe_o[146]     = iram_be          ;
+    `endif
 
 
     // ----------------------------------------------------------------------
     //  SOPHON core
     // ----------------------------------------------------------------------
     SOPHON U_SOPHON (
-          .clk_i              ( clk_i               ) 
-         ,.clk_neg_i          ( clk_neg             ) 
-         ,.rst_ni             ( rst_soft_ni         ) 
-         ,.bootaddr_i         ( bootaddr_i          ) 
-         ,.hart_id_i          ( hart_id_i           ) 
-         ,.inst_req_o         ( inst_core_req.req   ) 
-         ,.inst_addr_o        ( inst_core_req.addr  ) 
-         ,.inst_error_i       ( inst_core_ack.error ) 
-         ,.inst_ack_i         ( inst_core_ack.ack   ) 
-         ,.inst_data_i        ( inst_core_ack.rdata ) 
-         ,.irq_mei            ( irq_mei_i           ) 
-         ,.irq_mti            ( irq_mti_i           ) 
-         ,.irq_msi            ( irq_msi_i           ) 
-         ,.dm_req_i           ( dm_req_i            ) 
-         ,.lsu_req_o          ( lsu_core_req.req    ) 
-         ,.lsu_we_o           ( lsu_core_req.we     ) 
-         ,.lsu_addr_o         ( lsu_core_req.addr   ) 
-         ,.lsu_wdata_o        ( lsu_core_req.wdata  ) 
-         ,.lsu_strb_o         ( lsu_core_req.strb   ) 
-         ,.lsu_amo_o          ( lsu_core_req.amo    ) 
-         ,.lsu_size_o         ( lsu_core_req.size   ) 
-         ,.lsu_ack_i          ( lsu_core_ack.ack    ) 
-         ,.lsu_error_i        ( lsu_core_ack.error  ) 
-         ,.lsu_rdata_i        ( lsu_core_ack.rdata  ) 
+          .clk_i              ( clk_i                ) 
+         ,.clk_neg_i          ( clk_neg              ) 
+         ,.rst_ni             ( rst_soft_ni          ) 
+         ,.bootaddr_i         ( bootaddr_i           ) 
+         ,.hart_id_i          ( hart_id_i            ) 
+         ,.inst_req_o         ( inst_core_req.req    ) 
+         ,.inst_addr_o        ( inst_core_req.addr   ) 
+         ,.inst_error_i       ( inst_core_ack.error  ) 
+         ,.inst_ack_i         ( inst_core_ack.ack    ) 
+         ,.inst_data_i        ( inst_core_ack.rdata  ) 
+         ,.irq_mei_i          ( irq_mei_i            ) 
+         ,.irq_mti_i          ( irq_mti_i            ) 
+         ,.irq_msi_i          ( irq_msi_i            ) 
+         ,.dm_req_i           ( dm_req_i             ) 
+         ,.lsu_req_o          ( lsu_core_req.req     ) 
+         ,.lsu_we_o           ( lsu_core_req.we      ) 
+         ,.lsu_addr_o         ( lsu_core_req.addr    ) 
+         ,.lsu_wdata_o        ( lsu_core_req.wdata   ) 
+         ,.lsu_strb_o         ( lsu_core_req.strb    ) 
+         ,.lsu_amo_o          ( lsu_core_req.amo     ) 
+         ,.lsu_size_o         ( lsu_core_req.size    ) 
+         ,.lsu_ack_i          ( lsu_core_ack.ack     ) 
+         ,.lsu_error_i        ( lsu_core_ack.error   ) 
+         ,.lsu_rdata_i        ( lsu_core_ack.rdata   ) 
     `ifdef SOPHON_EEI
-        ,.eei_req             ( eei_req              ) 
-        ,.eei_ext             ( eei_ext              ) 
-        ,.eei_funct3          ( eei_funct3           ) 
-        ,.eei_funct7          ( eei_funct7           ) 
-        ,.eei_batch_start     ( eei_batch_start      ) 
-        ,.eei_batch_len       ( eei_batch_len        ) 
-        ,.eei_rs_val          ( eei_rs_val           ) 
-        ,.eei_ack             ( eei_ack              ) 
-        ,.eei_rd_op           ( eei_rd_op            ) 
-        ,.eei_rd_len          ( eei_rd_len           ) 
-        ,.eei_error           ( eei_error            ) 
-        ,.eei_rd_val          ( eei_rd_val           ) 
+        ,.eei_req_o           ( eei_req              ) 
+        ,.eei_ext_o           ( eei_ext              ) 
+        ,.eei_funct3_o        ( eei_funct3           ) 
+        ,.eei_funct7_o        ( eei_funct7           ) 
+        ,.eei_batch_start_o   ( eei_batch_start      ) 
+        ,.eei_batch_len_o     ( eei_batch_len        ) 
+        ,.eei_rs_val_o        ( eei_rs_val           ) 
+        ,.eei_ack_i           ( eei_ack              ) 
+        ,.eei_rd_op_i         ( eei_rd_op            ) 
+        ,.eei_rd_len_i        ( eei_rd_len           ) 
+        ,.eei_error_i         ( eei_error            ) 
+        ,.eei_rd_val_i        ( eei_rd_val           ) 
     `endif
     `ifdef SOPHON_CLIC
-       ,.clic_irq_req         (clic_irq_req_i        ) 
-       ,.clic_irq_shv         (clic_irq_shv_i        ) 
-       ,.clic_irq_id          (clic_irq_id_i         ) 
-       ,.clic_irq_level       (clic_irq_level_i      ) 
-       ,.clic_irq_ack         (clic_irq_ack_o        ) 
-       ,.clic_irq_intthresh   (clic_irq_intthresh_o  )
-       ,.clic_mnxti_clr       (clic_mnxti_clr_o      )
-       ,.clic_mnxti_id        (clic_mnxti_id_o       )
+       ,.clic_irq_req_i       ( clic_irq_req_i       ) 
+       ,.clic_irq_shv_i       ( clic_irq_shv_i       ) 
+       ,.clic_irq_id_i        ( clic_irq_id_i        ) 
+       ,.clic_irq_level_i     ( clic_irq_level_i     ) 
+       ,.clic_irq_ack_o       ( clic_irq_ack_o       ) 
+       ,.clic_irq_intthresh_o ( clic_irq_intthresh_o )
+       ,.clic_mnxti_clr_o     ( clic_mnxti_clr_o     )
+       ,.clic_mnxti_id_o      ( clic_mnxti_id_o      )
     `endif
-
+    `ifdef PROBE
+       ,.probe_sophon_o       ( probe_sophon_core    )
+    `endif
     );
-
 
 
     // ----------------------------------------------------------------------
@@ -205,7 +221,6 @@ module SOPHON_TOP (
     // -----------------------------------
     //  External Access Interface 
     // -----------------------------------
-
     `ifdef SOPHON_EXT_ACCESS
 
         SOPHON_PKG::lsu_req_t   ext_access_req;
@@ -221,7 +236,7 @@ module SOPHON_TOP (
         assign ext_access_req.wdata = ext_wdata_i;
         assign ext_access_req.size  = 2'b11;
         assign ext_access_req.amo   = '0;
-        assign ext_access_req.strb  = '1;
+        assign ext_access_req.strb  = ext_strb_i;
         assign ext_ack_o            = ext_access_ack.ack;
         assign ext_error_o          = ext_access_ack.error;
         assign ext_rdata_o          = ext_access_ack.rdata;
@@ -248,7 +263,6 @@ module SOPHON_TOP (
     // -----------------------------------
     //  External instruction interface
     // -----------------------------------
-
     `ifdef SOPHON_EXT_INST
 
         SOPHON_PKG::inst_req_t   inst_pos_req;
@@ -261,9 +275,9 @@ module SOPHON_TOP (
             .CH2_POS_END  ( SOPHON_PKG::EXT_INST_END  ) 
         ) U_INST_ITF_DEMUX (
             .clk_i              ( clk_i               ) ,
-            .rst_ni             ( rst_n               ) ,
+            .rst_ni             ( rstn_sync           ) ,
             .clk_neg_i          ( clk_neg             ) ,
-            .rst_neg_ni         ( rst_neg_n           ) ,
+            .rst_neg_ni         ( rstn_neg_sync       ) ,
 
             .inst_core_req_i    ( inst_core_req.req   ) ,
             .inst_core_addr_i   ( inst_core_req.addr  ) ,
@@ -286,20 +300,18 @@ module SOPHON_TOP (
 
         assign inst_ext_req_o     = inst_pos_req.req;
         assign inst_ext_addr_o    = inst_pos_req.addr;
-        assign inst_pos_ack.ack   = inst_ext_ack_i; 
-        assign inst_pos_ack.rdata  = inst_ext_rdata_i; 
-        assign inst_pos_ack.error = inst_ext_error_i; 
+        assign inst_pos_ack.ack   = inst_ext_ack_i;
+        assign inst_pos_ack.rdata = inst_ext_rdata_i;
+        assign inst_pos_ack.error = inst_ext_error_i;
 
     `else
         assign core_iram_req = inst_core_req;
         assign inst_core_ack = core_iram_ack;
     `endif
 
-
     // -----------------------------------
     //  External data interface
     // -----------------------------------
-
     `ifdef SOPHON_EXT_DATA
 
         SOPHON_PKG::lsu_req_t   lsu_ext_req;
@@ -339,18 +351,15 @@ module SOPHON_TOP (
     `endif
 
 
-
     // ----------------------------------------------------------------------
     //  CUST
     // ----------------------------------------------------------------------
-
     `ifdef SOPHON_EEI
 
         CUST U_CUST (
              .clk_i           ( clk_i           )
             ,.clk_neg_i       ( clk_neg         ) 
             ,.rst_ni          ( rst_soft_ni     )
-
             ,.eei_req         ( eei_req         )
             ,.eei_ext         ( eei_ext         )
             ,.eei_funct3      ( eei_funct3      )
@@ -373,11 +382,9 @@ module SOPHON_TOP (
     `endif
 
 
-
     // ----------------------------------------------------------------------
     //  Instruction RAM
     // ----------------------------------------------------------------------
-
     logic               iram_req;
     logic [31:0]        iram_addr;
     logic [31:0]        iram_rdata;
@@ -388,24 +395,23 @@ module SOPHON_TOP (
     // -----------------------------------
     //  INST arbiter
     // -----------------------------------
-
     `ifdef SOPHON_EXT_ACCESS
 
         INST_ITF_ARBITER U_INST_ITF_ARBITER (
-             .clk_i         ( clk_i         ) 
-            ,.rst_ni        ( rst_n         ) 
-            ,.clk_neg_i     ( clk_neg       ) 
-            ,.rst_neg_ni    ( rst_neg_n     ) 
-            ,.core_iram_req ( core_iram_req ) 
-            ,.core_iram_ack ( core_iram_ack ) 
-            ,.ext_iram_req  ( ext_iram_req  ) 
-            ,.ext_iram_ack  ( ext_iram_ack  ) 
-            ,.iram_req      ( iram_req      ) 
-            ,.iram_addr     ( iram_addr     ) 
-            ,.iram_wdata    ( iram_wdata    ) 
-            ,.iram_we       ( iram_we       ) 
-            ,.iram_be       ( iram_be       ) 
-            ,.iram_rdata    ( iram_rdata    ) 
+             .clk_i         ( clk_i          ) 
+             ,.rst_ni        ( rstn_sync     ) 
+             ,.clk_neg_i     ( clk_neg       ) 
+             ,.rst_neg_ni    ( rstn_neg_sync ) 
+             ,.core_iram_req ( core_iram_req ) 
+             ,.core_iram_ack ( core_iram_ack ) 
+             ,.ext_iram_req  ( ext_iram_req  ) 
+             ,.ext_iram_ack  ( ext_iram_ack  ) 
+             ,.iram_req      ( iram_req      ) 
+             ,.iram_addr     ( iram_addr     ) 
+             ,.iram_wdata    ( iram_wdata    ) 
+             ,.iram_we       ( iram_we       ) 
+             ,.iram_be       ( iram_be       ) 
+             ,.iram_rdata    ( iram_rdata    ) 
         );
 
     `else
@@ -420,9 +426,8 @@ module SOPHON_TOP (
     `endif
 
     // -----------------------------------
-    //  L1 ITCM
+    //  L1 Instruction RAM
     // -----------------------------------
-
     logic [31:0] iram_addr_offset;
     assign iram_addr_offset = iram_addr - SOPHON_PKG::ITCM_BASE;
 
@@ -444,11 +449,9 @@ module SOPHON_TOP (
     );
 
 
-
     // ----------------------------------------------------------------------
     //  Data RAM
     // ----------------------------------------------------------------------
-
     logic               dram_req;
     logic [31:0]        dram_addr;
     logic [31:0]        dram_rdata;
@@ -459,7 +462,6 @@ module SOPHON_TOP (
     // -----------------------------------
     //  Data arbiter
     // -----------------------------------
-
     `ifdef SOPHON_EXT_ACCESS
 
         DATA_ITF_ARBITER U_DATA_ITF_ARBITER (
@@ -487,9 +489,8 @@ module SOPHON_TOP (
     `endif
 
     // -----------------------------------
-    //  L1 DTCM
+    //  L1 Data RAM
     // -----------------------------------
-
     logic [31:0] dram_addr_offset;
     assign dram_addr_offset = dram_addr - SOPHON_PKG::DTCM_BASE;
 
@@ -509,7 +510,6 @@ module SOPHON_TOP (
         ,.be_i    ( dram_be                                              )
         ,.rdata_o ( dram_rdata                                           )
     );
-
 
 
 endmodule

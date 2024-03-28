@@ -1,10 +1,10 @@
 // ----------------------------------------------------------------------
-// Copyright 2023 TimingWalker
+// Copyright 2024 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2023-12-27 14:18:13
+// Last Modified : 2024-03-27 19:01:58
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,39 +14,15 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2023-12-27 14:18:13
-// Description   : Feature Configuration
+// Last Modified : 2024-03-27 19:01:58
+// Description   : 
 // ----------------------------------------------------------------------
 
 package SOPHON_PKG;
 
-
-    // ----------------------------------------------------------------------
-    //  Feature define
-    // ----------------------------------------------------------------------
-    `define SOPHON_EXT_INST
-    `define SOPHON_EXT_DATA
-    `define SOPHON_EXT_ACCESS
-    `define SOPHON_CLIC
-    `define SOPHON_EEI
-
-    // SubFeature
-    `ifdef SOPHON_EEI
-        `define SOPHON_EEI_SREG
-        `define SOPHON_EEI_GPIO
-    `endif
-
-    localparam EEI_RS_MAX   = 32;
-    localparam EEI_RD_MAX   = 32;
-    localparam FGPIO_NUM    = 32;
-
-    // Do Not change
-    `ifdef SOPHON_EXT_INST
-        `ifdef SOPHON_EXT_DATA
-            `define SOPHON_EXT_INST_DATA
-        `endif
-    `endif
-
+        localparam EEI_RS_MAX   = 4;
+        localparam EEI_RD_MAX   = 4;
+        localparam FGPIO_NUM    = 4;
 
     // ----------------------------------------------------------------------
     //  memory map
@@ -80,8 +56,9 @@ package SOPHON_PKG;
     localparam DM_HALT      = EXT_DM_BASE+32'h0000_0800;
     localparam DM_EXCEPTION = DM_HALT + 32'h8;
 
+    // 4KB DM + 64KM EXT INST MEM
     localparam EXT_INST_BASE = EXT_DM_BASE;
-    localparam EXT_INST_END  = 32'h0000_ffff;
+    localparam EXT_INST_END  = 32'h0000_1000+32'h0000_ffff;
 
     // -----------------------------------
     //  External Data access region

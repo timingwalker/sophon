@@ -1,3 +1,3 @@
--f ../../flist/sophon.f
+-f ../../flist/sophon_top.f
 
-../../design/common/sp_ram.sv
+../../design/common/bw_sp_ram.sv
