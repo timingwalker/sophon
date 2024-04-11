@@ -12,5 +12,5 @@ clean:
 	rm -rf usage_*
 	rm -rf *.txt
 	rm -rf output/
-	rm -rf .Xil/
-	rm -rf .cache/
+	rm -rf .cache
+	rm -rf .Xil

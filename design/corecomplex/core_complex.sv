@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2024-03-26 22:19:01
+// Last Modified : 2024-04-09 09:53:35
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -59,7 +59,7 @@ module CORE_COMPLEX(
     ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_mst_port_rsp_i
 `endif
 `ifdef PROBE
-    ,output logic [149:0]                           probe_o
+    ,output logic [209:0]                           probe_o
 `endif
 
 

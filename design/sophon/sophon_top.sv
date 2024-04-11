@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-03-26 21:55:25
+// Last Modified : 2024-04-09 09:53:11
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -83,7 +83,7 @@ module SOPHON_TOP (
     ,output logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val_o
 `endif
 `ifdef PROBE
-    ,output logic [149:0]                     probe_o
+    ,output logic [209:0]                     probe_o
 `endif
 
 );
@@ -146,13 +146,14 @@ module SOPHON_TOP (
     assign dummy_o = 1'b1;
 
     `ifdef PROBE
-        logic [79:0] probe_sophon_core;
-        assign probe_o[79:0]    = probe_sophon_core;
-        assign probe_o[111:80]  = iram_addr_offset ;
-        assign probe_o[143:112] = iram_wdata       ;
-        assign probe_o[144]     = iram_req         ;
-        assign probe_o[145]     = iram_we          ;
-        assign probe_o[146]     = iram_be          ;
+        logic [139:0] probe_sophon_core;
+        assign probe_o[139:0]    = probe_sophon_core;
+
+        assign probe_o[171:140]  = iram_addr_offset ;
+        assign probe_o[203:172]  = iram_wdata       ;
+        assign probe_o[204]      = iram_req         ;
+        assign probe_o[205]      = iram_we          ;
+        assign probe_o[206]      = iram_be          ;
     `endif
 
 

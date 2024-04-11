@@ -31,12 +31,18 @@ rv32ui:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32ui lds_dir=$(RV_LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32ui-* build/isa/
 
+rv32si:
+	mkdir -p build/isa/
+	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=$(RV_LDS_FILE)
+	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
+
+
 benchmarks:
 	mkdir -p build/benchmarks/
 	$(MAKE) -C $(BMARKS_SRC_DIR) all lds_dir=$(BM_LDS_FILE)
 	mv $(BMARKS_SRC_DIR)/*.riscv* build/benchmarks/
 
-isa:rv32ui
+isa:rv32ui rv32si
 
 
 clean: clean_benchmarks clean_isa clean_pcl-tests

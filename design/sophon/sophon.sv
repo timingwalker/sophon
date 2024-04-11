@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2024-03-25 15:18:12
+// Last Modified : 2024-04-11 17:50:04
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -75,7 +75,7 @@ module SOPHON (
 `endif
 `ifdef PROBE
     // Debug signal
-    ,output logic [79:0]                 probe_sophon_o
+    ,output logic [139:0]                probe_sophon_o
 `endif
 );
 
@@ -169,7 +169,7 @@ module SOPHON (
     // ------------------------------------------------
     //  npc select signal:
     //   1. change at negedge clock
-    //   2. TODO stable when inst_req & ~inst_ack?
+    //   2. stable when inst_req & ~inst_ack
     // ------------------------------------------------
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if ( ~rst_ni ) 
@@ -178,19 +178,19 @@ module SOPHON (
             npc_sel_bootaddr <= 1'b0;
     end
 
-    // TODO: dm_start should only ariase when there is no pending instruction fetch 
-    //       request, i.e. wait a complete instruction fetching. Then can use if_vld
-    //       to clear npc_sel_dm_halt without considering the value of npc
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             npc_sel_dm_halt <= 1'b0;
         else if ( dm_start )
             npc_sel_dm_halt <= 1'b1;
-        else if ( if_vld && ( npc==SOPHON_PKG::DM_HALT) )
+        //else if ( if_vld && ( npc==SOPHON_PKG::DM_HALT) )
+        else if ( if_vld )
             npc_sel_dm_halt <= 1'b0;
     end
 
-    // TODO: why use this patch? It seems that is_dret should be stable until if_vld
+    // When dret retired, debug_mode is cleared and so is is_dret.
+    // This signal is used to keep npc stable if it takes several cycles
+    // to fetch a new instruction, e.g. access external memories.
     logic  fetching_dpc;
     assign npc_sel_dm_exit = is_dret | fetching_dpc;
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -891,11 +891,11 @@ module SOPHON (
     always_comb begin
         csr_wr = 1'b0;
         csr_rd = 1'b0;
-        if (is_csrrw|is_csrrwi) begin
+        if ( inst_data_1d_vld & (is_csrrw|is_csrrwi) ) begin
             csr_wr = 1'b1;
             csr_rd = |rd_idx; // rd != x0
         end
-        else if (is_csrrs|is_csrrc|is_csrrsi|is_csrrci) begin
+        else if ( inst_data_1d_vld & (is_csrrs|is_csrrc|is_csrrsi|is_csrrci) ) begin
             // rs1 or uimm != x0, thay are in the smae location
             csr_wr = |rs1_idx; 
             csr_rd = 1'b1;
@@ -1460,8 +1460,10 @@ module SOPHON (
 
     assign if_stall_dm = dm_start;
 
+    // dm_start should only ariase when there is no pending instruction fetch 
+    // request, i.e. wait a complete instruction fetching. 
     always_comb begin
-        if ( ~debug_mode & retire_vld ) begin
+        if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) ) begin
             if ( is_ebreak & ebreakm ) begin // priority 3
                 dm_start = 1'b1;
                 dm_cause_d = 3'd1;
@@ -1478,11 +1480,6 @@ module SOPHON (
                 dm_start = 1'b0;
                 dm_cause_d = 3'd0;
             end
-        end
-        // TODO: if inst_ram is empty such as FPGA platform, no retire_vld signal
-        else if ( ~debug_mode & dm_req_neg ) begin // priority 1
-            dm_start = 1'b1;
-            dm_cause_d = 3'd3;
         end
         else begin
             dm_start = 1'b0;
@@ -1534,10 +1531,10 @@ module SOPHON (
         else if ( ~debug_mode & retire_vld & is_ebreak & ebreakm )
             dpc <= pc;
         // step records the next pc
-        else if ( ~debug_mode & retire_vld & step ) 
+        else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & step ) 
             dpc <= npc;
         // record the last npc before debug mode
-        else if ( ~debug_mode & retire_vld & dm_req_neg)
+        else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & dm_req_neg)
            dpc <= npc;
     end
 
@@ -1619,12 +1616,14 @@ module SOPHON (
     genvar i;
     generate
         for (i=1; i<32; i=i+1) begin:gen_regfile
-            always_ff @(posedge clk_i, negedge rst_ni) begin
-                if(~rst_ni) begin
-                    regfile[i] <= 32'd0;
-                end
-                // Sophon write port
-                else if ( wr_regfile && (rd_idx==i) ) begin
+            //always_ff @(posedge clk_i, negedge rst_ni) begin
+            always_ff @(posedge clk_i) begin
+                // if(~rst_ni) begin
+                //     regfile[i] <= 32'd0;
+                // end
+                // // Sophon write port
+                // else if ( wr_regfile && (rd_idx==i) ) begin
+                if ( wr_regfile && (rd_idx==i) ) begin
                     regfile[i] <= rd_val;
                 end
             `ifdef SOPHON_EEI
@@ -1719,15 +1718,18 @@ module SOPHON (
 
 
 `ifdef PROBE
-    assign probe_sophon_o[31:0]  = pc               ; 
-    assign probe_sophon_o[63:32] = inst_data_1d     ; 
-    assign probe_sophon_o[64]    = rst_dly_neg      ; 
-    assign probe_sophon_o[65]    = if_vld           ; 
-    assign probe_sophon_o[66]    = retire_vld       ; 
-    assign probe_sophon_o[67]    = ex_vld           ; 
-    assign probe_sophon_o[68]    = debug_mode       ; 
-    assign probe_sophon_o[69]    = is_dret          ; 
-    assign probe_sophon_o[70]    = inst_data_1d_vld ; 
+    assign probe_sophon_o[31:0]   = pc               ; 
+    assign probe_sophon_o[63:32]  = inst_data_1d     ; 
+    assign probe_sophon_o[95:64]  = dpc              ; 
+    assign probe_sophon_o[127:96] = npc              ; 
+    assign probe_sophon_o[128]    = if_vld           ; 
+    assign probe_sophon_o[129]    = inst_data_1d_vld ; 
+    assign probe_sophon_o[130]    = retire_vld       ; 
+    assign probe_sophon_o[131]    = ex_vld           ; 
+    assign probe_sophon_o[132]    = debug_mode       ; 
+    assign probe_sophon_o[133]    = is_dret          ; 
+    assign probe_sophon_o[134]    = rvi_csr          ; 
+    assign probe_sophon_o[135]    = csr_wr           ; 
 `endif
     
 

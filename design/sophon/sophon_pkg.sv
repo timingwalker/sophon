@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2024-03-27 19:01:58
+// Last Modified : 2024-04-10 16:32:27
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2024-03-27 19:01:58
+// Last Modified : 2024-04-10 16:32:27
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -56,9 +56,9 @@ package SOPHON_PKG;
     localparam DM_HALT      = EXT_DM_BASE+32'h0000_0800;
     localparam DM_EXCEPTION = DM_HALT + 32'h8;
 
-    // 4KB DM + 64KM EXT INST MEM
+    // 4KB DM + 64KB EXT INST MEM + 64KB EXT DATA MEM
     localparam EXT_INST_BASE = EXT_DM_BASE;
-    localparam EXT_INST_END  = 32'h0000_1000+32'h0000_ffff;
+    localparam EXT_INST_END  = 32'h0000_1000+32'h0001_ffff;
 
     // -----------------------------------
     //  External Data access region

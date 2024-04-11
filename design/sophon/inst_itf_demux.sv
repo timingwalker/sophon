@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2024-03-26 22:09:49
+// Last Modified : 2024-04-07 14:27:58
 // Description   : Demux inst interface    
 // ----------------------------------------------------------------------
 
@@ -123,10 +123,15 @@ module INST_ITF_DEMUX #(
             inst_core_data_o  = inst_pos_data_toneg;
             inst_core_error_o = inst_pos_error_toneg;
         end
-        else begin
+        else if ( inst_core_req_i & ((inst_core_addr_i>=CH1_NEG_BASE)&&(inst_core_addr_i<=CH1_NEG_END)) ) begin
             inst_core_ack_o   = inst_neg_ack_i;
             inst_core_data_o  = inst_neg_data_i;
             inst_core_error_o = inst_neg_error_i;
+        end
+        else if ( inst_core_req_i ) begin
+            inst_core_ack_o   = 1'b1;
+            inst_core_data_o  = 32'd0;
+            inst_core_error_o = 1'b1;
         end
     end
 
@@ -134,11 +139,11 @@ module INST_ITF_DEMUX #(
 `ifndef VERILATOR
 
     inst_pos_req_overlap: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
-                                       ((inst_pos_req_o==1'b1) |=> (inst_neg_req_o!=1'b1)) ) 
+                                       ((inst_pos_req_o==1'b1) |-> (inst_neg_req_o!=1'b1)) ) 
                             else $fatal(1,"neg_req overwrite pos_req");
 
     inst_neg_req_overlap: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
-                                       ((inst_neg_req_o==1'b1) |=> (inst_pos_req_o!=1'b1)) ) 
+                                       ((inst_neg_req_o==1'b1) |-> (inst_pos_req_o!=1'b1)) ) 
                             else $fatal(1,"pos_req overwrite neg_req");
 
 `endif

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-06 11:28:20
-// Last Modified : 2023-12-24 14:25:02
+// Last Modified : 2024-04-11 09:08:36
 // Description   : Demux lsu interface    
 // ----------------------------------------------------------------------
  
@@ -37,9 +37,9 @@ module DATA_ITF_DEMUX #(
         lsu_req_1ch_o.req = 1'b0;
         lsu_req_2ch_o.req = 1'b0;
         if ( lsu_req_i.req ) begin
-            if ( (lsu_req_i.addr[31:0]>=CH1_BASE)   && (lsu_req_i.addr[31:0]<CH1_END) ) 
+            if ( (lsu_req_i.addr[31:0]>=CH1_BASE) && (lsu_req_i.addr[31:0]<=CH1_END) ) 
                 lsu_req_1ch_o.req = 1'b1;
-            else if ( (lsu_req_i.addr[31:0]>=CH2_BASE)   && (lsu_req_i.addr[31:0]<CH2_END)   ) 
+            else if ( (lsu_req_i.addr[31:0]>=CH2_BASE) && (lsu_req_i.addr[31:0]<=CH2_END) ) 
                 lsu_req_2ch_o.req = 1'b1;
         end
     end
