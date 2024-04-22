@@ -20,6 +20,7 @@ read_verilog -sv ../design/sophon/inst_itf_arbiter.sv
 read_verilog -sv ../design/sophon/data_itf_demux.sv
 read_verilog -sv ../design/sophon/data_itf_arbiter.sv
 read_verilog -sv ../design/common/std_wrap_ckinv.sv
+read_verilog -sv ../design/common/std_wrap_ckand.sv
 read_verilog -sv ../design/common/rst_sync.sv
 read_verilog -sv ../design/common/tcm_wrap.sv
 read_verilog -sv ../design/common/bw_sp_ram.sv
@@ -36,6 +37,7 @@ read_verilog -sv ../design/corecomplex/sophon_axi_top.sv
 read_verilog -sv ../design/corecomplex/debugger.sv
 read_verilog -sv ../design/corecomplex/axi_interconnect.sv
 read_verilog -sv ../design/corecomplex/core_complex.sv
+read_verilog -sv ../design/corecomplex/crg.sv
 read_verilog -sv ../design/corecomplex/apb_syscfg_reg.sv
 read_verilog -sv ../design/corecomplex/reqrsp_to_mem.sv
 read_verilog -sv ../design/open-source/reqrsp_interface/src/axi_to_reqrsp.sv

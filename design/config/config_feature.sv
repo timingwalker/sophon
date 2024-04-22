@@ -7,8 +7,6 @@
 `define SOPHON_CLIC
 `define SOPHON_EEI
                                 
-// `define SOPHON_SOFT_RST
-
 // SubFeature
 `ifdef SOPHON_EEI
     `define SOPHON_EEI_SREG

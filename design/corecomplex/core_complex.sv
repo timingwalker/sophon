@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2024-04-09 09:53:35
+// Last Modified : 2024-04-18 16:41:22
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -66,6 +66,23 @@ module CORE_COMPLEX(
 );
 
 
+    logic         cc_rst;
+    logic  [31:0] cc_boot;
+    logic         debug_req;
+    logic         clk_neg;
+    logic         rstn_core_sync;
+
+    // ----------------------------------------------------------------------
+    //  Clock Reset Generator
+    // ----------------------------------------------------------------------
+    CRG U_CRG (
+        .clk_i               ( clk_i             )
+       ,.rst_ni              ( rst_ni            )
+       ,.rst_soft_i          ( cc_rst            )
+       ,.clk_neg_o           ( clk_neg           )
+       ,.rstn_sync_o         ( rstn_sync         )
+       ,.rstn_comb_sync_o    ( rstn_comb_sync    )
+    );
 
 
     // ----------------------------------------------------------------------
@@ -81,7 +98,7 @@ module CORE_COMPLEX(
 
     AXI_INTERCONNECT U_AXI_INTERCONNECT (
         .clk_i               ( clk_i             )
-       ,.rst_ni              ( rst_ni            )
+       ,.rst_ni              ( rstn_sync         )
        ,.testmode_i          ( 1'b0              )
        ,.xbar_slv_port_req_i ( xbar_slv_port_req )
        ,.xbar_slv_port_rsp_o ( xbar_slv_port_rsp )
@@ -108,13 +125,11 @@ module CORE_COMPLEX(
     // ----------------------------------------------------------------------
     //   Debug Module
     // ----------------------------------------------------------------------
-    logic debug_req;
-
     debugger #(
         .CC_NUM(1)
     ) U_DEBUGGER(
          .clk_i            ( clk_i                )
-        ,.rst_ni           ( rst_ni               )
+        ,.rst_ni           ( rstn_sync            )
         ,.debug_req        ( debug_req            )
         ,.axi_sba_mst_req  ( xbar_slv_port_req[1] )
         ,.axi_sba_mst_resp ( xbar_slv_port_rsp[1] )
@@ -160,21 +175,14 @@ module CORE_COMPLEX(
         assign xbar_slv_port_req[0].r_valid  = 1'b1;
     `endif
 
-    logic         cc_rst;
-    logic  [31:0] cc_boot;
-
 
     SOPHON_AXI_TOP #( 
         .HART_ID(0) 
     ) U_SOPHON_AXI_TOP (
-         .clk_i                                   ( clk_i                  ) 
-         ,.rst_ni                                 ( rst_ni                 ) 
-    //`ifndef SOPHON_EXT_ACCESS
-    `ifdef SOPHON_SOFT_RST
-         ,.rst_soft_ni                            ( cc_rst                 ) 
-    `else 
-         ,.rst_soft_ni                            ( rst_ni                 ) 
-    `endif
+          .clk_i                                  ( clk_i                  ) 
+         ,.clk_neg_i                              ( clk_neg                )
+         ,.rst_ni                                 ( rstn_sync              ) 
+         ,.rst_soft_ni                            ( rstn_comb_sync         ) 
          ,.bootaddr_i                             ( cc_boot                ) 
          ,.hart_id_i                              ( hart_id_i              ) 
          ,.irq_mei_i                              ( irq_mei_i              ) 
@@ -223,7 +231,7 @@ module CORE_COMPLEX(
     ) U_APB_SYSCFG_REG
     (
         .PCLK         ( clk_i                  ) ,
-        .PRESETn      ( rst_ni                 ) ,
+        .PRESETn      ( rstn_sync              ) ,
         .PADDR        ( apb_req[0].paddr[11:0] ) ,
         .PWDATA       ( apb_req[0].pwdata      ) ,
         .PWRITE       ( apb_req[0].pwrite      ) ,
@@ -248,7 +256,7 @@ module CORE_COMPLEX(
     ) U_UART
     (
         .CLK     ( clk_i                            ) ,
-        .RSTN    ( rst_ni                           ) ,
+        .RSTN    ( rstn_sync                        ) ,
         .PADDR   ( { 2'h0, apb_req[1].paddr[11:2] } ) ,
         .PWDATA  ( apb_req[1].pwdata                ) ,
         .PWRITE  ( apb_req[1].pwrite                ) ,

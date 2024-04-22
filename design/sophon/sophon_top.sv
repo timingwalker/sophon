@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-04-09 09:53:11
+// Last Modified : 2024-04-18 16:05:56
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -25,6 +25,7 @@
 
 module SOPHON_TOP (
      input logic                              clk_i
+    ,input logic                              clk_neg_i
     ,input logic                              rst_ni
     ,input logic                              rst_soft_ni
     ,input logic [31:0]                       bootaddr_i
@@ -89,7 +90,6 @@ module SOPHON_TOP (
 );
 
 
-    logic                   clk_neg;
     logic                   rstn_sync;
     logic                   rstn_neg_sync;
 
@@ -121,27 +121,10 @@ module SOPHON_TOP (
 
 
     // ----------------------------------------------------------------------
-    //  clock and reset generator 
+    //  I/O
     // ----------------------------------------------------------------------
-    STD_WRAP_CKINV U_CLK_INV 
-    ( 
-        .in_i         ( clk_i         ) ,
-        .zn_o         ( clk_neg       ) 
-    );
-
-    RST_SYNC U_RST_SYNC
-    (
-        .clk_i        ( clk_i         ) ,
-        .rst_ni       ( rst_ni        ) ,
-        .rstn_sync_o  ( rstn_sync     )
-     );
-
-    RST_SYNC U_RST_NEG_SYNC
-    (
-        .clk_i        ( clk_neg       ) ,
-        .rst_ni       ( rst_ni        ) ,
-        .rstn_sync_o  ( rstn_neg_sync )
-     );
+    assign rstn_sync     = rst_ni;
+    assign rstn_neg_sync = rst_ni;
 
     assign dummy_o = 1'b1;
 
@@ -162,7 +145,7 @@ module SOPHON_TOP (
     // ----------------------------------------------------------------------
     SOPHON U_SOPHON (
           .clk_i              ( clk_i                ) 
-         ,.clk_neg_i          ( clk_neg              ) 
+         ,.clk_neg_i          ( clk_neg_i            ) 
          ,.rst_ni             ( rst_soft_ni          ) 
          ,.bootaddr_i         ( bootaddr_i           ) 
          ,.hart_id_i          ( hart_id_i            ) 
@@ -277,7 +260,7 @@ module SOPHON_TOP (
         ) U_INST_ITF_DEMUX (
             .clk_i              ( clk_i               ) ,
             .rst_ni             ( rstn_sync           ) ,
-            .clk_neg_i          ( clk_neg             ) ,
+            .clk_neg_i          ( clk_neg_i           ) ,
             .rst_neg_ni         ( rstn_neg_sync       ) ,
 
             .inst_core_req_i    ( inst_core_req.req   ) ,
@@ -359,7 +342,7 @@ module SOPHON_TOP (
 
         CUST U_CUST (
              .clk_i           ( clk_i           )
-            ,.clk_neg_i       ( clk_neg         ) 
+            ,.clk_neg_i       ( clk_neg_i       ) 
             ,.rst_ni          ( rst_soft_ni     )
             ,.eei_req         ( eei_req         )
             ,.eei_ext         ( eei_ext         )
@@ -399,9 +382,9 @@ module SOPHON_TOP (
     `ifdef SOPHON_EXT_ACCESS
 
         INST_ITF_ARBITER U_INST_ITF_ARBITER (
-             .clk_i         ( clk_i          ) 
+              .clk_i         ( clk_i         ) 
              ,.rst_ni        ( rstn_sync     ) 
-             ,.clk_neg_i     ( clk_neg       ) 
+             ,.clk_neg_i     ( clk_neg_i     ) 
              ,.rst_neg_ni    ( rstn_neg_sync ) 
              ,.core_iram_req ( core_iram_req ) 
              ,.core_iram_ack ( core_iram_ack ) 
@@ -503,7 +486,7 @@ module SOPHON_TOP (
     )
     U_DTCM
     (
-         .clk_i   ( clk_neg                                              ) // use negedge clock to make l1 dram access time = 1 cycle
+         .clk_i   ( clk_neg_i                                            ) // use negedge clock to make l1 dram access time = 1 cycle
         ,.en_i    ( dram_req                                             )
         ,.addr_i  ( dram_addr_offset[ $clog2(SOPHON_PKG::DTCM_SIZE)-1:0] ) // in byte
         ,.wdata_i ( dram_wdata                                           )

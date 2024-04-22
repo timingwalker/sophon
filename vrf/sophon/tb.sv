@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-03-27 11:23:53
+// Last Modified : 2024-04-19 14:51:40
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -32,6 +32,7 @@ module tb(
 
     `ifdef VERILATOR
         assign clk = clk_i;
+        assign clk_neg = ~clk;
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
@@ -47,7 +48,8 @@ module tb(
 
     SOPHON_TOP u_dut
     (
-         .clk_i                   ( clk          ) 
+          .clk_i                  ( clk          ) 
+         ,.clk_neg_i              ( clk_neg      ) 
          ,.rst_ni                 ( rst_n        ) 
          ,.rst_soft_ni            ( rst_n        ) 
          ,.bootaddr_i             ( 32'h80000000 ) 

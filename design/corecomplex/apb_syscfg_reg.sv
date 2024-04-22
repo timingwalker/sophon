@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-23 16:21:07
-// Last Modified : 2024-01-13 16:43:19
+// Last Modified : 2024-04-18 16:06:56
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ module APB_SYSCFG_REG
 
     always_ff @(posedge PCLK, negedge PRESETn) begin
         if(~PRESETn) begin
-            cc0_rst  <= 32'h0000_0000;
+            cc0_rst  <= 32'h0000_0001;
         end
         else if ( wr_en && (PADDR==`REG_CC0_RST) )begin
             cc0_rst  <= PWDATA;
@@ -88,7 +88,7 @@ module APB_SYSCFG_REG
 
     always_ff @(posedge PCLK, negedge PRESETn) begin
         if(~PRESETn) begin
-            cc1_rst  <= 32'h0000_0000;
+            cc1_rst  <= 32'h0000_0001;
         end
         else if ( wr_en && (PADDR==`REG_CC1_RST) )begin
             cc1_rst  <= PWDATA;

@@ -18,6 +18,7 @@
 ../../design/corecomplex/debugger.sv
 ../../design/corecomplex/axi_interconnect.sv
 ../../design/corecomplex/core_complex.sv
+../../design/corecomplex/crg.sv
 
 
 ../../design/corecomplex/apb_syscfg_reg.sv

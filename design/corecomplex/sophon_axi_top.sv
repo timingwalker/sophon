@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-03-22 17:10:18
+// Last Modified : 2024-04-18 16:10:51
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -22,6 +22,7 @@ module SOPHON_AXI_TOP #(
     parameter int unsigned                          HART_ID = 0
 ) (
      input logic                                    clk_i
+    ,input logic                                    clk_neg_i
     ,input logic                                    rst_ni 
     ,input logic                                    rst_soft_ni 
     ,input logic [31:0]                             bootaddr_i
@@ -80,6 +81,7 @@ module SOPHON_AXI_TOP #(
     // ----------------------------------------------------------------------
     SOPHON_TOP U_SOPHON_TOP (
          .clk_i                   ( clk_i                   )
+        ,.clk_neg_i               ( clk_neg_i               )
         ,.rst_ni                  ( rst_ni                  )
         ,.rst_soft_ni             ( rst_soft_ni             )
         ,.bootaddr_i              ( bootaddr_i              )

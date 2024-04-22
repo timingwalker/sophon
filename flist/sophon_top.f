@@ -13,6 +13,7 @@
 ../../design/sophon/data_itf_arbiter.sv
 
 ../../design/common/std_wrap_ckinv.sv
+../../design/common/std_wrap_ckand.sv
 ../../design/common/rst_sync.sv
 ../../design/common/tcm_wrap.sv
 
