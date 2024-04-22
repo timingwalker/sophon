@@ -24,12 +24,15 @@ Configurable parameters:
 The Sophon core can be reused in different levels:
 
 1. Sophon core
+
 This is the simplest form of the Sophon core which exposing its original interfaces.
 
 2. SOPHON_AXI_TOP
+
 An AXI wrapper is provided to make it easier to be integrated to an AXI-based system. The L1 instruction/data memories are also provided in this level.
 
 3. CORE_COMPLEX
+
 Complete form of the Sophon architecture. You can use it as a stand-alone RISC-V cores or a co-processor in tandem with an application core.
 
 <img src="docs/img/sophon_overview.png"/>
