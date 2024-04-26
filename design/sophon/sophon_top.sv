@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-04-18 16:05:56
+// Last Modified : 2024-04-26 10:29:40
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -34,8 +34,10 @@ module SOPHON_TOP (
     ,input logic                              irq_mei_i 
     ,input logic                              irq_mti_i 
     ,input logic                              irq_msi_i 
+`ifdef SOPHON_RVDEBUG
     // debug halt request
     ,input  logic                             dm_req_i
+`endif
     // dummy output for synthesis compatibility
     ,output logic                             dummy_o
 `ifdef SOPHON_EXT_INST
@@ -157,7 +159,9 @@ module SOPHON_TOP (
          ,.irq_mei_i          ( irq_mei_i            ) 
          ,.irq_mti_i          ( irq_mti_i            ) 
          ,.irq_msi_i          ( irq_msi_i            ) 
+    `ifdef SOPHON_RVDEBUG
          ,.dm_req_i           ( dm_req_i             ) 
+    `endif
          ,.lsu_req_o          ( lsu_core_req.req     ) 
          ,.lsu_we_o           ( lsu_core_req.we      ) 
          ,.lsu_addr_o         ( lsu_core_req.addr    ) 
@@ -494,7 +498,6 @@ module SOPHON_TOP (
         ,.be_i    ( dram_be                                              )
         ,.rdata_o ( dram_rdata                                           )
     );
-
 
 endmodule
 

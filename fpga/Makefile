@@ -6,7 +6,7 @@ gen_ip:
 fpga:clean
 	/home/huangzhe/lab/Xilinx/Vivado/2021.1/bin/vivado -mode batch -source run.tcl
 
-clean:clean_ip
+clean:
 	rm -rf *.log
 	rm -rf vivado*
 	rm -rf usage_*

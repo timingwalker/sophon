@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-04-19 14:51:40
+// Last Modified : 2024-04-23 16:07:35
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -57,7 +57,9 @@ module tb(
          ,.irq_mei_i              ( 1'b0         ) 
          ,.irq_mti_i              ( 1'b0         ) 
          ,.irq_msi_i              ( 1'b0         ) 
+         `ifdef SOPHON_RVDEBUG
          ,.dm_req_i               ( 1'b0         ) 
+         `endif
          `ifdef SOPHON_EXT_INST
          ,.inst_ext_req_o         (              ) 
          ,.inst_ext_addr_o        (              ) 

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2024-04-18 16:41:22
+// Last Modified : 2024-04-23 15:11:36
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -188,7 +188,9 @@ module CORE_COMPLEX(
          ,.irq_mei_i                              ( irq_mei_i              ) 
          ,.irq_mti_i                              ( irq_mti_i              ) 
          ,.irq_msi_i                              ( irq_msi_i              ) 
+    `ifdef SOPHON_RVDEBUG
          ,.dm_req_i                               ( debug_req              ) 
+    `endif
     `ifdef SOPHON_EXT_ACCESS
          ,.axi_slv_d64_req_i                      ( sophon_axi_slv_d64_req ) 
          ,.axi_slv_d64_rsp_o                      ( sophon_axi_slv_d64_rsp ) 

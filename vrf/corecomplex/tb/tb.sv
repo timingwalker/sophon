@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-04-18 16:26:02
+// Last Modified : 2024-04-22 19:22:47
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -498,6 +498,9 @@ module tb();
 
         `ifdef SOPHON_EXT_ACCESS
 
+            $display($realtime, ": Configure: Set Soft Reset = 0......");
+            axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
+
             // Inst RAM
             flag_axi_access_itcm = 1'b1;
             $display("\n===================================================");
@@ -541,8 +544,6 @@ module tb();
                 $display($realtime, ": Configure: Set bootaddr = 0x1000 (EXT MEM)......");
                 axi_rand_master.run_write_word(32'h0600_0000, 64'h0000_0000_0000_1000, 8'd0, 3'b010);
             end
-            $display($realtime, ": Configure: Set Soft Reset = 0......");
-            axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
             $display($realtime, ": Configure: Set Soft Reset = 1......");
             axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0001_0000_0000, 8'd0, 3'b010);
 

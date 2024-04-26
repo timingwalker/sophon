@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-04-18 16:10:51
+// Last Modified : 2024-04-23 15:10:44
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -30,7 +30,9 @@ module SOPHON_AXI_TOP #(
     ,input logic                                    irq_mei_i 
     ,input logic                                    irq_mti_i 
     ,input logic                                    irq_msi_i 
+`ifdef SOPHON_RVDEBUG
     ,input  logic                                   dm_req_i
+`endif
 `ifdef SOPHON_EXT_ACCESS
     ,input  CC_ITF_PKG::xbar_mst_port_d64_req_t     axi_slv_d64_req_i
     ,output CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_slv_d64_rsp_o
@@ -89,7 +91,9 @@ module SOPHON_AXI_TOP #(
         ,.irq_mei_i               ( irq_mei_i               )
         ,.irq_mti_i               ( irq_mti_i               )
         ,.irq_msi_i               ( irq_msi_i               )
+        `ifdef SOPHON_RVDEBUG
         ,.dm_req_i                ( dm_req_i                )
+        `endif
         ,.dummy_o                 (                         )
         `ifdef SOPHON_EXT_INST
         ,.inst_ext_req_o          ( ext_inst_inst_req.req   )
