@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2024-04-26 10:57:17
+// Last Modified : 2024-05-09 10:58:40
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -168,7 +168,6 @@ module SOPHON (
     //   2. Align the instruction fetching request to 
     //      the negedge clock.
     // ------------------------------------------------
-    assign rst_dly_neg = &rst_cnt;
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if (~rst_ni) begin
             rst_cnt <= 3'd0;
@@ -176,6 +175,14 @@ module SOPHON (
         else if (rst_cnt<3'd7) begin
             rst_cnt <= rst_cnt + 3'd1;
         end
+    end
+
+    // assign rst_dly_neg = &rst_cnt;
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if (~rst_ni)
+            rst_dly_neg <= 1'b0;
+        else if (rst_cnt==3'd6)
+            rst_dly_neg <= 1'b1;
     end
 
     // ------------------------------------------------
@@ -290,7 +297,6 @@ module SOPHON (
             npc = {mtvec[31:2], 2'b0}; 
         //   3. CLINT irq: vector mode
         else if ( npc_sel_clint_vector ) 
-            // TODO: regress test
             //npc = {mtvec[31:2], 2'b0} + ({1'b0,mcause[30:0]}<<2); 
             npc = npc_adder_result[31:0];
         //   4. CLIC irq

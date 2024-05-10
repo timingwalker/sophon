@@ -4,11 +4,11 @@ MEM_MODE := TCM
 # TC_TYPE := isa
 # TC := rv32ui-p-addi
 
-# TC_TYPE := benchmarks
-# TC := multiply
+TC_TYPE := benchmarks
+TC := multiply
 
-TC_TYPE := sanity-tests
-TC := clic_shv
+# TC_TYPE := sanity-tests
+# TC := clic_shv
 # TC := gpio
 # TC := clic_no_shv
 # TC := clic_no_shv_snapreg
@@ -76,6 +76,8 @@ compile_sw:
 
 compile_rtl:clean
 	vcs  $(CMP_OPTIONS) -top tb -f ./tb.f 
+	#vcs  $(CMP_OPTIONS) -top SOPHON_TOP -f ../../flist/sophon_top.f
+	#vcs  $(CMP_OPTIONS) -top SOPHON_AXI_TOP -f ../../flist/sophon_axi_top.f
 
 compile_rtl_sw:compile_sw compile_rtl
 

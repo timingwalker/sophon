@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2024-04-07 14:27:58
+// Last Modified : 2024-05-09 10:22:33
 // Description   : Demux inst interface    
 // ----------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ module INST_ITF_DEMUX #(
     // demux req by addr
     // -----------------------------------
     always_comb begin
-        if ( (inst_core_addr_i>=CH1_NEG_BASE) && (inst_core_addr_i<=CH1_NEG_END) )
+        if ( (inst_core_addr_i[31:12]>=CH1_NEG_BASE[31:12]) && (inst_core_addr_i[31:12]<=CH1_NEG_END[31:12]) )
             inst_neg_req_o = inst_core_req_i;
         else
             inst_neg_req_o = 1'b0;
@@ -133,8 +133,12 @@ module INST_ITF_DEMUX #(
             inst_core_data_o  = 32'd0;
             inst_core_error_o = 1'b1;
         end
+        else begin
+            inst_core_ack_o   = 1'b0;
+            inst_core_data_o  = 32'd0;
+            inst_core_error_o = 1'b1;
+        end
     end
-
 
 `ifndef VERILATOR
 

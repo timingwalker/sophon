@@ -13,7 +13,7 @@ set_property -dict [list CONFIG.PRIM_SOURCE {Differential clock capable pin} \
                         CONFIG.CLKIN1_JITTER_PS {50.0} \
                         CONFIG.NUM_OUT_CLKS {2} \
                         CONFIG.CLKOUT2_USED {true} \
-                        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {25} \
+                        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {50} \
                         CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {50} \
                        ] [get_ips $ipName]
 

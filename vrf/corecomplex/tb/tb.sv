@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-04-22 19:22:47
+// Last Modified : 2024-05-10 11:31:53
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ module tb();
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
-            .ClkPeriod    ( 40ns ),
+            .ClkPeriod    ( 20ns ),
             .RstClkCycles ( 5    )
         ) u_clk_gen 
         (
