@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-05-10 11:31:53
+// Last Modified : 2024-05-31 17:33:53
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -274,21 +274,21 @@ module tb();
             `endif
 
             localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
-            localparam int unsigned E_BANK_NUM   = 64;
+            localparam int unsigned E_BANK_NUM   = 32;
 
             genvar m;
             generate
                 // per bank
                 for (m=0; m<E_BANK_NUM; m=m+1) begin
                     initial begin
-                        // 512*32bit=2KB
+                        // 1024*32bit=4KB
                         if (mem_mode=="EXT") begin
-                            for ( i = 0; i < 512; i = i + 1 ) begin
+                            for ( i = 0; i < 1024; i = i + 1 ) begin
                                 for ( by = 0; by < 4; by = by + 1 ) begin
                                 `ifdef DBG_ENABLE
                                     `EXT_MEM(m)[i][by*8+:8] = '0;
                                 `else
-                                    `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*2048 + i*4+by];
+                                    `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*4096 + i*4+by];
                                 `endif
                                 end
                             end
@@ -311,18 +311,18 @@ module tb();
 
     localparam int unsigned ITCM_OFFSET = SOPHON_PKG::ITCM_OFFSET;
     localparam int unsigned DTCM_OFFSET = SOPHON_PKG::DTCM_OFFSET;
-    localparam int unsigned BANK_NUM    = 32;
+    localparam int unsigned BANK_NUM    = 16;
 
     genvar k;
     generate
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
+                // 1024*32bit=2KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 512; i = i + 1 ) begin
+                    for ( i = 0; i < 1024; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
+                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
                         end
                     end
                 end
@@ -331,11 +331,11 @@ module tb();
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
+                // 1024*32bit=2KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 512; i = i + 1 ) begin
+                    for ( i = 0; i < 1024; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
+                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
                         end
                     end
                 end
@@ -624,7 +624,7 @@ module tb();
                 `ifndef SOPHON_EXT_INST_DATA
                     $fatal("FATAL: External memory is not enabled.");
                 `else
-                    assign tohost = U_EXT_MEM.gen_spilt_ram[32].U_BW_SP_RAM.ram_block[0];
+                    assign tohost = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
                 `endif
             else
                 assign tohost = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];

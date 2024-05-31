@@ -9,6 +9,8 @@
 ../../design/corecomplex/cc_itf_pkg.sv
 ../../design/open-source/common_cells/src/cf_math_pkg.sv
 
+../../design/sophon/sophon_axi_top.sv
+
 ../../design/open-source/reqrsp_interface/src/reqrsp_mux.sv
 ../../design/open-source/reqrsp_interface/src/reqrsp_iso.sv
 ../../design/open-source/reqrsp_interface/src/reqrsp_to_axi.sv
@@ -28,5 +30,4 @@
 ../../design/open-source/common_cells/src/lzc.sv
 
 ../../design/corecomplex/reqrsp_to_mem.sv
-../../design/corecomplex/sophon_axi_top.sv
 

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-04-23 16:07:35
+// Last Modified : 2024-05-31 19:16:46
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -121,7 +121,7 @@ module tb(
 
     localparam int unsigned ITCM_OFFSET = SOPHON_PKG::ITCM_OFFSET;
     localparam int unsigned DTCM_OFFSET = SOPHON_PKG::DTCM_OFFSET;
-    localparam int unsigned BANK_NUM    = 32;
+    localparam int unsigned BANK_NUM    = 16;
 
     localparam int unsigned TMP_RAM_SIZE = DTCM_OFFSET + 2048*BANK_NUM -1;
     reg [7:0] cc0_ram [0:TMP_RAM_SIZE];
@@ -141,10 +141,10 @@ module tb(
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
-                for ( i = 0; i < 512; i = i + 1 ) begin
+                // 1024*32bit=4KB
+                for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
+                        `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
                     end
                 end
             end
@@ -152,10 +152,10 @@ module tb(
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
-                for ( i = 0; i < 512; i = i + 1 ) begin
+                // 1024*32bit=4KB
+                for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
+                        `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
                     end
                 end
             end

@@ -1,11 +1,13 @@
 
 MEM_MODE := TCM
 
-# TC_TYPE := isa
-# TC := rv32ui-p-addi
+TC_TYPE := isa
+#TC := rv32ui-p-addi
+TC := rv32ui-p-sw
 
-TC_TYPE := benchmarks
-TC := multiply
+# TC_TYPE := benchmarks
+# # TC := towers
+# TC := multiply
 
 # TC_TYPE := sanity-tests
 # TC := clic_shv

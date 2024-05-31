@@ -33,9 +33,9 @@ read_verilog -sv ../design/open-source/common_cells/src/cf_math_pkg.sv
 read_verilog -sv ../design/open-source/axi/src/axi_intf.sv
 read_verilog -sv ../design/corecomplex/cc_itf_pkg.sv
 read_verilog -sv ../design/corecomplex/cc_cfg_pkg.sv
-read_verilog -sv ../design/corecomplex/sophon_axi_top.sv
 read_verilog -sv ../design/corecomplex/debugger.sv
 read_verilog -sv ../design/corecomplex/axi_interconnect.sv
+read_verilog -sv ../design/sophon/sophon_axi_top.sv
 read_verilog -sv ../design/corecomplex/core_complex.sv
 read_verilog -sv ../design/corecomplex/crg.sv
 read_verilog -sv ../design/corecomplex/apb_syscfg_reg.sv
