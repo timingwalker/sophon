@@ -11,19 +11,23 @@ TC := rv32ui-p-sw
 
 # TC_TYPE := sanity-tests
 # TC := clic_shv
-# TC := gpio
-# TC := clic_no_shv
-# TC := clic_no_shv_snapreg
+# # TC := fgpio
+# # TC := clic_no_shv
+# # TC := clic_no_shv_snapreg
+
+# TC_TYPE := app
+# TC := fgpio_uart
 
 
-
-TC_DIR := ../../sw/build/$(TC_TYPE)
+TC_DIR := ../../sw/build
 ifeq ($(TC_TYPE), sanity-tests)
-	TC_HEX := $(TC_DIR)/$(TC)/$(TC).hex
+	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC)/$(TC).hex
 else ifeq ($(TC_TYPE), isa)
-	TC_HEX := $(TC_DIR)/$(TC).hex
+	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC).hex
 else ifeq ($(TC_TYPE), benchmarks)
-	TC_HEX := $(TC_DIR)/$(TC).riscv.hex
+	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC).riscv.hex
+else ifeq ($(TC_TYPE), app)
+	TC_HEX := $(TC_DIR)/$(TC)/$(TC).hex
 endif
 
 # isa/benchmarks can use external memory if it is enabled
@@ -72,14 +76,17 @@ SIM_OPTIONS	+= -l ./log/sim.log
 
 
 
+ifeq ($(TC_TYPE), app)
+	SW_TARGET := $(TC)
+else 
+	SW_TARGET := $(TC_TYPE)
+endif
 compile_sw:
-	$(MAKE) -C ../../sw clean_$(TC_TYPE)
-	$(MAKE) -C ../../sw $(TC_TYPE) LDS_FILE=$(LDS_FILE)
+	$(MAKE) -C ../../sw clean_$(SW_TARGET)
+	$(MAKE) -C ../../sw $(SW_TARGET) LDS_FILE=$(LDS_FILE)
 
 compile_rtl:clean
 	vcs  $(CMP_OPTIONS) -top tb -f ./tb.f 
-	#vcs  $(CMP_OPTIONS) -top SOPHON_TOP -f ../../flist/sophon_top.f
-	#vcs  $(CMP_OPTIONS) -top SOPHON_AXI_TOP -f ../../flist/sophon_axi_top.f
 
 compile_rtl_sw:compile_sw compile_rtl
 

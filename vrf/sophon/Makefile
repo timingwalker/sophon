@@ -8,7 +8,7 @@ sw_compile:
 	$(MAKE) -C ../../sw $(TEST)
 
 compile:clean
-	verilator -cc -exe -Wall --trace --top-module tb -f ../../flist/sophon_top.f tb.sv sim_main.cpp -Wno-fatal
+	verilator -cc -exe -Wall --trace --top-module tb -f ../../flist/sophon_top_rtl.f tb.sv sim_main.cpp -Wno-fatal
 
 build:compile
 	make -j -C obj_dir -f Vtb.mk Vtb
@@ -18,7 +18,7 @@ sim:
 
 build_sim:sw_compile
 	rm -rf obj_dir wave.vcd* log
-	verilator -cc -exe -Wall --trace --top-module tb -f ../../flist/sophon_top.f tb.sv sim_main.cpp -Wno-fatal
+	verilator -cc -exe -Wall --trace --top-module tb -f ../../flist/sophon_top_rtl.f tb.sv sim_main.cpp -Wno-fatal
 	make -j -C obj_dir -f Vtb.mk Vtb
 	./obj_dir/Vtb +CC0=$(CC0)
 

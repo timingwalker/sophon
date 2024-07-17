@@ -16,9 +16,13 @@ void uart_init()
     // _REG32(g_console_port, UART_REG_DLL) = 174;
     // _REG32(g_console_port, UART_REG_DLM) = 174>>8;
 
-    // clock=25M, set baudrate=115200
-    _REG32(g_console_port, UART_REG_DLL) = 216;
-    _REG32(g_console_port, UART_REG_DLM) = 216>>8;
+    // // clock=25M, set baudrate=115200
+    // _REG32(g_console_port, UART_REG_DLL) = 216;
+    // _REG32(g_console_port, UART_REG_DLM) = 216>>8;
+
+    // clock=50M, set baudrate=115200
+    _REG32(g_console_port, UART_REG_DLL) = 434;
+    _REG32(g_console_port, UART_REG_DLM) = 434>>8;
 
     // set LCR: 8bit data, 1 bit stop, no parity, DLAB=0
     writel(0xFFFFFF03 , g_console_port + UART_REG_LCR);

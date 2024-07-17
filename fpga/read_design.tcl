@@ -33,9 +33,9 @@ read_verilog -sv ../design/open-source/common_cells/src/cf_math_pkg.sv
 read_verilog -sv ../design/open-source/axi/src/axi_intf.sv
 read_verilog -sv ../design/corecomplex/cc_itf_pkg.sv
 read_verilog -sv ../design/corecomplex/cc_cfg_pkg.sv
+read_verilog -sv ../design/corecomplex/sophon_axi_top.sv
 read_verilog -sv ../design/corecomplex/debugger.sv
 read_verilog -sv ../design/corecomplex/axi_interconnect.sv
-read_verilog -sv ../design/sophon/sophon_axi_top.sv
 read_verilog -sv ../design/corecomplex/core_complex.sv
 read_verilog -sv ../design/corecomplex/crg.sv
 read_verilog -sv ../design/corecomplex/apb_syscfg_reg.sv
@@ -46,7 +46,6 @@ read_verilog -sv ../design/open-source/axi/src/axi_to_axi_lite.sv
 read_verilog -sv ../design/open-source/axi/src/axi_lite_to_apb.sv
 read_verilog -sv ../design/open-source/axi/src/axi_dw_converter.sv
 read_verilog -sv ../design/open-source/axi/src/axi_dw_downsizer.sv
-read_verilog -sv ../design/open-source/axi/src/axi_dw_upsizer.sv
 read_verilog -sv ../design/open-source/axi/src/axi_atop_filter.sv
 read_verilog -sv ../design/open-source/axi/src/axi_burst_splitter.sv
 read_verilog -sv ../design/open-source/common_cells/src/fifo_v3.sv
@@ -82,7 +81,6 @@ read_verilog -sv ../design/open-source/tech_cells_generic/src/deprecated/pulp_cl
 read_verilog -sv ../design/open-source/tech_cells_generic/src/rtl/tc_clk.sv
 read_verilog -sv ../design/open-source/riscv_dbg/debug_rom/debug_rom_one_scratch.sv
 read_verilog -sv ../design/open-source/reqrsp_interface/src/reqrsp_mux.sv
-read_verilog -sv ../design/open-source/reqrsp_interface/src/reqrsp_iso.sv
 read_verilog -sv ../design/open-source/reqrsp_interface/src/reqrsp_to_axi.sv
 read_verilog -sv ../design/open-source/common_cells/src/stream_mux.sv
 read_verilog -sv ../design/open-source/common_cells/src/stream_fork.sv
@@ -91,7 +89,6 @@ read_verilog -sv ../design/open-source/common_cells/src/stream_join.sv
 read_verilog -sv ../design/open-source/common_cells/src/stream_fork_dynamic.sv
 read_verilog -sv ../design/open-source/common_cells/src/spill_register.sv
 read_verilog -sv ../design/open-source/common_cells/src/spill_register_flushable.sv
-read_verilog -sv ../design/open-source/common_cells/src/isochronous_spill_register.sv
 read_verilog -sv ../design/open-source/apb_uart_sv/apb_uart_sv.sv
 read_verilog -sv ../design/open-source/apb_uart_sv/uart_rx.sv
 read_verilog -sv ../design/open-source/apb_uart_sv/uart_tx.sv

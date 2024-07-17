@@ -14,8 +14,8 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-05-09 16:46:57
-// Description   : Top module of SOPHON with AXI interfaces
+// Last Modified : 2024-04-18 16:10:51
+// Description   : 
 // ----------------------------------------------------------------------
 
 module SOPHON_AXI_TOP #(
@@ -30,16 +30,14 @@ module SOPHON_AXI_TOP #(
     ,input logic                                    irq_mei_i 
     ,input logic                                    irq_mti_i 
     ,input logic                                    irq_msi_i 
-`ifdef SOPHON_RVDEBUG
     ,input  logic                                   dm_req_i
-`endif
 `ifdef SOPHON_EXT_ACCESS
-    ,input  CC_ITF_PKG::axi_mst_side_d32_req_t      axi_slv_d32_req_i
-    ,output CC_ITF_PKG::axi_mst_side_d32_resps_t    axi_slv_d32_rsp_o
+    ,input  CC_ITF_PKG::xbar_mst_port_d64_req_t     axi_slv_d64_req_i
+    ,output CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_slv_d64_rsp_o
 `endif
 `ifdef SOPHON_EXT_INST_DATA
-    ,output CC_ITF_PKG::xbar_slv_port_d64_req_t     axi_mst_d32_req_o
-    ,input  CC_ITF_PKG::xbar_slv_port_d64_resps_t   axi_mst_d32_rsp_i
+    ,output CC_ITF_PKG::xbar_slv_port_d64_req_t     axi_mst_d64_req_o
+    ,input  CC_ITF_PKG::xbar_slv_port_d64_resps_t   axi_mst_d64_rsp_i
 `endif
 `ifdef SOPHON_CLIC
     ,input  logic                                   clic_irq_req_i
@@ -62,17 +60,19 @@ module SOPHON_AXI_TOP #(
 );
 
 
+
+
 `ifdef SOPHON_EXT_INST
     SOPHON_PKG::inst_req_t      ext_inst_inst_req;
     SOPHON_PKG::inst_ack_t      ext_inst_inst_ack;
-    CC_ITF_PKG::reqrsp_d32_req_t    ext_inst_req;
-    CC_ITF_PKG::reqrsp_d32_resps_t  ext_inst_rsp;
+    CC_ITF_PKG::reqrsp_req_t    ext_inst_req;
+    CC_ITF_PKG::reqrsp_resps_t  ext_inst_rsp;
 `endif
 `ifdef SOPHON_EXT_DATA
     SOPHON_PKG::lsu_req_t       ext_data_lsu_req;
     SOPHON_PKG::lsu_ack_t       ext_data_lsu_ack;
-    CC_ITF_PKG::reqrsp_d32_req_t    ext_data_req;
-    CC_ITF_PKG::reqrsp_d32_resps_t  ext_data_rsp;
+    CC_ITF_PKG::reqrsp_req_t    ext_data_req;
+    CC_ITF_PKG::reqrsp_resps_t  ext_data_rsp;
 `endif
 
 
@@ -89,9 +89,7 @@ module SOPHON_AXI_TOP #(
         ,.irq_mei_i               ( irq_mei_i               )
         ,.irq_mti_i               ( irq_mti_i               )
         ,.irq_msi_i               ( irq_msi_i               )
-        `ifdef SOPHON_RVDEBUG
         ,.dm_req_i                ( dm_req_i                )
-        `endif
         ,.dummy_o                 (                         )
         `ifdef SOPHON_EXT_INST
         ,.inst_ext_req_o          ( ext_inst_inst_req.req   )
@@ -138,7 +136,7 @@ module SOPHON_AXI_TOP #(
         ,.gpio_out_val_o          ( gpio_out_val_o          )
         `endif
         `ifdef PROBE
-        ,.probe_o                 (probe_o                  )
+           ,.probe_o              (probe_o                  )
         `endif
     
     );
@@ -147,19 +145,28 @@ module SOPHON_AXI_TOP #(
     // ----------------------------------------------------------------------
     //  Merge EXT_INST and EXT_DATA to an AXI master 
     // ----------------------------------------------------------------------
-    //      inst interface (32b)     <-> reqrsp interface (32b) 
-    //      data interface (lsu/32b) <-> reqrsp interface (32b) 
-    //      Merge: inst(reqrsp/32b) + data(reqrsp/32b) to AXI master (32b)
+    //      inst interface (32b)     <-> reqrsp interface (64b) 
+    //      data interface (lsu/32b) <-> reqrsp interface (64b) 
+    //      Merge: inst(reqrsp/64b) + data(reqrsp/64b) to AXI master (64b)
     // ----------------------------------------------------------------------
+
 
 `ifdef SOPHON_EXT_INST
+
     // ----------------------------------------------------------------------
-    //      inst interface (32b) <-> reqrsp interface (32b) 
+    //      inst interface (32b) <-> reqrsp interface (64b) 
     // ----------------------------------------------------------------------
-    logic                       is_ext_inst_pending;
+
     logic                       q_valid;
     logic [31:0]                q_addr;
+    logic                       is_ext_inst_pending;
+    logic                       req_high_32b;
 
+    // -----------------------------------
+    //  inst interface to reqrsp itf.
+    // -----------------------------------
+
+    // inst interface do not support outstanding, send request to reqrsp interface one by one
     always @(posedge clk_i or negedge rst_ni) begin
     	if(~rst_ni) 
             is_ext_inst_pending <= 1'b0;
@@ -169,41 +176,53 @@ module SOPHON_AXI_TOP #(
             is_ext_inst_pending <= 1'b0;
     end
 
-    // break inst_req to optimize timing
+    // inst itf. aliagn to 32b address, but changer to 64b address for external access
+    // always send 64b request, and set a high 32b request flag to select response data field
     always @(posedge clk_i or negedge rst_ni) begin
     	if(~rst_ni) begin
             q_valid      <= 1'b0;
             q_addr       <= 32'd0;
+            req_high_32b <= 1'b0;
         end
         else if (  ( ext_inst_req.q_valid & ext_inst_rsp.q_ready ) | is_ext_inst_pending ) begin
             q_valid      <= 1'b0;
             q_addr       <= q_addr;
+            req_high_32b <= req_high_32b;
         end
+        //else if ( inst_valid & ((inst_addr>=32'h0000_0000)&&(inst_addr<=32'h0000_0fff)) ) begin
         else if ( ext_inst_inst_req.req ) begin
             q_valid      <= 1'b1;
-            q_addr       <= ext_inst_inst_req.addr;
+            q_addr       <= {ext_inst_inst_req.addr[31:3], 3'd0};
+            req_high_32b <= ext_inst_inst_req.addr[2];
         end
     end
+
+    assign ext_inst_inst_ack.ack   = ext_inst_req.p_ready & ext_inst_rsp.p_valid;
+    assign ext_inst_inst_ack.rdata = req_high_32b ? ext_inst_rsp.p.data[63:32] : ext_inst_rsp.p.data[31:0];
+    assign ext_inst_inst_ack.error = 1'b0;
+
+    // -----------------------------------
+    //  reqrsp interface
+    // -----------------------------------
     assign ext_inst_req.q.addr  = q_addr;
     assign ext_inst_req.q_valid = q_valid;
-
     assign ext_inst_req.q.write = 1'b0;
     assign ext_inst_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_inst_req.q.data  = '0;
     assign ext_inst_req.q.strb  = '1;
-    assign ext_inst_req.q.size  = 3'b010;
+    assign ext_inst_req.q.size  = 3'b011;
+
     assign ext_inst_req.p_ready = 1'b1;
 
-    assign ext_inst_inst_ack.ack   = ext_inst_req.p_ready & ext_inst_rsp.p_valid;
-    assign ext_inst_inst_ack.rdata = ext_inst_rsp.p.data;
-    assign ext_inst_inst_ack.error = 1'b0;
 `endif
 
 
 `ifdef SOPHON_EXT_DATA
+
     // ----------------------------------------------------------------------
-    //      data interface (lsu/32b) <-> reqrsp interface (32b) 
+    //      data interface (lsu/32b) <-> reqrsp interface (64b) 
     // ----------------------------------------------------------------------
+
     logic is_ext_data_pending;
 
     always @(posedge clk_i or negedge rst_ni) begin
@@ -216,31 +235,36 @@ module SOPHON_AXI_TOP #(
     end
 
     assign ext_data_req.q_valid = ext_data_lsu_req.req & ~is_ext_data_pending;
-    assign ext_data_req.q.addr  = ext_data_lsu_req.addr;
+    // Modify(hz) 28/03/23 17:56:40 align to 32bit address because debugmodule need it; TCMD can process thess address properly
+    assign ext_data_req.q.addr  = ext_data_lsu_req.addr & 32'hffff_fffc;
+    // Modify(hz) 27/04/23 17:20:12 load should always be 32 bit
+    // Modify(hz) 24/12/23 18:14:18 store also should always be 32bit? rv32i regress in TCM/EXT_MEM are OK, TODO test store in DM
+    // assign ext_data_req.q.size  = (ext_data_lsu_req.req & ~ext_data_req.q.write) ? {1'b0, 2'b10} : {1'b0,ext_data_lsu_req.size};
     assign ext_data_req.q.size  = {1'b0, 2'b10};
-    assign ext_data_req.q.strb  = ext_data_lsu_req.strb;
-    assign ext_data_req.q.data  = ext_data_lsu_req.wdata;
+    assign ext_data_req.q.strb  = (ext_data_lsu_req.addr[2])? {ext_data_lsu_req.strb,4'b0} : {4'b0,ext_data_lsu_req.strb};
+    assign ext_data_req.q.data  = (ext_data_lsu_req.addr[2])? {ext_data_lsu_req.wdata,32'b0} : {32'b0,ext_data_lsu_req.wdata};
     assign ext_data_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_data_req.q.write = ext_data_lsu_req.we;
     assign ext_data_req.p_ready = ext_data_lsu_req.req;
 
     assign ext_data_lsu_ack.ack   = ext_data_rsp.p_valid & ext_data_req.p_ready;
-    assign ext_data_lsu_ack.rdata = ext_data_rsp.p.data;
+    assign ext_data_lsu_ack.rdata = (ext_data_lsu_req.addr[2])? ext_data_rsp.p.data[63:32] : ext_data_rsp.p.data[31:0];
     assign ext_data_lsu_ack.error = ext_data_rsp.p.error;
+
 `endif
 
 
 `ifdef SOPHON_EXT_INST_DATA
-    // ----------------------------------------------------------------------
-    //      Merge: inst(reqrsp/32b) + data(reqrsp/32b) to AXI master (32b)
-    // ----------------------------------------------------------------------
-    CC_ITF_PKG::reqrsp_d32_req_t          outer_axi_req;
-    CC_ITF_PKG::reqrsp_d32_resps_t        outer_axi_resp;
-    CC_ITF_PKG::reqrsp_d32_req_t          outer_axi_req_iso;
-    CC_ITF_PKG::reqrsp_d32_resps_t        outer_axi_resp_iso;
 
-    CC_ITF_PKG::reqrsp_d32_req_t   [1:0]  slv_req_mux;
-    CC_ITF_PKG::reqrsp_d32_resps_t [1:0]  slv_resp_mux;
+    // ----------------------------------------------------------------------
+    //      Merge: inst(reqrsp/64b) + data(reqrsp/64b) to AXI master (64b)
+    // ----------------------------------------------------------------------
+
+    CC_ITF_PKG::reqrsp_req_t      outer_axi_req;
+    CC_ITF_PKG::reqrsp_resps_t    outer_axi_resp;
+
+    CC_ITF_PKG::reqrsp_req_t   [1:0]   slv_req_mux;
+    CC_ITF_PKG::reqrsp_resps_t [1:0]   slv_resp_mux;
 
     `ifdef SOPHON_EXT_INST
         assign slv_req_mux[1] = ext_inst_req;
@@ -260,11 +284,11 @@ module SOPHON_AXI_TOP #(
 
     // mux internal reqrsp interface
     reqrsp_mux #(
-        .NrPorts    ( 2                              ) ,
-        .AddrWidth  ( 32                             ) ,
-        .DataWidth  ( 32                             ) ,
-        .req_t      ( CC_ITF_PKG::reqrsp_d32_req_t   ) ,
-        .rsp_t      ( CC_ITF_PKG::reqrsp_d32_resps_t ) 
+        .NrPorts    ( 2                        ) ,
+        .AddrWidth  ( 32                       ) ,
+        .DataWidth  ( 64                       ) ,
+        .req_t      ( CC_ITF_PKG::reqrsp_req_t   ) ,
+        .rsp_t      ( CC_ITF_PKG::reqrsp_resps_t ) 
     ) u_reqrsp_mux (
         .clk_i     ( clk_i          ) ,
         .rst_ni    ( rst_ni         ) ,
@@ -275,42 +299,26 @@ module SOPHON_AXI_TOP #(
         .idx_o     (                ) 
     );
 
-    // cut combinational logic path to optimize timing
-    reqrsp_iso #(
-        .AddrWidth ( 32                             ) ,
-        .DataWidth ( 32                             ) ,
-        .req_t     ( CC_ITF_PKG::reqrsp_d32_req_t   ) ,
-        .rsp_t     ( CC_ITF_PKG::reqrsp_d32_resps_t ) ,
-        .BypassReq ( 1'b0                           ) ,
-        .BypassRsp ( 1'b0                           ) 
-    ) i_reqrsp_iso (
-        .src_clk_i  ( clk_i              ) ,
-        .src_rst_ni ( rst_ni             ) ,
-        .src_req_i  ( outer_axi_req      ) ,
-        .src_rsp_o  ( outer_axi_resp     ) ,
-        .dst_clk_i  ( clk_i              ) ,
-        .dst_rst_ni ( rst_ni             ) ,
-        .dst_req_o  ( outer_axi_req_iso  ) ,
-        .dst_rsp_i  ( outer_axi_resp_iso ) 
+    reqrsp_to_axi #(
+        .DataWidth    ( CC_ITF_PKG::XBAR_DATA_WIDTH ) ,
+        .UserWidth    ( CC_ITF_PKG::XBAR_USER_WIDTH ) ,
+        .reqrsp_req_t ( CC_ITF_PKG::reqrsp_req_t    ) ,
+        .reqrsp_rsp_t ( CC_ITF_PKG::reqrsp_resps_t  ) ,
+        .axi_req_t    ( CC_ITF_PKG::xbar_slv_port_d64_req_t   ) ,
+        .axi_rsp_t    ( CC_ITF_PKG::xbar_slv_port_d64_resps_t ) 
+    ) i_reqrsp_to_axi_core (
+        .clk_i        ( clk_i             ) ,
+        .rst_ni       ( rst_ni            ) ,
+        .user_i       ( '0                ) ,
+        .reqrsp_req_i ( outer_axi_req     ) ,
+        .reqrsp_rsp_o ( outer_axi_resp    ) ,
+        .axi_req_o    ( axi_mst_d64_req_o ) ,
+        .axi_rsp_i    ( axi_mst_d64_rsp_i ) 
     );
 
-    reqrsp_to_axi #(
-        .DataWidth    ( CC_ITF_PKG::XBAR_DATA_WIDTH          ) ,
-        .UserWidth    ( CC_ITF_PKG::XBAR_USER_WIDTH          ) ,
-        .reqrsp_req_t ( CC_ITF_PKG::reqrsp_d32_req_t         ) ,
-        .reqrsp_rsp_t ( CC_ITF_PKG::reqrsp_d32_resps_t       ) ,
-        .axi_req_t    ( CC_ITF_PKG::axi_slv_side_d32_req_t   ) ,
-        .axi_rsp_t    ( CC_ITF_PKG::axi_slv_side_d32_resps_t ) 
-    ) i_reqrsp_to_axi_core (
-        .clk_i        ( clk_i              ) ,
-        .rst_ni       ( rst_ni             ) ,
-        .user_i       ( '0                 ) ,
-        .reqrsp_req_i ( outer_axi_req_iso  ) ,
-        .reqrsp_rsp_o ( outer_axi_resp_iso ) ,
-        .axi_req_o    ( axi_mst_d32_req_o  ) ,
-        .axi_rsp_i    ( axi_mst_d32_rsp_i  ) 
-    );
 `endif
+
+
 
 
     // ----------------------------------------------------------------------
@@ -318,10 +326,47 @@ module SOPHON_AXI_TOP #(
     // ----------------------------------------------------------------------
 
 `ifdef SOPHON_EXT_ACCESS
+
+    // -----------------------------------
+    //  AXI 64 -> AXI 32
+    // -----------------------------------
+    CC_ITF_PKG::axi_mst_side_d32_req_t    axi_mst_32b_req;
+    CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_32b_rsp;
+
+    axi_dw_converter #(
+        .AxiMaxReads         ( 4                                     ) ,
+        .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
+        .AxiMstPortDataWidth ( 32                                    ) ,
+        .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
+        .AxiIdWidth          ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH    ) ,
+        .aw_chan_t           ( CC_ITF_PKG::xbar_mst_port_aw_t        ) ,
+        .slv_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
+        .b_chan_t            ( CC_ITF_PKG::xbar_mst_port_b_t         ) ,
+        .ar_chan_t           ( CC_ITF_PKG::xbar_mst_port_ar_t        ) ,
+        .slv_r_chan_t        ( CC_ITF_PKG::xbar_mst_port_r_t         ) ,
+        .mst_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
+        .mst_r_chan_t        ( CC_ITF_PKG::axi_r_32b_t               ) ,
+        .axi_mst_req_t       ( CC_ITF_PKG::axi_mst_side_d32_req_t    ) ,
+        .axi_mst_resp_t      ( CC_ITF_PKG::axi_mst_side_d32_resps_t  ) ,
+        .axi_slv_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
+        .axi_slv_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) 
+    ) i_axi_dw_converter (
+        .clk_i         ( clk_i           ) ,
+        .rst_ni        ( rst_ni          ) ,
+        // slave port
+        .slv_req_i     ( axi_slv_d64_req_i ) ,
+        .slv_resp_o    ( axi_slv_d64_rsp_o ) ,
+        // master port
+        .mst_req_o     ( axi_mst_32b_req   ) ,
+        .mst_resp_i    ( axi_mst_32b_rsp   ) 
+    );
+
+
     // -----------------------------------
     //          32b data width
     //  AXI -> reqrsp -> memory -> lsu
     // -----------------------------------
+
     CC_ITF_PKG::reqrsp_d32_req_t      reqresp_d32_req;
     CC_ITF_PKG::reqrsp_d32_resps_t    reqresp_d32_rsp;
 
@@ -350,8 +395,8 @@ module SOPHON_AXI_TOP #(
         .clk_i        ( clk_i             ) ,
         .rst_ni       ( rst_ni            ) ,
         .busy_o       (                   ) ,
-        .axi_req_i    ( axi_slv_d32_req_i ) ,
-        .axi_rsp_o    ( axi_slv_d32_rsp_o ) , 
+        .axi_req_i    ( axi_mst_32b_req   ) ,
+        .axi_rsp_o    ( axi_mst_32b_rsp   ) , // TODO addr substrate?
         .reqrsp_req_o ( reqresp_d32_req   ) ,
         .reqrsp_rsp_i ( reqresp_d32_rsp   ) 
     );
@@ -359,8 +404,8 @@ module SOPHON_AXI_TOP #(
     REQRSP_TO_MEM #(
         .req_t      ( CC_ITF_PKG::reqrsp_d32_req_t   ) ,
         .resp_t     ( CC_ITF_PKG::reqrsp_d32_resps_t ) ,
-        .DATA_WIDTH ( 32                             ) ,
-        .ADDR_WIDTH ( 32                             ) 
+        .DATA_WIDTH ( 32                           ) ,
+        .ADDR_WIDTH ( 32                           ) 
     ) u_reqrsp_to_mem 
     (
         .clk_i     ( clk_i           ) ,
@@ -391,6 +436,9 @@ module SOPHON_AXI_TOP #(
             axi_mem_rdata <= ext_access_ack.rdata;
     end
 `endif
+
+
+
 
 endmodule
 

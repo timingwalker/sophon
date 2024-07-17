@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-05-17 15:45:18
+// Last Modified : 2024-04-18 16:05:56
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -34,10 +34,8 @@ module SOPHON_TOP (
     ,input logic                              irq_mei_i 
     ,input logic                              irq_mti_i 
     ,input logic                              irq_msi_i 
-`ifdef SOPHON_RVDEBUG
     // debug halt request
     ,input  logic                             dm_req_i
-`endif
     // dummy output for synthesis compatibility
     ,output logic                             dummy_o
 `ifdef SOPHON_EXT_INST
@@ -94,7 +92,6 @@ module SOPHON_TOP (
 
     logic                   rstn_sync;
     logic                   rstn_neg_sync;
-
 
     SOPHON_PKG::lsu_req_t   lsu_core_req;
     SOPHON_PKG::lsu_ack_t   lsu_core_ack;
@@ -160,9 +157,7 @@ module SOPHON_TOP (
          ,.irq_mei_i          ( irq_mei_i            ) 
          ,.irq_mti_i          ( irq_mti_i            ) 
          ,.irq_msi_i          ( irq_msi_i            ) 
-    `ifdef SOPHON_RVDEBUG
          ,.dm_req_i           ( dm_req_i             ) 
-    `endif
          ,.lsu_req_o          ( lsu_core_req.req     ) 
          ,.lsu_we_o           ( lsu_core_req.we      ) 
          ,.lsu_addr_o         ( lsu_core_req.addr    ) 
@@ -239,8 +234,6 @@ module SOPHON_TOP (
         )
         U_EXT_ACCESS_DEMUX
         (
-            .clk_i         ( clk_i          ) ,
-            .rst_ni        ( rst_ni         ) ,
             .lsu_req_i     ( ext_access_req ) ,
             .lsu_ack_o     ( ext_access_ack ) ,
             .lsu_req_1ch_o ( ext_iram_req   ) ,
@@ -317,8 +310,6 @@ module SOPHON_TOP (
         )
         U_DATA_DEMUX
         (
-            .clk_i         ( clk_i         ) ,
-            .rst_ni        ( rst_ni        ) ,
             .lsu_req_i     ( lsu_core_req  ) ,
             .lsu_ack_o     ( lsu_core_ack  ) ,
             .lsu_req_1ch_o ( core_dram_req ) ,
@@ -503,6 +494,7 @@ module SOPHON_TOP (
         ,.be_i    ( dram_be                                              )
         ,.rdata_o ( dram_rdata                                           )
     );
+
 
 endmodule
 

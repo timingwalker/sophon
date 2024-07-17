@@ -6,8 +6,6 @@
 `define SOPHON_EXT_ACCESS
 `define SOPHON_CLIC
 `define SOPHON_EEI
-
-`define SOPHON_RVDEBUG
                                 
 // SubFeature
 `ifdef SOPHON_EEI

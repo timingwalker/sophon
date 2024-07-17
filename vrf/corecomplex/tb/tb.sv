@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-05-31 17:33:53
+// Last Modified : 2024-07-02 10:17:09
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -35,11 +35,11 @@ module tb();
     logic rst_n;
 
     `ifdef VERILATOR
-        assign clk = clk_i;
+        assign clk   = clk_i;
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
-            .ClkPeriod    ( 20ns ),
+            .ClkPeriod    ( 40ns ),
             .RstClkCycles ( 5    )
         ) u_clk_gen 
         (
@@ -52,7 +52,6 @@ module tb();
     // ----------------------------------------------------------------------
     //  DUT
     // ----------------------------------------------------------------------
-
     logic tck; 
     logic tms; 
     logic trst_n; 
@@ -61,12 +60,16 @@ module tb();
     logic tdo_oe; 
     logic dut_uart_tx;
     logic dut_uart_rx;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val;
 
     CC_ITF_PKG::xbar_slv_port_d64_req_t   axi_slv_port_req;
     CC_ITF_PKG::xbar_slv_port_d64_resps_t axi_slv_port_rsp;
 
     CC_ITF_PKG::xbar_mst_port_d64_req_t   axi_mst_port_req;
     CC_ITF_PKG::xbar_mst_port_d64_resps_t axi_mst_port_rsp;
+
 
     CORE_COMPLEX u_dut
     (
@@ -89,9 +92,9 @@ module tb();
           ,.clic_apb_rsp_i            (                  ) 
           `endif
           `ifdef SOPHON_EEI_GPIO
-          ,.gpio_dir_o                (                  ) 
-          ,.gpio_in_val_i             ( 'b0              ) 
-          ,.gpio_out_val_o            (                  ) 
+          ,.gpio_dir_o                ( gpio_dir         ) 
+          ,.gpio_in_val_i             ( gpio_in_val      ) 
+          ,.gpio_out_val_o            ( gpio_out_val     ) 
           `endif
           ,.tck_i                     ( tck              ) 
           ,.tms_i                     ( tms              ) 
@@ -265,39 +268,38 @@ module tb();
     // -----------------------------------
     //  Preload external memory
     // -----------------------------------
+    `ifdef SOPHON_EXT_INST_DATA
 
-        `ifdef SOPHON_EXT_INST_DATA
+        `ifndef ASIC
+            `define EXT_MEM(bankaddr) U_EXT_MEM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
+        `else
+        `endif
 
-            `ifndef ASIC
-                `define EXT_MEM(bankaddr) U_EXT_MEM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
-            `else
-            `endif
+        localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
+        localparam int unsigned E_BANK_NUM   = 64;
 
-            localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
-            localparam int unsigned E_BANK_NUM   = 32;
-
-            genvar m;
-            generate
-                // per bank
-                for (m=0; m<E_BANK_NUM; m=m+1) begin
-                    initial begin
-                        // 1024*32bit=4KB
-                        if (mem_mode=="EXT") begin
-                            for ( i = 0; i < 1024; i = i + 1 ) begin
-                                for ( by = 0; by < 4; by = by + 1 ) begin
-                                `ifdef DBG_ENABLE
-                                    `EXT_MEM(m)[i][by*8+:8] = '0;
-                                `else
-                                    `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*4096 + i*4+by];
-                                `endif
-                                end
+        genvar m;
+        generate
+            // per bank
+            for (m=0; m<E_BANK_NUM; m=m+1) begin
+                initial begin
+                    // 512*32bit=2KB
+                    if (mem_mode=="EXT") begin
+                        for ( i = 0; i < 512; i = i + 1 ) begin
+                            for ( by = 0; by < 4; by = by + 1 ) begin
+                            `ifdef DBG_ENABLE
+                                `EXT_MEM(m)[i][by*8+:8] = '0;
+                            `else
+                                `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*2048 + i*4+by];
+                            `endif
                             end
                         end
                     end
                 end
-            endgenerate
+            end
+        endgenerate
 
-        `endif
+    `endif
 
 
     // -----------------------------------
@@ -311,18 +313,18 @@ module tb();
 
     localparam int unsigned ITCM_OFFSET = SOPHON_PKG::ITCM_OFFSET;
     localparam int unsigned DTCM_OFFSET = SOPHON_PKG::DTCM_OFFSET;
-    localparam int unsigned BANK_NUM    = 16;
+    localparam int unsigned BANK_NUM    = 32;
 
     genvar k;
     generate
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 1024*32bit=2KB
+                // 512*32bit=2KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 1024; i = i + 1 ) begin
+                    for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
+                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
                         end
                     end
                 end
@@ -331,11 +333,11 @@ module tb();
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 1024*32bit=2KB
+                // 512*32bit=2KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 1024; i = i + 1 ) begin
+                    for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
+                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
                         end
                     end
                 end
@@ -349,6 +351,7 @@ module tb();
     // ----------------------------------------------------------------------
     logic uart_tx;  
     logic uart_rx;  
+
     parameter  BAUDRATE = 115200;
 
     assign uart_rx = dut_uart_tx;
@@ -624,7 +627,7 @@ module tb();
                 `ifndef SOPHON_EXT_INST_DATA
                     $fatal("FATAL: External memory is not enabled.");
                 `else
-                    assign tohost = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
+                    assign tohost = U_EXT_MEM.gen_spilt_ram[32].U_BW_SP_RAM.ram_block[0];
                 `endif
             else
                 assign tohost = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
@@ -669,9 +672,10 @@ module tb();
             $display("release cpu\n");
 
         case (tc)
-            "clic_shv"            : `ifdef SOPHON_CLIC clic_shv() `endif;
+            "clic_shv"            : `ifdef SOPHON_CLIC     clic_shv()       `endif;
             "clic_no_shv"         ,
-            "clic_no_shv_snapreg" : `ifdef SOPHON_CLIC clic_no_shv() `endif;
+            "clic_no_shv_snapreg" : `ifdef SOPHON_CLIC     clic_no_shv()    `endif;
+            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO fgpio_uart()     `endif;
             default: ;
         endcase
 
@@ -708,7 +712,6 @@ module tb();
     // ----------------------------------------------------------------------
     //  Dump waveform
     // ----------------------------------------------------------------------
-
     `ifndef VERILATOR
         initial begin
           $fsdbDumpfile("test.fsdb"); 
@@ -721,6 +724,9 @@ module tb();
     `ifdef SOPHON_CLIC
         `include "./tc/clic_shv.sv"
         `include "./tc/clic_no_shv.sv"
+    `endif
+    `ifdef SOPHON_EEI_GPIO
+        `include "./tc/fgpio.sv"
     `endif
 
 endmodule

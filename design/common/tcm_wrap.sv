@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-09 16:42:12
-// Last Modified : 2024-05-29 14:49:24
+// Last Modified : 2024-03-27 14:37:16
 // Description   : TCM wrapper
 // ----------------------------------------------------------------------
 
@@ -34,8 +34,7 @@ module TCM_WRAP
 );
 
     // spilt to several bank
-    //localparam int unsigned BANK_DEPTH       = 512;
-    localparam int unsigned BANK_DEPTH       = 1024;
+    localparam int unsigned BANK_DEPTH       = 512;
     localparam int unsigned BANK_NUM         = DEPTH / BANK_DEPTH;
     localparam int unsigned BANK_ADDR_WIDTH  = $clog2(BANK_NUM); 
     localparam int unsigned SPILT_ADDR_WIDTH = ADDR_WIDTH-BANK_ADDR_WIDTH; 
@@ -66,13 +65,13 @@ module TCM_WRAP
     
             `ifdef ASIC
                 S55NLLGSPH_X64Y8D32_BW u_tcm_ram (
-                    .Q       ( bank_rdata[i]              ) ,
-                    .CLK     ( clk_i                      ) ,
-                    .CEN     ( ~bank_en[i]                ) ,
-                    .WEN     ( ~we_i                      ) ,
-                    .BWEN    ( ~bit_wen                   ) ,
-                    .A       ( addr[SPILT_ADDR_WIDTH-1:2] ) , // in word
-                    .D       ( wdata_i                    ) 
+                    .Q       ( bank_rdata[i] ) ,
+                    .CLK     ( clk_i         ) ,
+                    .CEN     ( ~bank_en[i]   ) ,
+                    .WEN     ( ~we_i         ) ,
+                    .BWEN    ( ~bit_wen      ) ,
+                    .A       ( addr[2+:9]    ) , // in word
+                    .D       ( wdata_i       ) 
                 );
             `else
                 BW_SP_RAM
@@ -84,13 +83,13 @@ module TCM_WRAP
                 )
                 U_BW_SP_RAM
                 (
-                    .clk_i   ( clk_i                      ) ,
-                    .en_i    ( bank_en[i]                 ) ,
-                    .addr_i  ( addr[SPILT_ADDR_WIDTH-1:2] ) , // in DATA_WIDTH
-                    .wdata_i ( wdata_i                    ) ,
-                    .rdata_o ( bank_rdata[i]              ) ,
-                    .we_i    ( we_i                       ) ,
-                    .be_i    ( be_i                       ) 
+                    .clk_i   ( clk_i            ) ,
+                    .en_i    ( bank_en[i]       ) ,
+                    .addr_i  ( addr[2+:9]       ) , // in DATA_WIDTH
+                    .wdata_i ( wdata_i          ) ,
+                    .rdata_o ( bank_rdata[i]    ) ,
+                    .we_i    ( we_i             ) ,
+                    .be_i    ( be_i             ) 
                 );
             `endif
     
@@ -103,25 +102,8 @@ module TCM_WRAP
             rsv_bank_addr <= bank_addr;
     end
 
-    localparam int unsigned RDATA_NUM = BANK_NUM / 4;
-    logic [DATA_WIDTH-1:0]  rdata_sel[RDATA_NUM-1:0];
-    genvar m,n;
-    generate
-    for (m=0; m<RDATA_NUM; m=m+1) begin:gen_rdata_l1
-        always_comb begin
-            case (rsv_bank_addr[1:0])
-                2'b00: rdata_sel[m] = bank_rdata[m*4+0];
-                2'b01: rdata_sel[m] = bank_rdata[m*4+1];
-                2'b10: rdata_sel[m] = bank_rdata[m*4+2];
-                2'b11: rdata_sel[m] = bank_rdata[m*4+3];
-                default: rdata_sel[m] = '0;
-            endcase
-        end
-    end
-    endgenerate
-    assign rdata_o = rdata_sel[rsv_bank_addr[BANK_ADDR_WIDTH-1:2]];
+    assign rdata_o = bank_rdata[rsv_bank_addr];
 
-    //assign rdata_o = bank_rdata[rsv_bank_addr[1:0]];
 
 endmodule
 

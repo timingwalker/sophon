@@ -1,3 +1,3 @@
 `define FPGA
-// `define PROBE
+`define PROBE
 

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2024-05-31 17:17:42
+// Last Modified : 2024-04-07 14:27:58
 // Description   : Demux inst interface    
 // ----------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ module INST_ITF_DEMUX #(
     // demux req by addr
     // -----------------------------------
     always_comb begin
-        if ( (inst_core_addr_i[31:12]>=CH1_NEG_BASE[31:12]) && (inst_core_addr_i[31:12]<=CH1_NEG_END[31:12]) )
+        if ( (inst_core_addr_i>=CH1_NEG_BASE) && (inst_core_addr_i<=CH1_NEG_END) )
             inst_neg_req_o = inst_core_req_i;
         else
             inst_neg_req_o = 1'b0;
@@ -104,18 +104,11 @@ module INST_ITF_DEMUX #(
     always @(posedge clk_neg_i or negedge rst_neg_ni) begin
     	if(~rst_neg_ni) begin
             inst_pos_ack_toneg   <= 1'b0;
-        end
-        else begin
-            inst_pos_ack_toneg   <= inst_pos_ack_i;
-        end
-    end
-
-    always @(posedge clk_i or negedge rst_neg_ni) begin
-    	if(~rst_neg_ni) begin
             inst_pos_data_toneg  <= 32'd0;
             inst_pos_error_toneg <= 1'b0;
         end
-        else if (inst_pos_req_o & inst_pos_ack_i) begin
+        else begin
+            inst_pos_ack_toneg   <= inst_pos_ack_i;
             inst_pos_data_toneg  <= inst_pos_data_i;
             inst_pos_error_toneg <= inst_pos_error_i;
         end
@@ -127,39 +120,20 @@ module INST_ITF_DEMUX #(
     always_comb begin
         if ( inst_core_req_i & ((inst_core_addr_i>=CH2_POS_BASE)&&(inst_core_addr_i<=CH2_POS_END)) ) begin
             inst_core_ack_o   = inst_pos_ack_toneg;
-            //inst_core_data_o  = inst_pos_data_toneg;
-            //inst_core_error_o = inst_pos_error_toneg;
+            inst_core_data_o  = inst_pos_data_toneg;
+            inst_core_error_o = inst_pos_error_toneg;
         end
         else if ( inst_core_req_i & ((inst_core_addr_i>=CH1_NEG_BASE)&&(inst_core_addr_i<=CH1_NEG_END)) ) begin
             inst_core_ack_o   = inst_neg_ack_i;
-            //inst_core_data_o  = inst_neg_data_i;
-            //inst_core_error_o = inst_neg_error_i;
+            inst_core_data_o  = inst_neg_data_i;
+            inst_core_error_o = inst_neg_error_i;
         end
         else if ( inst_core_req_i ) begin
             inst_core_ack_o   = 1'b1;
-            //inst_core_data_o  = 32'd0;
-            //inst_core_error_o = 1'b1;
-        end
-        else begin
-            inst_core_ack_o   = 1'b0;
-            //inst_core_data_o  = 32'b0;
-            //inst_core_error_o = 1'b1;
+            inst_core_data_o  = 32'd0;
+            inst_core_error_o = 1'b1;
         end
     end
-
-    logic inst_neg_ack_topos;
-    always @(posedge clk_i or negedge rst_neg_ni) begin
-    	if(~rst_neg_ni) begin
-            inst_neg_ack_topos   <= 1'b0;
-        end
-        else begin
-            inst_neg_ack_topos   <= inst_neg_ack_i;
-        end
-    end
-
-    assign inst_core_data_o  = inst_neg_ack_topos ? inst_neg_data_i  : inst_pos_data_toneg ;
-    assign inst_core_error_o = inst_neg_ack_topos ? inst_neg_error_i : inst_pos_error_toneg;
-
 
 
 `ifndef VERILATOR

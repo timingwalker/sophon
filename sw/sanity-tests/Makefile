@@ -1,5 +1,5 @@
 
-TC ?= gpio
+TC ?= fgpio
 
 default: all
 

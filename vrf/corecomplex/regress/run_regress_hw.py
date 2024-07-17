@@ -12,7 +12,6 @@ hw_feature_group = ["SOPHON_EXT_ACCESS", \
                     "SOPHON_EXT_DATA", \
                     "SOPHON_EEI", \
                     "SOPHON_CLIC", \
-                    "SOPHON_RVDEBUG", \
                     "SOPHON_EXT_INST SOPHON_EXT_DATA", \
                     "SOPHON_EXT_ACCESS SOPHON_EXT_INST SOPHON_EXT_DATA", \
                     "SOPHON_EEI SOPHON_CLIC",\
@@ -58,8 +57,7 @@ if __name__ == "__main__":
                 file.write('\n')
 
         # call software regress test
-        # os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc benchmarks.tc")
-        os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc")
+        os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc benchmarks.tc")
 
         # check result
         hw_feature_result = "PASS"
