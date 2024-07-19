@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2024-05-31 17:44:59
+// Last Modified : 2024-07-19 19:38:03
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -410,8 +410,11 @@ module SOPHON (
     assign pre_is_sh       = pre_op_is_store && pre_funct3==3'b001 ;
     assign pre_is_sw       = pre_op_is_store && pre_funct3==3'b010 ;
 
-    assign pre_rvi_load    = pre_is_lb|pre_is_lh|pre_is_lw|pre_is_lbu|pre_is_lhu;
-    assign pre_rvi_store   = pre_is_sb|pre_is_sh|pre_is_sw;
+    //assign pre_rvi_load    = pre_is_lb|pre_is_lh|pre_is_lw|pre_is_lbu|pre_is_lhu;
+    //assign pre_rvi_store   = pre_is_sb|pre_is_sh|pre_is_sw;
+    // optimize for timing
+    assign pre_rvi_load    = pre_op_is_load  & ( ~pre_funct3[1] | ~(pre_funct3[0]|pre_funct3[2]) );
+    assign pre_rvi_store   = pre_op_is_store & ( ~pre_funct3[2] & ~(pre_funct3[1]&pre_funct3[0]) );
     assign pre_inst_lsu    = pre_rvi_load|pre_rvi_store;
 
 

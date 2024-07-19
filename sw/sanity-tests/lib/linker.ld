@@ -9,7 +9,9 @@ SECTIONS
 
     . = 0x80090000;
     .tohost : { *(.tohost) }
-    . = ALIGN(0x1000);
+    . = ALIGN(0x100);
+    .rodata : { *(.rodata) }
+    . = ALIGN(0x100);
     /* data segment */
     .data : { *(.data) }
 

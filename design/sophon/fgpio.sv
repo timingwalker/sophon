@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2023-12-27 15:03:32
+// Last Modified : 2024-07-02 14:51:52
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
@@ -47,21 +47,25 @@ module FGPIO (
         gpio_out_val = gpio_out_val_1d;
         fgpio_rd_val = 32'd0;
         fgpio_error  = fgpio_req;
+        // IO.in.raw rs2,rd
         if ( fgpio_req && fgpio_funct7 == 7'b0000000 ) begin
-            gpio_dir     = { {RSV_BIT{1'b0}}, {SOPHON_PKG::FGPIO_NUM{1'b0}} };
-            fgpio_rd_val = { {RSV_BIT{1'b0}}, gpio_in_val};
+            gpio_dir     = gpio_dir_1d & (~fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0]);
+            fgpio_rd_val = gpio_in_val & fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0];
             fgpio_error  = 1'b0;
         end
+        // IO.in.bit rs1,rs2,rd
         else if ( fgpio_req && fgpio_funct7 == 7'b0000001 ) begin
-            gpio_dir     = { {RSV_BIT{1'b0}}, {SOPHON_PKG::FGPIO_NUM{1'b0}} };
-            fgpio_rd_val = { {30{1'b0}}, gpio_in_val[ fgpio_rs1_val[$clog2(SOPHON_PKG::FGPIO_NUM)-1:0] ]};
+            gpio_dir     = gpio_dir_1d & (~(1<<fgpio_rs1_val));
+            fgpio_rd_val = gpio_in_val[ fgpio_rs1_val[$clog2(SOPHON_PKG::FGPIO_NUM)-1:0] ] << fgpio_rs2_val;
             fgpio_error  = 1'b0;
         end
+        // IO.out.raw rs1,rs2,rd
         else if ( fgpio_req && fgpio_funct7 == 7'b1000000 ) begin
-            gpio_dir     = { {RSV_BIT{1'b0}}, {SOPHON_PKG::FGPIO_NUM{1'b1}} };
-            gpio_out_val = fgpio_rs1_val[SOPHON_PKG::FGPIO_NUM-1:0];
+            gpio_dir     = gpio_dir_1d | fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0];
+            gpio_out_val = (gpio_out_val_1d & ~fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0]) | (fgpio_rs1_val[SOPHON_PKG::FGPIO_NUM-1:0] & fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0]);
             fgpio_error  = 1'b0;
         end
+        // IO.out.and rs1,rs2,rd
         else if ( fgpio_req && fgpio_funct7 == 7'b1000001 ) begin
             gpio_dir     = { {RSV_BIT{1'b0}}, {SOPHON_PKG::FGPIO_NUM{1'b1}} };
             gpio_out_val = fgpio_rs1_val[SOPHON_PKG::FGPIO_NUM-1:0] & fgpio_rs2_val[SOPHON_PKG::FGPIO_NUM-1:0];

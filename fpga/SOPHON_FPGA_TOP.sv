@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2024-04-11 17:31:25
+// Last Modified : 2024-07-17 17:30:46
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -26,6 +26,8 @@ module SOPHON_FPGA_TOP(
 
     input  UART_RX,
     output UART_TX,
+
+    inout [SOPHON_PKG::FGPIO_NUM-1:0] GPIO,
 
     input  JTAG_TCK,
     input  JTAG_TMS,
@@ -71,6 +73,26 @@ module SOPHON_FPGA_TOP(
         // assign axi_mst_port_rsp.r_valid  = 1'b0;
     `endif
 
+    `ifdef SOPHON_EEI_GPIO
+        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir;
+        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val;
+        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val;
+
+        genvar t;
+        generate
+            for (t=0; t<SOPHON_PKG::FGPIO_NUM; t=t+1) begin:gen_gpio
+                assign GPIO[t] = gpio_dir[t] ? gpio_out_val[t] : 1'bz;
+                assign gpio_in_val[t] = GPIO[t];
+            end
+        endgenerate
+    `else
+        genvar t;
+        generate
+            for (t=0; t<SOPHON_PKG::FGPIO_NUM; t=t+1) begin:gen_gpio_empty
+                assign GPIO[t] = 1'b0;
+            end
+        endgenerate
+    `endif
 
     CORE_COMPLEX U_CORE_COMPLEX(
          .clk_i              ( clock            ) 
@@ -87,6 +109,11 @@ module SOPHON_FPGA_TOP(
          ,.tdo_oe_o          ( tdo_oe           ) 
          ,.uart_rx_i         ( UART_RX          ) 
          ,.uart_tx_o         ( UART_TX          ) 
+    `ifdef SOPHON_EEI_GPIO
+         ,.gpio_dir_o        ( gpio_dir         ) 
+         ,.gpio_in_val_i     ( gpio_in_val      ) 
+         ,.gpio_out_val_o    ( gpio_out_val     ) 
+    `endif
     `ifdef SOPHON_EXT_ACCESS
         ,.axi_slv_port_req_i ( axi_slv_port_req )
         ,.axi_slv_port_rsp_o ( axi_slv_port_rsp )
@@ -96,7 +123,7 @@ module SOPHON_FPGA_TOP(
         ,.axi_mst_port_rsp_i ( axi_mst_port_rsp )
     `endif
      `ifdef PROBE
-        ,.probe_o            (probe             )
+        ,.probe_o            ( probe            )
      `endif
     );
 
@@ -273,6 +300,8 @@ module SOPHON_FPGA_TOP(
         	.probe8  ( debug_mode       ) ,
         	.probe9  ( is_dret          ) ,
         	.probe10 ( rvi_csr          ) ,
+        	//.probe9  ( gpio_dir[1]      ) ,
+        	//.probe10 ( gpio_out_val[1]  ) ,
         	.probe11 ( csr_wr           ) 
         );
 

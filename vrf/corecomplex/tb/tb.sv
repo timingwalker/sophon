@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-05-31 17:33:53
+// Last Modified : 2024-07-02 10:17:09
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -35,7 +35,7 @@ module tb();
     logic rst_n;
 
     `ifdef VERILATOR
-        assign clk = clk_i;
+        assign clk   = clk_i;
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
@@ -52,7 +52,6 @@ module tb();
     // ----------------------------------------------------------------------
     //  DUT
     // ----------------------------------------------------------------------
-
     logic tck; 
     logic tms; 
     logic trst_n; 
@@ -61,12 +60,16 @@ module tb();
     logic tdo_oe; 
     logic dut_uart_tx;
     logic dut_uart_rx;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val;
+    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val;
 
     CC_ITF_PKG::xbar_slv_port_d64_req_t   axi_slv_port_req;
     CC_ITF_PKG::xbar_slv_port_d64_resps_t axi_slv_port_rsp;
 
     CC_ITF_PKG::xbar_mst_port_d64_req_t   axi_mst_port_req;
     CC_ITF_PKG::xbar_mst_port_d64_resps_t axi_mst_port_rsp;
+
 
     CORE_COMPLEX u_dut
     (
@@ -89,9 +92,9 @@ module tb();
           ,.clic_apb_rsp_i            (                  ) 
           `endif
           `ifdef SOPHON_EEI_GPIO
-          ,.gpio_dir_o                (                  ) 
-          ,.gpio_in_val_i             ( 'b0              ) 
-          ,.gpio_out_val_o            (                  ) 
+          ,.gpio_dir_o                ( gpio_dir         ) 
+          ,.gpio_in_val_i             ( gpio_in_val      ) 
+          ,.gpio_out_val_o            ( gpio_out_val     ) 
           `endif
           ,.tck_i                     ( tck              ) 
           ,.tms_i                     ( tms              ) 
@@ -669,9 +672,10 @@ module tb();
             $display("release cpu\n");
 
         case (tc)
-            "clic_shv"            : `ifdef SOPHON_CLIC clic_shv() `endif;
+            "clic_shv"            : `ifdef SOPHON_CLIC     clic_shv()       `endif;
             "clic_no_shv"         ,
-            "clic_no_shv_snapreg" : `ifdef SOPHON_CLIC clic_no_shv() `endif;
+            "clic_no_shv_snapreg" : `ifdef SOPHON_CLIC     clic_no_shv()    `endif;
+            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO fgpio_uart()     `endif;
             default: ;
         endcase
 
@@ -721,6 +725,9 @@ module tb();
     `ifdef SOPHON_CLIC
         `include "./tc/clic_shv.sv"
         `include "./tc/clic_no_shv.sv"
+    `endif
+    `ifdef SOPHON_EEI_GPIO
+        `include "./tc/fgpio.sv"
     `endif
 
 endmodule
