@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-05-09 16:46:57
+// Last Modified : 2024-07-29 10:55:25
 // Description   : Top module of SOPHON with AXI interfaces
 // ----------------------------------------------------------------------
 
@@ -52,9 +52,9 @@ module SOPHON_AXI_TOP #(
     ,output logic [4:0]                             clic_mnxti_id_o
 `endif
 `ifdef SOPHON_EEI_GPIO
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_dir_o
-    ,input  logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_in_val_i
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_out_val_o
+    ,output logic [`FGPIO_NUM-1:0]                  gpio_dir_o
+    ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
+    ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
 `endif
 `ifdef PROBE
     ,output logic [149:0]                           probe_o

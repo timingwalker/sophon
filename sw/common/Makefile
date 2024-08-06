@@ -18,9 +18,9 @@ OBJ = $(notdir $(COM_OBJC) $(COM_OBJS) $(SW_OBJC) $(SW_OBJS))
 
 
 CC      = riscv64-unknown-elf-gcc
-CFLAGS  = -march=rv32ia -mabi=ilp32 -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns
+CFLAGS  = -march=rv32ia -mabi=ilp32 -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR)
 LDFLAGS = -static -nostdlib -nostartfiles -lm -lgcc
-LINKER  = -T ../../common/link.ld
+LINKER  = ../../common/link.ld
 # CFLAGS  = -march=rv32i -mabi=ilp32 -static -O2 -g -mcmodel=medany -ffunction-sections -fdata-sections \
 # 		  --specs=nano.specs -DMTIME_RATE_HZ_DEF=32768 -DSLEN=512 -DVLEN=512
 # LDFLAGS = -Wl,--gc-sections -Wl,-Map,psv.map -nostartfiles -nostdlib -lm -lc -lgcc
@@ -48,7 +48,7 @@ clean:
 
 %.elf: $(OBJ)
 	cd $(BUILD_DIR) && \
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) $(LINKER) 
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -T $(LINKER) 
 
 %.bin: %.elf
 	cd $(BUILD_DIR) && \

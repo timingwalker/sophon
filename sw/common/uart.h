@@ -2,9 +2,9 @@
 #ifndef _DRIVERS_UART_H
 #define _DRIVERS_UART_H
 #include <stdint.h>
+#include "common.h"
 
 
-#define UART0_BASE     0x6004000
 #ifndef g_console_port 
 #define g_console_port          (void *)UART0_BASE    //adapt the UART Number
 #endif

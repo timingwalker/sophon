@@ -8,6 +8,7 @@
 ../../design/corecomplex/core_complex.sv
 ../../design/corecomplex/crg.sv
 ../../design/corecomplex/apb_syscfg_reg.sv
+../../design/corecomplex/clint.sv
 ../../design/corecomplex/reqrsp_to_mem.sv
 
 ../../design/open-source/axi/src/axi_intf.sv

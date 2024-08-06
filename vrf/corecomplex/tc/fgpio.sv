@@ -50,5 +50,12 @@
     end
     endtask
 
+    task fgpio;
+    begin
+        #1ms;
+        repeat(10)@(posedge clk);
+        irq_mei = 1'b1;
+    end
+    endtask
 
 

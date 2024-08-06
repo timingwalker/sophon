@@ -1,6 +1,6 @@
 .align 6
-.global irq_enter
-irq_enter:
+.global trap_entry
+trap_entry:
     addi sp, sp, -16*4
     sw ra, 0*4(sp)
     sw a0, 1*4(sp)
@@ -49,3 +49,28 @@ service_loop:
     addi sp, sp, 16*4
 
     mret
+
+
+
+
+.align 6
+.global trap_entry_snapreg
+trap_entry_snapreg:
+    # .insn r 0x2b,0,0x0,x1,x30,x0
+    .insn r 0x2b,0,0x0,x0,x1,x30
+
+    csrrsi a0, mnxti, 0x1    # Get highest current interrupt, but disable MIE
+    beqz a0, exit2           # Check if original interrupt vanished.
+service_loop2:             
+    lw a1, (a0)              # Indirect into handler vector table for function pointer.
+    #csrrsi x0, mstatus, 0x0 # Ensure interrupts enabled.
+    jalr a1                  # Call C ABI Routine, a0 has interrupt ID encoded.
+                             # Routine must clear down interrupt in CLIC.
+    csrrsi a0, mnxti, 0x1    # Claim any pending interrupt at level > mcause.pil
+    bnez a0, service_loop2   # Loop to service any interrupt.
+
+    # .insn r 0x2b,0,0x40,x1,x30,x0
+     .insn r 0x2b,0,0x40,x0,x1,x30
+ exit2:   
+    mret
+

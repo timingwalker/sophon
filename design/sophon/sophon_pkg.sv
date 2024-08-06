@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2024-05-20 17:37:59
+// Last Modified : 2024-08-05 14:12:53
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,15 +14,11 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2024-05-20 17:37:59
+// Last Modified : 2024-08-05 14:12:53
 // Description   : 
 // ----------------------------------------------------------------------
 
 package SOPHON_PKG;
-
-        localparam EEI_RS_MAX   = 4;
-        localparam EEI_RD_MAX   = 4;
-        localparam FGPIO_NUM    = 4;
 
     // ----------------------------------------------------------------------
     //  memory map
@@ -34,10 +30,9 @@ package SOPHON_PKG;
     localparam TCM_BASE       = 32'h8000_0000;
     localparam ITCM_OFFSET    = 32'h0000_0000;
     localparam DTCM_OFFSET    = 32'h0009_0000;
-    localparam ITCM_SIZE      = 32'h0001_0000;
-    localparam DTCM_SIZE      = 32'h0001_0000;
-    // localparam ITCM_SIZE      = 32'h0000_8000;
-    // localparam DTCM_SIZE      = 32'h0001_8000;
+    // TCM size should be multiples of 16KB
+    localparam ITCM_SIZE      = 32'h0002_0000;
+    localparam DTCM_SIZE      = 32'h0002_0000;
 
     // Do Not change
     localparam ITCM_BASE      = TCM_BASE+ITCM_OFFSET;
@@ -74,10 +69,6 @@ package SOPHON_PKG;
     localparam EXT_DATA_BASE     = 32'h0000_0000;
     localparam EXT_DATA_END      = 32'h7fff_ffff;
 
-    // Data memory shared inside the CoreComplex
-    // localparam L2RAM_BASE     = 32'd0010_0000;
-    // localparam L2RAM_END      = 32'h0017_ffff;
-
 
     // ----------------------------------------------------------------------
     //  Constant define
@@ -103,12 +94,12 @@ package SOPHON_PKG;
     localparam CSR_MINSTRET     = 12'hb02;
     localparam CSR_MINSTRETH    = 12'hb82;
     // CLIC CSR
-    `ifdef SOPHON_CLIC
-        localparam CSR_MTVT         = 12'h307;
-        localparam CSR_XNXTI        = 12'h345;
-        localparam CSR_MINTSTATUS   = 12'h346;
-        localparam CSR_MINTTHRESH   = 12'h347;
-    `endif
+`ifdef SOPHON_CLIC
+    localparam CSR_MTVT         = 12'h307;
+    localparam CSR_XNXTI        = 12'h345;
+    localparam CSR_MINTSTATUS   = 12'h346;
+    localparam CSR_MINTTHRESH   = 12'h347;
+`endif
     // debug mode CSR
     localparam CSR_DCSR         = 12'h7b0;
     localparam CSR_DPC          = 12'h7b1;

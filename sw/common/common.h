@@ -15,4 +15,12 @@ typedef __u32 u32;
 #define readl	__raw_readl
 
 
+#define UART0_BASE     0x06004000
+
+#define CLINT_BASE     0x06005000
+#define CLINT_MTIME    0x00
+#define CLINT_MTIMECMP 0x04
+#define CLINT_MSIP     0x08
+
+
 #endif 

@@ -13,5 +13,12 @@
 `ifdef SOPHON_EEI
     `define SOPHON_EEI_SREG
     `define SOPHON_EEI_GPIO
+    `define EEI_RS_MAX 32
+    `define EEI_RD_MAX 32
+`endif
+
+// SubSubFeature
+`ifdef SOPHON_EEI_GPIO
+    `define FGPIO_NUM 4
 `endif
                                                             

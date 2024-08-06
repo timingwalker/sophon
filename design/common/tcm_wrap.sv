@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-09 16:42:12
-// Last Modified : 2024-05-29 14:49:24
+// Last Modified : 2024-07-29 14:56:12
 // Description   : TCM wrapper
 // ----------------------------------------------------------------------
 
@@ -34,29 +34,32 @@ module TCM_WRAP
 );
 
     // spilt to several bank
-    //localparam int unsigned BANK_DEPTH       = 512;
-    localparam int unsigned BANK_DEPTH       = 1024;
-    localparam int unsigned BANK_NUM         = DEPTH / BANK_DEPTH;
-    localparam int unsigned BANK_ADDR_WIDTH  = $clog2(BANK_NUM); 
-    localparam int unsigned SPILT_ADDR_WIDTH = ADDR_WIDTH-BANK_ADDR_WIDTH; 
+    localparam int unsigned BANK_DEPTH        = 1024;
+    localparam int unsigned BANK_NUM          = DEPTH / BANK_DEPTH;
+    localparam int unsigned BANK_ADDR_WIDTH   = $clog2(BANK_NUM); 
+    localparam int unsigned COMMON_ADDR_WIDTH = ADDR_WIDTH-BANK_ADDR_WIDTH; 
     
     logic [BANK_ADDR_WIDTH-1:0]             bank_addr;
-    logic [BANK_ADDR_WIDTH-1:0]             rsv_bank_addr;
+    logic [BANK_ADDR_WIDTH-1:0]             bank_addr_q;
     logic [BANK_NUM-1:0]                    bank_en;
     logic [DATA_WIDTH-1:0]                  bank_rdata[BANK_NUM-1:0];
-    logic [SPILT_ADDR_WIDTH-1:0]            addr;
-    logic [DATA_WIDTH-1:0]                  bit_wen;
+    logic [COMMON_ADDR_WIDTH-1:0]           addr_common;
     
-    // addr_i = { bank_addr, addr }
-    assign bank_addr = addr_i[ADDR_WIDTH-1 -: BANK_ADDR_WIDTH]; // select bank ram
-    assign addr      = addr_i[ADDR_WIDTH-BANK_ADDR_WIDTH-1:0 ]; // bank ram addr
+    // addr_i = { bank_addr, addr_common }
+    assign bank_addr   = addr_i[ADDR_WIDTH-1 -: BANK_ADDR_WIDTH]; // select bank ram
+    assign addr_common = addr_i[COMMON_ADDR_WIDTH-1:0 ];          // addr inside bank
 
-    integer j;
-    always_comb begin
-        for(j=0; j<DATA_WIDTH; j=j+1) begin
-            bit_wen[j] = be_i[j/8];
+
+    `ifdef ASIC
+        logic [DATA_WIDTH-1:0] bit_wen;
+        integer j;
+        always_comb begin
+            for(j=0; j<DATA_WIDTH; j=j+1) begin
+                bit_wen[j] = be_i[j/8];
+            end
         end
-    end
+    `endif
+
 
     genvar i;
     generate
@@ -65,32 +68,32 @@ module TCM_WRAP
             assign bank_en[i] = en_i & (bank_addr==BANK_ADDR_WIDTH'(i));
     
             `ifdef ASIC
-                S55NLLGSPH_X64Y8D32_BW u_tcm_ram (
-                    .Q       ( bank_rdata[i]              ) ,
-                    .CLK     ( clk_i                      ) ,
-                    .CEN     ( ~bank_en[i]                ) ,
-                    .WEN     ( ~we_i                      ) ,
-                    .BWEN    ( ~bit_wen                   ) ,
-                    .A       ( addr[SPILT_ADDR_WIDTH-1:2] ) , // in word
-                    .D       ( wdata_i                    ) 
+                S55NLLGSPH_X64Y8D32_BW U_TCM_RAM (
+                    .Q       ( bank_rdata[i]                      ) ,
+                    .CLK     ( clk_i                              ) ,
+                    .CEN     ( ~bank_en[i]                        ) ,
+                    .WEN     ( ~we_i                              ) ,
+                    .BWEN    ( ~bit_wen                           ) ,
+                    .A       ( addr_common[COMMON_ADDR_WIDTH-1:2] ) , // in word
+                    .D       ( wdata_i                            ) 
                 );
             `else
                 BW_SP_RAM
                 #(
-                    // SPILT_ADDR_WIDTH counts in byte, but
-                    // addr of memory counts in DATA_WIDTH
-                    .ADDR_WIDTH ( SPILT_ADDR_WIDTH-2 ), 
+                    // ADDR_WIDTH:  counts in DATA_WIDTH
+                    // addr_common: counts in byte
+                    .ADDR_WIDTH ( $clog2(BANK_DEPTH) ), 
                     .DATA_WIDTH ( DATA_WIDTH         )
                 )
                 U_BW_SP_RAM
                 (
-                    .clk_i   ( clk_i                      ) ,
-                    .en_i    ( bank_en[i]                 ) ,
-                    .addr_i  ( addr[SPILT_ADDR_WIDTH-1:2] ) , // in DATA_WIDTH
-                    .wdata_i ( wdata_i                    ) ,
-                    .rdata_o ( bank_rdata[i]              ) ,
-                    .we_i    ( we_i                       ) ,
-                    .be_i    ( be_i                       ) 
+                    .clk_i   ( clk_i                              ) ,
+                    .en_i    ( bank_en[i]                         ) ,
+                    .addr_i  ( addr_common[COMMON_ADDR_WIDTH-1:2] ) , // in DATA_WIDTH
+                    .wdata_i ( wdata_i                            ) ,
+                    .rdata_o ( bank_rdata[i]                      ) ,
+                    .we_i    ( we_i                               ) ,
+                    .be_i    ( be_i                               ) 
                 );
             `endif
     
@@ -98,30 +101,31 @@ module TCM_WRAP
     endgenerate
 
 
+    // Spilt rdata mux to optimize timing
+    localparam int unsigned RDATA_MUX_NUM = BANK_NUM / 4;
+    logic [DATA_WIDTH-1:0]  rdata_mux[RDATA_MUX_NUM-1:0];
+    genvar m,n;
+
     always_ff @(posedge clk_i) begin
         if ( en_i && ~we_i )
-            rsv_bank_addr <= bank_addr;
+            bank_addr_q <= bank_addr;
     end
 
-    localparam int unsigned RDATA_NUM = BANK_NUM / 4;
-    logic [DATA_WIDTH-1:0]  rdata_sel[RDATA_NUM-1:0];
-    genvar m,n;
     generate
-    for (m=0; m<RDATA_NUM; m=m+1) begin:gen_rdata_l1
+    for (m=0; m<RDATA_MUX_NUM; m=m+1) begin:gen_rdata_l1
         always_comb begin
-            case (rsv_bank_addr[1:0])
-                2'b00: rdata_sel[m] = bank_rdata[m*4+0];
-                2'b01: rdata_sel[m] = bank_rdata[m*4+1];
-                2'b10: rdata_sel[m] = bank_rdata[m*4+2];
-                2'b11: rdata_sel[m] = bank_rdata[m*4+3];
-                default: rdata_sel[m] = '0;
+            case (bank_addr_q[1:0])
+                2'b00  : rdata_mux[m] = bank_rdata[m*4+0];
+                2'b01  : rdata_mux[m] = bank_rdata[m*4+1];
+                2'b10  : rdata_mux[m] = bank_rdata[m*4+2];
+                2'b11  : rdata_mux[m] = bank_rdata[m*4+3];
+                default: rdata_mux[m] = '0;
             endcase
         end
     end
     endgenerate
-    assign rdata_o = rdata_sel[rsv_bank_addr[BANK_ADDR_WIDTH-1:2]];
 
-    //assign rdata_o = bank_rdata[rsv_bank_addr[1:0]];
+    assign rdata_o = rdata_mux[bank_addr_q[BANK_ADDR_WIDTH-1:2]];
 
 endmodule
 

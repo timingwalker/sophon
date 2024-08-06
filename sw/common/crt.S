@@ -12,8 +12,8 @@
 # define REGBYTES 4
 #endif
 
-  .section ".text.init"
-  .globl _start
+.section ".text.init"
+.globl _start
 _start:
   li  x1, 0
   li  x2, 0
@@ -47,9 +47,6 @@ _start:
   li  x30,0
   li  x31,0
 
-  # enable FPU and accelerator if present
-  li t0, MSTATUS_FS | MSTATUS_XS
-  csrs mstatus, t0
 
   # make sure XLEN agrees with compilation choice
   li t0, 1
@@ -65,50 +62,17 @@ _start:
   j 2b
 1:
 
-#ifdef __riscv_flen
-  # initialize FPU if we have one
+
+  # set mtvt of CLIC mode
   la t0, 1f
   csrw mtvec, t0
-
-  fssr    x0
-  fmv.s.x f0, x0
-  fmv.s.x f1, x0
-  fmv.s.x f2, x0
-  fmv.s.x f3, x0
-  fmv.s.x f4, x0
-  fmv.s.x f5, x0
-  fmv.s.x f6, x0
-  fmv.s.x f7, x0
-  fmv.s.x f8, x0
-  fmv.s.x f9, x0
-  fmv.s.x f10,x0
-  fmv.s.x f11,x0
-  fmv.s.x f12,x0
-  fmv.s.x f13,x0
-  fmv.s.x f14,x0
-  fmv.s.x f15,x0
-  fmv.s.x f16,x0
-  fmv.s.x f17,x0
-  fmv.s.x f18,x0
-  fmv.s.x f19,x0
-  fmv.s.x f20,x0
-  fmv.s.x f21,x0
-  fmv.s.x f22,x0
-  fmv.s.x f23,x0
-  fmv.s.x f24,x0
-  fmv.s.x f25,x0
-  fmv.s.x f26,x0
-  fmv.s.x f27,x0
-  fmv.s.x f28,x0
-  fmv.s.x f29,x0
-  fmv.s.x f30,x0
-  fmv.s.x f31,x0
+  la t0, vector_table
+  csrw mtvt, t0
 1:
-#endif
-
   # initialize trap vector
   la t0, trap_entry
   csrw mtvec, t0
+
 
   # initialize global pointer
 .option push
@@ -116,15 +80,16 @@ _start:
   la gp, __global_pointer$
 .option pop
 
+
   la  tp, _end + 63
   and tp, tp, -64
+
 
   # get core id
   csrr a0, mhartid
   # for now, assume only 1 core
   li a1, 1
 1:bgeu a0, a1, 1b
-
   // Modify(hz) 11/01/24 11:02:03
   # give each core 16KB of stack + TLS
 #define STKSHIFT 14
@@ -134,9 +99,12 @@ _start:
   sll a2, a0, STKSHIFT
   add tp, tp, a2
 
+    
   j _init
 
-  .align 2
+
+.align 6
+.weak trap_entry
 trap_entry:
   addi sp, sp, -272
 
@@ -216,6 +184,34 @@ trap_entry:
 
   addi sp, sp, 272
   mret
+
+
+// int16 is used in CLIC non-shv test
+// int17 is used in CLIC shv test
+.align 6
+.weak int16_handle
+int16_handle:
+1:
+    j 1b
+.align 6
+.weak int17_handle
+int17_handle:
+1:
+    j 1b
+
+.global __dummy
+__dummy:
+    j __dummy
+
+.section .data
+.align 6
+vector_table:
+    .rept 16
+    .long __dummy
+    .endr
+    .long int16_handle
+    .long int17_handle
+
 
 .section ".tohost","aw",@progbits
 .align 6
