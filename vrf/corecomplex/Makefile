@@ -1,27 +1,28 @@
 
-MEM_MODE := EXT
+MEM_MODE := TCM
 
 # TC_TYPE := isa
 # TC := rv32ui-p-addi
 # #TC := rv32ui-p-sw
 
- TC_TYPE := benchmarks
- TC := dhrystone
+# TC_TYPE := benchmarks
+# TC := dhrystone
 # TC := mm
 # TC := memcpy
 # TC := multiply
 # # TC := rsort
 # # # TC := towers
 
-# TC_TYPE := sanity-tests
+ TC_TYPE := sanity-tests
+# TC := exception
 # TC := clint
-# TC := ext_access
+ TC := ext_access
 # TC := clic
 # TC := fgpio
 
- #TC_TYPE := app
- #TC := fgpio_uart
- #TC := freertos
+# TC_TYPE := app
+# #TC := fgpio_uart
+# TC := freertos
 
 
 TC_DIR := ../../sw/build
@@ -44,7 +45,7 @@ ifeq ($(MEM_MODE), EXT)
 	else ifeq ($(TC_TYPE), sanity-tests)
 		LDS_FILE := ../../../common/link_ext_mem.ld
 	else ifeq ($(TC_TYPE), app)
-		LDS_FILE := TODO
+		LDS_FILE := ../../common/link_ext_mem.ld
 	endif
 endif
 

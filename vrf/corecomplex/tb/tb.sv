@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-08-05 17:08:07
+// Last Modified : 2024-08-09 11:02:35
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -636,7 +636,7 @@ module tb();
 
         case (tc_type)
             "benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
-            default      : begin $display("TIMEOUTE=5ms\n"  );  #5ms   ; end
+            default      : begin $display("TIMEOUTE=3ms\n"  );  #3ms   ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");
 

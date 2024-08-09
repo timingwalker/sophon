@@ -11,13 +11,15 @@ SANITY_SRC_DIR := ./sanity-tests
 CM_SRC_DIR     := ./coremark
 
 ifdef LDS_FILE
-	RV_LDS_FILE := $(LDS_FILE)
-	BM_LDS_FILE := $(LDS_FILE)
-	SA_LDS_FILE := $(LDS_FILE)
+	RV_LDS_FILE  := $(LDS_FILE)
+	BM_LDS_FILE  := $(LDS_FILE)
+	SA_LDS_FILE  := $(LDS_FILE)
+	APP_LDS_FILE := $(LDS_FILE)
 else
-	RV_LDS_FILE := ./../env/p/link.ld
-	BM_LDS_FILE := ./common/link.ld
-	SA_LDS_FILE := ../../../common/link.ld
+	RV_LDS_FILE  := ./../env/p/link.ld
+	BM_LDS_FILE  := ./common/link.ld
+	SA_LDS_FILE  := ../../../common/link.ld
+	APP_LDS_FILE := ../../common/link.ld
 endif
 
 
@@ -27,7 +29,7 @@ fgpio_uart:
 
 freertos:
 	cd freertos &&\
-	make
+	make LINKER=$(APP_LDS_FILE)
 
 sanity-tests : clean_sanity-tests
 	mkdir -p build/sanity-tests/
@@ -35,6 +37,7 @@ sanity-tests : clean_sanity-tests
 	$(MAKE) -C sanity-tests/ext_access 			LINKER=$(SA_LDS_FILE)
 	$(MAKE) -C sanity-tests/fgpio      			LINKER=$(SA_LDS_FILE)
 	$(MAKE) -C sanity-tests/clic          		LINKER=$(SA_LDS_FILE)
+	$(MAKE) -C sanity-tests/exception     		LINKER=$(SA_LDS_FILE)
 
 rv32ui:
 	mkdir -p build/isa/

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2024-08-02 17:32:57
+// Last Modified : 2024-08-09 10:53:29
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -122,6 +122,7 @@ module SOPHON (
 
     logic        ex_inst_access, ex_illg_instr, ex_load_store,
                  ex_transfer, ex_csr_addr;
+    logic        ex_inst_access_pre;
     logic        mei_en_pending, mti_en_pending, msi_en_pending;
     logic        ex_vld, irq_vld, irq_ex_vld, clint_irq_vld;
     logic        irq_pending;
@@ -216,8 +217,8 @@ module SOPHON (
     assign npc_sel_clint_direct = clint_irq_vld && (mtvec[1:0]==2'd0);
     assign npc_sel_clint_vector = clint_irq_vld && (mtvec[1:0]==2'd1);
 
-    assign npc_sel_jump         = rvi_jump;
-    assign npc_sel_branch_taken = branch_taken;
+    assign npc_sel_jump         = rvi_jump     & ~ex_inst_access;
+    assign npc_sel_branch_taken = branch_taken & ~ex_inst_access;
 
 
 `ifdef SOPHON_RVDEBUG
@@ -328,7 +329,7 @@ module SOPHON (
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if ( ~rst_ni ) 
             pc <= 32'd0;
-        else if ( if_vld ) 
+        else if ( if_vld & ~inst_error_i ) 
             pc <= npc;
     end
 
@@ -429,8 +430,10 @@ module SOPHON (
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if (~rst_ni)
             inst_data_1d_vld <= 1'b0;
-        else if (if_vld & ~irq_pending)
+        else if (if_vld & ~inst_error_i & ~irq_pending)
             inst_data_1d_vld <= 1'b1;
+        else if (if_vld & inst_error_i)
+            inst_data_1d_vld <= 1'b0;
         // clear when the current instruction is retired
         // and the next one is not fetched
         else if (retire_vld)
@@ -708,7 +711,7 @@ module SOPHON (
     // mtval record transfer target when exception occurs
     assign transfer_target = rvi_jump ? jump_target : branch_target;
 
-    assign wb_jump = rvi_jump;
+    assign wb_jump = rvi_jump & ~ (ex_inst_access_pre|ex_inst_access);
 
 
     // ----------------------------------------------------------------------
@@ -968,10 +971,12 @@ module SOPHON (
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             load_addr_misalign <= 1'b0;
-        else if (pre_is_lw & if_vld_pos)
+        else if (pre_is_lw & if_vld)
             load_addr_misalign <= |lsu_addr_o[1:0] ;
-        else if ((pre_is_lh|pre_is_lhu) & if_vld_pos )
+        else if ((pre_is_lh|pre_is_lhu) & if_vld)
             load_addr_misalign <= lsu_addr_o[0] ;
+        else if (if_vld)
+            load_addr_misalign <= 1'b0;
     end
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
@@ -980,6 +985,8 @@ module SOPHON (
             store_addr_misalign <= |lsu_addr_o[1:0] ;
         else if (pre_is_sh & if_vld_pos)
             store_addr_misalign <= lsu_addr_o[0] ;
+        else if (if_vld)
+            store_addr_misalign <= 1'b0;
     end
 
     // ------------------------------------------------
@@ -993,8 +1000,23 @@ module SOPHON (
             lsu_error <= lsu_error_i;
         end
     end
-    assign load_access_fault  = lsu_valid & lsu_error & (post_rvi_load `ifdef SOPHON_CLIC  | clic_npc_load `endif);
-    assign store_access_fault = lsu_valid & lsu_error & post_rvi_store ;
+
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            load_access_fault  <= 1'b0;
+            store_access_fault <= 1'b0;
+        end
+        else if ( lsu_req_o & lsu_ack_i & lsu_error_i ) begin
+            load_access_fault  <= post_rvi_load `ifdef SOPHON_CLIC  | clic_npc_load `endif ;
+            store_access_fault <= post_rvi_store ;
+        end
+        else if (if_vld) begin
+            load_access_fault  <= 1'b0;
+            store_access_fault <= 1'b0;
+        end
+    end
+    // assign load_access_fault  = lsu_valid & lsu_error & (post_rvi_load `ifdef SOPHON_CLIC  | clic_npc_load `endif);
+    // assign store_access_fault = lsu_valid & lsu_error & post_rvi_store ;
 
 
     // ----------------------------------------------------------------------
@@ -1818,6 +1840,8 @@ module SOPHON (
         else if (if_vld)
             ex_inst_access <= inst_error_i;
     end
+
+    assign ex_inst_access_pre = if_vld & inst_error_i & (npc_sel_jump | npc_sel_branch_taken);
 
     // exception: transfer target addr misaligned 
     assign ex_transfer =   ( jump_target[1]   & rvi_jump     )
