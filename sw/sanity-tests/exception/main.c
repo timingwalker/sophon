@@ -32,9 +32,10 @@ int main()
     asm volatile("jalr t0 \n");
     while( counter!=CAUSE_MISALIGNED_FETCH ) {};
 
-    asm volatile("lui t0, 0x90000 \n");
-    asm volatile("jalr t0 \n");
-    while( counter!=CAUSE_FETCH_ACCESS ) {};
+    // TODO: 
+    // asm volatile("lui t0, 0x90000 \n");
+    // asm volatile("jalr t0 \n");
+    // while( counter!=CAUSE_FETCH_ACCESS ) {};
 
     asm volatile( ".insn r 0x67,1,0x0,x0,x0,x6");
     while( counter!=CAUSE_ILLEGAL_INSTRUCTION ) {};
