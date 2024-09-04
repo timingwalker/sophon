@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-10 11:37:09
-// Last Modified : 2024-03-20 01:59:12
+// Last Modified : 2024-05-09 17:08:36
 // Description   : CoreComplex interface define
 // ----------------------------------------------------------------------
 
@@ -89,6 +89,13 @@ package CC_ITF_PKG;
   `AXI_TYPEDEF_REQ_T(axi_mst_side_d32_req_t, xbar_mst_port_aw_t, axi_w_32b_t, xbar_mst_port_ar_t)
   `AXI_TYPEDEF_RESP_T(axi_mst_side_d32_resps_t, xbar_mst_port_b_t, axi_r_32b_t)
 
+  // ----------------------------------------------------------------------
+  //  XBAR Slave side interface: 32b data width + slave port id
+  // ----------------------------------------------------------------------
+  `AXI_TYPEDEF_R_CHAN_T(axi_slv_side_r_32b_t, axi_data_32b_t, xbat_slv_port_id_t, xbar_user_t)
+
+  `AXI_TYPEDEF_REQ_T (axi_slv_side_d32_req_t, xbar_slv_port_aw_t, axi_w_32b_t, xbar_slv_port_ar_t)
+  `AXI_TYPEDEF_RESP_T(axi_slv_side_d32_resps_t, xbar_slv_port_b_t, axi_slv_side_r_32b_t)
 
   // ----------------------------------------------------------------------
   //  XBAR Master side AXI LITE interface: 32b data width + master port id

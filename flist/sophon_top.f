@@ -17,3 +17,4 @@
 ../../design/common/rst_sync.sv
 ../../design/common/tcm_wrap.sv
 
+-f ../../flist/memory_rtl.f
