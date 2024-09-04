@@ -22,13 +22,16 @@ else
 	APP_LDS_FILE := ../../common/link.ld
 endif
 
-
-fgpio_uart:
+# ------------------------------------------------
+#  target
+# ------------------------------------------------
+fgpio_uart: clean_fgpio_uart
 	cd fgpio_uart &&\
 	make
 
-freertos:
-	cd freertos &&\
+FreeRTOS: clean_FreeRTOS
+	cd FreeRTOS &&\
+	make init &&\
 	make LINKER=$(APP_LDS_FILE)
 
 sanity-tests : clean_sanity-tests
@@ -49,6 +52,8 @@ rv32si:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=$(RV_LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
 
+isa:rv32ui rv32si
+
 benchmarks:
 	mkdir -p build/benchmarks/
 	$(MAKE) -C $(BMARKS_SRC_DIR) all lds_dir=$(BM_LDS_FILE)
@@ -62,10 +67,11 @@ coremark:
 	riscv64-unknown-elf-objcopy -O verilog build/coremark/coremark.riscv build/coremark/coremark.hex
 	sed -i 's/@800/@000/g' build/coremark/coremark.hex
 
-isa:rv32ui rv32si
 
-
-clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_fgpio_uart clean_freertos
+# ------------------------------------------------
+#  clean
+# ------------------------------------------------
+clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_fgpio_uart clean_FreeRTOS
 
 clean_coremark:
 	[ ! -d build/coremark ]     || rm -rf ./build/coremark
@@ -73,8 +79,8 @@ clean_coremark:
 clean_fgpio_uart:
 	[ ! -d build/fgpio_uart ]     || rm -rf ./build/fgpio_uart
 
-clean_freertos:
-	[ ! -d build/freertos ]     || rm -rf ./build/freertos
+clean_FreeRTOS:
+	[ ! -d build/FreeRTOS ]     || rm -rf ./build/FreeRTOS
 
 clean_benchmarks:
 	[ ! -d build/benchmarks ]     || $(MAKE) -C $(BMARKS_SRC_DIR)  clean ; rm -rf ./build/benchmarks

@@ -7,7 +7,7 @@ BUILD_DIR = ../build/$(NAME)
 
 COM_SRC = $(wildcard $(COM_DIR)/*.c)
 COM_ASM = $(wildcard $(COM_DIR)/*.S)
-SW_SRC  = $(wildcard $(SW_DIR)/*.c)
+SW_SRC  ?= $(wildcard $(SW_DIR)/*.c)
 SW_ASM  = $(wildcard $(SW_DIR)/*.s)
 
 COM_OBJC = $(COM_SRC:.c=.com.c.o)
@@ -66,3 +66,5 @@ clean:
  
 all: $(NAME).hex $(NAME).dump $(NAME).bin $(NAME).elf 
 
+debug:
+	echo $(OBJ)

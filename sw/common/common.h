@@ -22,5 +22,4 @@ typedef __u32 u32;
 #define CLINT_MTIMECMP 0x04
 #define CLINT_MSIP     0x08
 
-
 #endif 

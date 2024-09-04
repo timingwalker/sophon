@@ -13,16 +13,16 @@ MEM_MODE := TCM
 # # TC := rsort
 # # # TC := towers
 
- TC_TYPE := sanity-tests
+# TC_TYPE := sanity-tests
 # TC := exception
 # TC := clint
- TC := ext_access
+# TC := ext_access
 # TC := clic
 # TC := fgpio
 
-# TC_TYPE := app
+ TC_TYPE := app
 # #TC := fgpio_uart
-# TC := freertos
+ TC := FreeRTOS
 
 
 TC_DIR := ../../sw/build

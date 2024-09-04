@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-08-09 11:02:35
+// Last Modified : 2024-08-30 09:44:12
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -252,6 +252,10 @@ module tb();
     integer i, by;
         
     initial begin
+        // initial memory to zero
+        for ( i = 0; i < 32'h000a_0000; i = i + 1 ) begin
+            cc0_ram[i]=0;
+        end
         if ( $value$plusargs("TC_HEX=%s",tc_hex ) ) begin
             $display("TC_HEX=%s\n",  tc_hex);
             $readmemh(tc_hex, cc0_ram);   
@@ -469,10 +473,10 @@ module tb();
     // ----------------------------------------------------------------------
     //  TESE START
     // ----------------------------------------------------------------------
+    reg [8*20:0]  tc;
 
     initial begin
 
-        reg [8*20:0]  tc;
         logic flag_release_cpu;
 
         $value$plusargs("TC=%s",tc);
@@ -557,26 +561,25 @@ module tb();
     `ifndef VERILATOR
 
         initial begin
-            wait ( is_ecall );
-
-            //if ( gp == 32'd1 ) begin
-            if ( tohost == 32'd1 ) begin
-                $display($realtime, ": Core %0s success\n",  tc_hex);
-            end
-            else begin
-                $display($realtime, ": Core %0s FAIL\n",  tc_hex);
-                fail = 1;
-            end
-
-            if (fail)
-                $display($realtime, ": Testcase FAIL!!\n\n");
-            else 
-                $display($realtime, ": Testcase PASS!!\n\n");
-
+            if ( tc!="FreeRTOS" ) begin
+                wait ( is_ecall );
+                //if ( gp == 32'd1 ) begin
+                if ( tohost == 32'd1 ) begin
+                    $display($realtime, ": Core %0s success\n",  tc_hex);
+                end
+                else begin
+                    $display($realtime, ": Core %0s FAIL\n",  tc_hex);
+                    fail = 1;
+                end
+                if (fail)
+                    $display($realtime, ": Testcase FAIL!!\n\n");
+                else 
+                    $display($realtime, ": Testcase PASS!!\n\n");
             `ifndef DBG_ENABLE        
                 repeat(100)@(posedge clk);
                 $finish;
             `endif
+            end
         end
 
     `else
@@ -636,6 +639,7 @@ module tb();
 
         case (tc_type)
             "benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            "app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
             default      : begin $display("TIMEOUTE=3ms\n"  );  #3ms   ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");

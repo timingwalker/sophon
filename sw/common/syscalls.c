@@ -78,8 +78,10 @@ void abort()
 
 void printstr(const char* s)
 {
-  // Modify(hz) 07/06/23 17:00:28
+
   // syscall(SYS_write, 1, (uintptr_t)s, strlen(s));
+  
+  // Modify(hz) 07/06/23 17:00:28
     while (*s) 
     {		
         if (*s == '\n') 
@@ -147,24 +149,27 @@ void _init(int cid, int nc)
   // if (pbuf != buf)
   //   printstr(buf);
 
-
-
   exit(ret);
 }
 
 #undef putchar
 int putchar(int ch)
 {
-  static __thread char buf[64] __attribute__((aligned(64)));
-  static __thread int buflen = 0;
 
-  buf[buflen++] = ch;
+  // static __thread char buf[64] __attribute__((aligned(64)));
+  // static __thread int buflen = 0;
 
-  if (ch == '\n' || buflen == sizeof(buf))
-  {
-    syscall(SYS_write, 1, (uintptr_t)buf, buflen);
-    buflen = 0;
-  }
+  // buf[buflen++] = ch;
+
+  // if (ch == '\n' || buflen == sizeof(buf))
+  // {
+  //   syscall(SYS_write, 1, (uintptr_t)buf, buflen);
+  //   buflen = 0;
+  // }
+
+  // Modify(hz) 30/08/24 10:56:27
+  tohost=ch;
+  uart_putc(g_console_port, ch);
 
   return 0;
 }
