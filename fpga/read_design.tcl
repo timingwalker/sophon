@@ -39,6 +39,7 @@ read_verilog -sv ../design/corecomplex/axi_interconnect.sv
 read_verilog -sv ../design/corecomplex/core_complex.sv
 read_verilog -sv ../design/corecomplex/crg.sv
 read_verilog -sv ../design/corecomplex/apb_syscfg_reg.sv
+read_verilog -sv ../design/corecomplex/clint.sv
 read_verilog -sv ../design/corecomplex/reqrsp_to_mem.sv
 read_verilog -sv ../design/open-source/reqrsp_interface/src/axi_to_reqrsp.sv
 read_verilog -sv ../design/open-source/axi/src/axi_xbar.sv

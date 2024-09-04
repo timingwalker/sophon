@@ -1,35 +1,46 @@
 
-RISCV_PREFIX ?= riscv64-unknown-elf
+RISCV_PREFIX   ?= riscv64-unknown-elf
 
-RISCV_GCC     := $(RISCV_PREFIX)-gcc
-RISCV_OBJDUMP := $(RISCV_PREFIX)-objdump
-RISCV_OBJCOPY := $(RISCV_PREFIX)-objcopy
+RISCV_GCC      := $(RISCV_PREFIX)-gcc
+RISCV_OBJDUMP  := $(RISCV_PREFIX)-objdump
+RISCV_OBJCOPY  := $(RISCV_PREFIX)-objcopy
 
 ISA_SRC_DIR    := ../vrf/riscv-tests/isa
 BMARKS_SRC_DIR := ../vrf/riscv-tests/benchmarks
-PCL_SRC_DIR := ./sanity-tests
-CM_SRC_DIR := ./coremark
-
+SANITY_SRC_DIR := ./sanity-tests
+CM_SRC_DIR     := ./coremark
 
 ifdef LDS_FILE
-	RV_LDS_FILE := $(LDS_FILE)
-	BM_LDS_FILE := $(LDS_FILE)
+	RV_LDS_FILE  := $(LDS_FILE)
+	BM_LDS_FILE  := $(LDS_FILE)
+	SA_LDS_FILE  := $(LDS_FILE)
+	APP_LDS_FILE := $(LDS_FILE)
 else
-	RV_LDS_FILE := ./../env/p/link.ld
-	BM_LDS_FILE := ./common/link.ld
+	RV_LDS_FILE  := ./../env/p/link.ld
+	BM_LDS_FILE  := ./common/link.ld
+	SA_LDS_FILE  := ../../../common/link.ld
+	APP_LDS_FILE := ../../common/link.ld
 endif
 
-fgpio_uart:
+# ------------------------------------------------
+#  target
+# ------------------------------------------------
+fgpio_uart: clean_fgpio_uart
 	cd fgpio_uart &&\
 	make
 
+FreeRTOS: clean_FreeRTOS
+	cd FreeRTOS &&\
+	make init &&\
+	make LINKER=$(APP_LDS_FILE)
+
 sanity-tests : clean_sanity-tests
 	mkdir -p build/sanity-tests/
-	$(MAKE) -C $(PCL_SRC_DIR) TC=fgpio
-	$(MAKE) -C $(PCL_SRC_DIR) TC=clic_shv
-	$(MAKE) -C $(PCL_SRC_DIR) TC=clic_no_shv
-	$(MAKE) -C $(PCL_SRC_DIR) TC=clic_no_shv_snapreg
-	mv $(PCL_SRC_DIR)/build/* build/sanity-tests
+	$(MAKE) -C sanity-tests/clint         		LINKER=$(SA_LDS_FILE)
+	$(MAKE) -C sanity-tests/ext_access 			LINKER=$(SA_LDS_FILE)
+	$(MAKE) -C sanity-tests/fgpio      			LINKER=$(SA_LDS_FILE)
+	$(MAKE) -C sanity-tests/clic          		LINKER=$(SA_LDS_FILE)
+	$(MAKE) -C sanity-tests/exception     		LINKER=$(SA_LDS_FILE)
 
 rv32ui:
 	mkdir -p build/isa/
@@ -41,6 +52,7 @@ rv32si:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=$(RV_LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
 
+isa:rv32ui rv32si
 
 benchmarks:
 	mkdir -p build/benchmarks/
@@ -56,18 +68,19 @@ coremark:
 	sed -i 's/@800/@000/g' build/coremark/coremark.hex
 
 
-
-
-isa:rv32ui rv32si
-
-
-clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_fgpio_uart
+# ------------------------------------------------
+#  clean
+# ------------------------------------------------
+clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_fgpio_uart clean_FreeRTOS
 
 clean_coremark:
 	[ ! -d build/coremark ]     || rm -rf ./build/coremark
 
 clean_fgpio_uart:
 	[ ! -d build/fgpio_uart ]     || rm -rf ./build/fgpio_uart
+
+clean_FreeRTOS:
+	[ ! -d build/FreeRTOS ]     || rm -rf ./build/FreeRTOS
 
 clean_benchmarks:
 	[ ! -d build/benchmarks ]     || $(MAKE) -C $(BMARKS_SRC_DIR)  clean ; rm -rf ./build/benchmarks
@@ -76,7 +89,7 @@ clean_isa:
 	[ ! -d build/isa ]    || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa
 
 clean_sanity-tests:
-	[ ! -d build/sanity-tests ]     || $(MAKE) -C $(PCL_SRC_DIR)  clean ; rm -rf ./build/sanity-tests
+	[ ! -d build/sanity-tests ]     || rm -rf ./build/sanity-tests
 
 subfold=$(shell find * -maxdepth 0 -type d)
 .PHONY: $(subfold)

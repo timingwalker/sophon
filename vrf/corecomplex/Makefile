@@ -1,44 +1,51 @@
 
 MEM_MODE := TCM
 
-TC_TYPE := isa
-#TC := rv32ui-p-addi
-TC := rv32ui-p-sw
+# TC_TYPE := isa
+# TC := rv32ui-p-addi
+# #TC := rv32ui-p-sw
 
 # TC_TYPE := benchmarks
-# # TC := towers
+# TC := dhrystone
+# TC := mm
+# TC := memcpy
 # TC := multiply
+# # TC := rsort
+# # # TC := towers
 
 # TC_TYPE := sanity-tests
-# TC := clic_shv
-# # TC := fgpio
-# # TC := clic_no_shv
-# # TC := clic_no_shv_snapreg
+# TC := exception
+# TC := clint
+# TC := ext_access
+# TC := clic
+# TC := fgpio
 
-# TC_TYPE := app
-# TC := fgpio_uart
+ TC_TYPE := app
+# #TC := fgpio_uart
+ TC := FreeRTOS
 
 
 TC_DIR := ../../sw/build
-ifeq ($(TC_TYPE), sanity-tests)
+ifeq ($(TC_TYPE), app)
+	TC_HEX := $(TC_DIR)/$(TC)/$(TC).hex
+else ifeq ($(TC_TYPE), sanity-tests)
 	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC)/$(TC).hex
-else ifeq ($(TC_TYPE), isa)
-	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC).hex
 else ifeq ($(TC_TYPE), benchmarks)
 	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC).riscv.hex
-else ifeq ($(TC_TYPE), app)
-	TC_HEX := $(TC_DIR)/$(TC)/$(TC).hex
+else 
+	TC_HEX := $(TC_DIR)/$(TC_TYPE)/$(TC).hex
 endif
 
 # isa/benchmarks can use external memory if it is enabled
-ifeq ($(TC_TYPE), isa)
-	ifeq ($(MEM_MODE), EXT)
+ifeq ($(MEM_MODE), EXT)
+	ifeq ($(TC_TYPE), isa)
 		LDS_FILE := ./../env/p/link_ext_mem.ld
-	endif
-endif
-ifeq ($(TC_TYPE), benchmarks)
-	ifeq ($(MEM_MODE), EXT)
+	else ifeq ($(TC_TYPE), benchmarks)
 		LDS_FILE := ./common/link_ext_mem.ld
+	else ifeq ($(TC_TYPE), sanity-tests)
+		LDS_FILE := ../../../common/link_ext_mem.ld
+	else ifeq ($(TC_TYPE), app)
+		LDS_FILE := ../../common/link_ext_mem.ld
 	endif
 endif
 

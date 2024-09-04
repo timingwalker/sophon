@@ -5,20 +5,31 @@
 
 void uart_init()
 {
+    volatile uint32_t clock;
+    volatile uint32_t baudrate;
+    volatile uint32_t value;
+
+    clock    = 40000000; // 40M
+    baudrate = 115200; 
+
     // set LCR.DALB=1 to config DLL/DLM
     writel(_REG32(g_console_port, UART_REG_LCR) | 0x80 , g_console_port + UART_REG_LCR);
 
     // // clock=100M, set baudrate=115200
     // _REG32(g_console_port, UART_REG_DLL) = 868;
     // _REG32(g_console_port, UART_REG_DLM) = 868>>8;
-
     // // clock=20M, set baudrate=115200
     // _REG32(g_console_port, UART_REG_DLL) = 174;
     // _REG32(g_console_port, UART_REG_DLM) = 174>>8;
-
-    // clock=25M, set baudrate=115200
-    _REG32(g_console_port, UART_REG_DLL) = 216;
-    _REG32(g_console_port, UART_REG_DLM) = 216>>8;
+    // // clock=25M, set baudrate=115200
+    // _REG32(g_console_port, UART_REG_DLL) = 216;
+    // _REG32(g_console_port, UART_REG_DLM) = 216>>8;
+    //// clock=50M, set baudrate=115200
+    //_REG32(g_console_port, UART_REG_DLL) = 434;
+    //_REG32(g_console_port, UART_REG_DLM) = 434>>8;
+    value = clock / baudrate;
+    _REG32(g_console_port, UART_REG_DLL) = value;
+    _REG32(g_console_port, UART_REG_DLM) = value>>8;
 
     // set LCR: 8bit data, 1 bit stop, no parity, DLAB=0
     writel(0xFFFFFF03 , g_console_port + UART_REG_LCR);

@@ -7,7 +7,7 @@
 
     uart_bus
     #(
-        .BAUD_RATE ( 2000000 ) ,
+        .BAUD_RATE ( 4166667 ) , // 50M/12
         .PARITY_EN ( 0       ) 
     )
     u_fgpio_uart_bus
@@ -50,5 +50,12 @@
     end
     endtask
 
+    task fgpio;
+    begin
+        #1ms;
+        repeat(10)@(posedge clk);
+        irq_mei = 1'b1;
+    end
+    endtask
 
 

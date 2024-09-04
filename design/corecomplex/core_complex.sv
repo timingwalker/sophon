@@ -14,8 +14,14 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2024-04-18 16:41:22
-// Description   : 
+// Last Modified : 2024-08-05 15:18:01
+// Description   : Core Complex
+//                  - Sophon
+//                  - AXI INTERCONNECT
+//                  - CRG
+//                  - Debug Module
+//                  - System register
+//                  - UART
 // ----------------------------------------------------------------------
 
 module CORE_COMPLEX(
@@ -23,8 +29,6 @@ module CORE_COMPLEX(
     ,input logic                                    rst_ni
     ,input logic [31:0]                             hart_id_i
     ,input logic                                    irq_mei_i 
-    ,input logic                                    irq_mti_i 
-    ,input logic                                    irq_msi_i 
 `ifdef SOPHON_CLIC
     ,input  logic                                   clic_irq_req_i      
     ,input  logic                                   clic_irq_shv_i      
@@ -38,9 +42,9 @@ module CORE_COMPLEX(
     ,input  CC_ITF_PKG::apb_d32_resps_t             clic_apb_rsp_i
 `endif
 `ifdef SOPHON_EEI_GPIO
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_dir_o
-    ,input  logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_in_val_i
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0]       gpio_out_val_o
+    ,output logic [`FGPIO_NUM-1:0]                  gpio_dir_o
+    ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
+    ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
 `endif
     ,input                                          tck_i
     ,input                                          tms_i
@@ -71,6 +75,8 @@ module CORE_COMPLEX(
     logic         debug_req;
     logic         clk_neg;
     logic         rstn_core_sync;
+    logic         irq_mti;
+    logic         irq_msi;
 
     // ----------------------------------------------------------------------
     //  Clock Reset Generator
@@ -92,8 +98,8 @@ module CORE_COMPLEX(
     CC_ITF_PKG::xbar_slv_port_d64_resps_t [2:0] xbar_slv_port_rsp;
     CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req;
     CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp;
-    CC_ITF_PKG::apb_d32_req_t             [2:0] apb_req;
-    CC_ITF_PKG::apb_d32_resps_t           [2:0] apb_resp;
+    CC_ITF_PKG::apb_d32_req_t             [3:0] apb_req;
+    CC_ITF_PKG::apb_d32_resps_t           [3:0] apb_resp;
 
 
     AXI_INTERCONNECT U_AXI_INTERCONNECT (
@@ -186,8 +192,9 @@ module CORE_COMPLEX(
          ,.bootaddr_i                             ( cc_boot                ) 
          ,.hart_id_i                              ( hart_id_i              ) 
          ,.irq_mei_i                              ( irq_mei_i              ) 
-         ,.irq_mti_i                              ( irq_mti_i              ) 
-         ,.irq_msi_i                              ( irq_msi_i              ) 
+         ,.irq_mti_i                              ( irq_mti                ) 
+         ,.irq_msi_i                              ( irq_msi                ) 
+    `ifdef SOPHON_RVDEBUG
          ,.dm_req_i                               ( debug_req              ) 
     `ifdef SOPHON_EXT_ACCESS
          ,.axi_slv_d64_req_i                      ( sophon_axi_slv_d64_req ) 
@@ -271,13 +278,35 @@ module CORE_COMPLEX(
     );
 
     // -----------------------------------
+    //  Clint
+    // -----------------------------------
+    CLINT 
+    #(
+        .APB_ADDR_WIDTH(12)
+    ) U_CLINT
+    (
+        .PCLK    ( clk_i                            ) ,
+        .PRESETn ( rstn_sync                        ) ,
+        .PADDR   ( apb_req[2].paddr[11:0]           ) ,
+        .PWDATA  ( apb_req[2].pwdata                ) ,
+        .PWRITE  ( apb_req[2].pwrite                ) ,
+        .PSEL    ( apb_req[2].psel                  ) ,
+        .PENABLE ( apb_req[2].penable               ) ,
+        .PRDATA  ( apb_resp[2].prdata               ) ,
+        .PREADY  ( apb_resp[2].pready               ) ,
+        .PSLVERR ( apb_resp[2].pslverr              ) ,
+        .msi_o   ( irq_msi                          ) ,
+        .mti_o   ( irq_mti                          ) 
+    );
+
+    // -----------------------------------
     //  CLIC interface
     // -----------------------------------
     `ifdef SOPHON_CLIC
-        assign clic_apb_req_o = apb_req[2];
-        assign apb_resp[2]  = clic_apb_rsp_i;
+        assign clic_apb_req_o = apb_req[3];
+        assign apb_resp[3]  = clic_apb_rsp_i;
     `else
-        assign apb_resp[2].pready = 1'b1;
+        assign apb_resp[3].pready = 1'b1;
     `endif
 
 

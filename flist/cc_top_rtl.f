@@ -22,6 +22,7 @@
 
 
 ../../design/corecomplex/apb_syscfg_reg.sv
+../../design/corecomplex/clint.sv
 ../../design/corecomplex/reqrsp_to_mem.sv
 ../../design/open-source/reqrsp_interface/src/axi_to_reqrsp.sv
 

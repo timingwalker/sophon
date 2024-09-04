@@ -1,0 +1,117 @@
+Magic 271485
+Revision Verdi_N-2017.12
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 28 1920 610 330 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/home/huangzhe/projects/tw/sophon/vrf/corecomplex/test.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 25042483.063837 25481763.142925
+cursor 25150000.000000
+marker 44937000.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 0
+; marker line index
+markerPos 18
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "instruction"
+activeDirFile "" "/home/huangzhe/projects/tw/sophon/vrf/corecomplex/test.fsdb"
+addSignal -h 15 -UNSIGNED -HEX /tb/tohost[31:0]
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/pc[31:0]
+addSignal -h 15 -holdScope retire_vld
+addSignal -h 15 -UNSIGNED -HEX -holdScope inst_data_1d[31:0]
+addSignal -h 15 -holdScope inst_data_1d_vld
+addGroup "irq_pending"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/clk_i
+addSignal -h 15 -holdScope clic_en_pending
+addSignal -h 15 -holdScope mei_en_pending
+addSignal -h 15 -holdScope mti_en_pending
+addSignal -h 15 -holdScope msi_en_pending
+addGroup "irq_vld - posedge"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/irq_vld
+addSignal -h 15 -holdScope clint_irq_vld
+addSignal -h 15 -holdScope clic_irq_vld
+addSignal -h 15 -holdScope clic_irq_direct_vld
+addSignal -h 15 -holdScope clic_irq_vector_vld
+addSignal -h 15 -holdScope is_mret
+addGroup "npc_sel_*"
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/npc[31:0]
+addSignal -h 15 -holdScope npc_sel_clint_direct
+addSignal -h 15 -holdScope npc_sel_clic_direct
+addSignal -h 15 -holdScope npc_sel_clic_vector
+addGroup "CSR"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/irq_vld
+addSignal -h 15 -holdScope mstatus_mie
+addSignal -h 15 -holdScope mstatus_mpie
+addSignal -h 15 -UNSIGNED -HEX -holdScope mstatus_mpp[1:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope mepc[31:0]
+addSignal -h 15 /BLANK
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/clic_irq_vld
+addSignal -h 15 -UNSIGNED -HEX -holdScope mcause[31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope mtval[31:0]
+addSignal -h 15 /BLANK
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/clic_irq_vector_vld
+addSignal -h 15 -UNSIGNED -HEX -holdScope mpil[7:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope curr_clic_level[7:0]
+addSignal -h 15 -holdScope minhv
+addSignal -h 15 /BLANK
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/mnxti[31:0]
+addGroup "G6"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/irq_vld
+addSignal -h 15 -holdScope inst_data_1d_vld
+addSignal -h 15 -holdScope wr_regfile
+addSignal -h 15 -holdScope retire_no_rd
+addGroup "G7"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/if_vld_pos
+addGroup "G8"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/clic_irq_req_i
+addSignal -h 15 -holdScope clic_irq_shv_i
+addSignal -h 15 -holdScope clic_irq_ack_o
+addGroup "G9"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/mnxti_clr
+addGroup "G10"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/inst_req_o
+addSignal -h 15 -UNSIGNED -HEX -holdScope inst_addr_o[31:0]
+addSignal -h 15 -holdScope inst_ack_i
+addSignal -h 15 -UNSIGNED -HEX -holdScope inst_data_i[31:0]
+addSignal -h 15 -holdScope inst_error_i
+addGroup "G11"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/if_vld
+addSignal -h 15 -holdScope clint_irq_vld
+addSignal -h 15 -holdScope npc_sel_clint_direct
+addGroup "G12"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+

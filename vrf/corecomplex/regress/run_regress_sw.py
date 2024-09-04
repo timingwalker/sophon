@@ -4,7 +4,7 @@ import os
 import sys
 import time
 
-f_tc_group   = ["./rv32ui.tc", "./benchmarks.tc"]
+f_tc_group   = ["./sanity-tests.tc", "./rv32ui.tc", "./benchmarks.tc"]
 # relative to verification directory
 tc_file_dir  = "../../sw/build/"
 # relative to regress directory
@@ -105,6 +105,9 @@ if __name__ == "__main__":
         elif 'rv32' in f_tc:
             sw_type = "isa"
             print ("isa")
+        elif 'sanity' in f_tc:
+            sw_type = "sanity-tests"
+            print ("sanity-tests")
 
         # run test cases
         result_group = run_test_group(f_tc, sw_type)

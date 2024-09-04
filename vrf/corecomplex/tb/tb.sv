@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-07-02 10:17:09
+// Last Modified : 2024-08-30 09:44:12
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -27,7 +27,6 @@
 
 module tb();
 
-
     // ----------------------------------------------------------------------
     //  clock reset
     // ----------------------------------------------------------------------
@@ -39,7 +38,7 @@ module tb();
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
-            .ClkPeriod    ( 40ns ),
+            .ClkPeriod    ( 25ns ),
             .RstClkCycles ( 5    )
         ) u_clk_gen 
         (
@@ -60,9 +59,22 @@ module tb();
     logic tdo_oe; 
     logic dut_uart_tx;
     logic dut_uart_rx;
-    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir;
-    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val;
-    logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val;
+    logic irq_mei;
+`ifdef SOPHON_EEI_GPIO
+    logic [`FGPIO_NUM-1:0] gpio_dir;
+    logic [`FGPIO_NUM-1:0] gpio_in_val;
+    logic [`FGPIO_NUM-1:0] gpio_out_val;
+`endif
+`ifdef SOPHON_CLIC  
+    logic       clic_irq_req;
+    logic       clic_irq_shv;
+    logic [4:0] clic_irq_id;
+    logic [7:0] clic_irq_level;
+    logic       clic_irq_ack;
+    logic [7:0] clic_irq_intthresh;
+    logic       clic_mnxti_clr;
+    logic [4:0] clic_mnxti_id;
+`endif
 
     CC_ITF_PKG::xbar_slv_port_d64_req_t   axi_slv_port_req;
     CC_ITF_PKG::xbar_slv_port_d64_resps_t axi_slv_port_rsp;
@@ -73,44 +85,42 @@ module tb();
 
     CORE_COMPLEX u_dut
     (
-          .clk_i                      ( clk              ) 
-          ,.rst_ni                    ( rst_n            ) 
-          ,.hart_id_i                 ( '0               ) 
-          ,.irq_mei_i                 ( 1'b0             ) 
-          ,.irq_mti_i                 ( 1'b0             ) 
-          ,.irq_msi_i                 ( 1'b0             ) 
+          .clk_i                      ( clk                ) 
+          ,.rst_ni                    ( rst_n              ) 
+          ,.hart_id_i                 ( '0                 ) 
+          ,.irq_mei_i                 ( irq_mei            ) 
           `ifdef SOPHON_CLIC  
-          ,.clic_irq_req_i            ( '0               ) 
-          ,.clic_irq_shv_i            ( '0               ) 
-          ,.clic_irq_id_i             ( '0               ) 
-          ,.clic_irq_level_i          ( '0               ) 
-          ,.clic_irq_ack_o            (                  ) 
-          ,.clic_irq_intthresh_o      (                  ) 
-          ,.clic_mnxti_clr_o          (                  ) 
-          ,.clic_mnxti_id_o           (                  ) 
-          ,.clic_apb_req_o            (                  ) 
-          ,.clic_apb_rsp_i            (                  ) 
+          ,.clic_irq_req_i            ( clic_irq_req       ) 
+          ,.clic_irq_shv_i            ( clic_irq_shv       ) 
+          ,.clic_irq_id_i             ( clic_irq_id        ) 
+          ,.clic_irq_level_i          ( clic_irq_level     ) 
+          ,.clic_irq_ack_o            ( clic_irq_ack       ) 
+          ,.clic_irq_intthresh_o      ( clic_irq_intthresh ) 
+          ,.clic_mnxti_clr_o          ( clic_mnxti_clr     ) 
+          ,.clic_mnxti_id_o           ( clic_mnxti_id      ) 
+          ,.clic_apb_req_o            (                    ) 
+          ,.clic_apb_rsp_i            ( '0                 ) 
           `endif
           `ifdef SOPHON_EEI_GPIO
-          ,.gpio_dir_o                ( gpio_dir         ) 
-          ,.gpio_in_val_i             ( gpio_in_val      ) 
-          ,.gpio_out_val_o            ( gpio_out_val     ) 
+          ,.gpio_dir_o                ( gpio_dir           ) 
+          ,.gpio_in_val_i             ( gpio_in_val        ) 
+          ,.gpio_out_val_o            ( gpio_out_val       ) 
           `endif
-          ,.tck_i                     ( tck              ) 
-          ,.tms_i                     ( tms              ) 
-          ,.trst_n_i                  ( trst_n           ) 
-          ,.tdi_i                     ( tdi              ) 
-          ,.tdo_o                     ( tdo              ) 
-          ,.tdo_oe_o                  ( tdo_oe           ) 
-          ,.uart_rx_i                 ( dut_uart_rx      ) 
-          ,.uart_tx_o                 ( dut_uart_tx      ) 
+          ,.tck_i                     ( tck                ) 
+          ,.tms_i                     ( tms                ) 
+          ,.trst_n_i                  ( trst_n             ) 
+          ,.tdi_i                     ( tdi                ) 
+          ,.tdo_o                     ( tdo                ) 
+          ,.tdo_oe_o                  ( tdo_oe             ) 
+          ,.uart_rx_i                 ( dut_uart_rx        ) 
+          ,.uart_tx_o                 ( dut_uart_tx        ) 
           `ifdef SOPHON_EXT_ACCESS
-          ,.axi_slv_port_req_i        ( axi_slv_port_req ) 
-          ,.axi_slv_port_rsp_o        ( axi_slv_port_rsp ) 
+          ,.axi_slv_port_req_i        ( axi_slv_port_req   ) 
+          ,.axi_slv_port_rsp_o        ( axi_slv_port_rsp   ) 
           `endif
           `ifdef SOPHON_EXT_INST_DATA
-          ,.axi_mst_port_req_o        ( axi_mst_port_req ) 
-          ,.axi_mst_port_rsp_i        ( axi_mst_port_rsp ) 
+          ,.axi_mst_port_req_o        ( axi_mst_port_req   ) 
+          ,.axi_mst_port_rsp_i        ( axi_mst_port_rsp   ) 
           `endif
     );
 
@@ -208,7 +218,8 @@ module tb();
         assign axi_mem_addr_offset = axi_addr - 32'h1000;
 
         //32K*32bit=128K
-        localparam int unsigned EXT_MEM_SIZE = 32'h0002_0000;
+        localparam int unsigned EXT_MEM_SIZE = CC_CFG_PKG::EXT_MEM_END-CC_CFG_PKG::EXT_MEM_BASE+1;
+        //localparam int unsigned EXT_MEM_SIZE = 32'h0002_0000;
         TCM_WRAP 
         #(
             .DATA_WIDTH ( 32                    ) ,
@@ -235,13 +246,16 @@ module tb();
     // -----------------------------------
     //  read program data 
     // -----------------------------------
-
     reg [7:0]    cc0_ram [0:32'h000a_0000];
     reg [8*80:0] tc_hex;
     reg [8*3:0]  mem_mode;
     integer i, by;
         
     initial begin
+        // initial memory to zero
+        for ( i = 0; i < 32'h000a_0000; i = i + 1 ) begin
+            cc0_ram[i]=0;
+        end
         if ( $value$plusargs("TC_HEX=%s",tc_hex ) ) begin
             $display("TC_HEX=%s\n",  tc_hex);
             $readmemh(tc_hex, cc0_ram);   
@@ -275,23 +289,26 @@ module tb();
         `else
         `endif
 
-        localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
-        localparam int unsigned E_BANK_NUM   = 64;
+            localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
+            localparam int unsigned E_BANK_DEPTH = 1024;
+            localparam int unsigned E_BANK_NUM   = (EXT_MEM_SIZE/(32/8)) / E_BANK_DEPTH;
+            //localparam int unsigned E_BANK_NUM = 32;
 
-        genvar m;
-        generate
-            // per bank
-            for (m=0; m<E_BANK_NUM; m=m+1) begin
-                initial begin
-                    // 512*32bit=2KB
-                    if (mem_mode=="EXT") begin
-                        for ( i = 0; i < 512; i = i + 1 ) begin
-                            for ( by = 0; by < 4; by = by + 1 ) begin
-                            `ifdef DBG_ENABLE
-                                `EXT_MEM(m)[i][by*8+:8] = '0;
-                            `else
-                                `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*2048 + i*4+by];
-                            `endif
+            genvar m;
+            generate
+                // per bank
+                for (m=0; m<E_BANK_NUM; m=m+1) begin
+                    initial begin
+                        // 1024*32bit=4KB
+                        if (mem_mode=="EXT") begin
+                            for ( i = 0; i < 1024; i = i + 1 ) begin
+                                for ( by = 0; by < 4; by = by + 1 ) begin
+                                `ifdef DBG_ENABLE
+                                    `EXT_MEM(m)[i][by*8+:8] = '0;
+                                `else
+                                    `EXT_MEM(m)[i][by*8+:8] = cc0_ram[ EXT_MEM_BASE + m*4096 + i*4+by];
+                                `endif
+                                end
                             end
                         end
                     end
@@ -311,16 +328,20 @@ module tb();
     `else
     `endif
 
-    localparam int unsigned ITCM_OFFSET = SOPHON_PKG::ITCM_OFFSET;
-    localparam int unsigned DTCM_OFFSET = SOPHON_PKG::DTCM_OFFSET;
-    localparam int unsigned BANK_NUM    = 32;
+    localparam int unsigned ITCM_OFFSET    = SOPHON_PKG::ITCM_OFFSET;
+    localparam int unsigned DTCM_OFFSET    = SOPHON_PKG::DTCM_OFFSET;
+    // BANK_NUM = TCM_DEPTH / BANK_DEPTH
+    localparam int unsigned TCM_BANK_DEPTH = 1024;
+    localparam int unsigned ITCM_BANK_NUM  = (SOPHON_PKG::ITCM_SIZE/(32/8)) / TCM_BANK_DEPTH;
+    localparam int unsigned DTCM_BANK_NUM  = (SOPHON_PKG::DTCM_SIZE/(32/8)) / TCM_BANK_DEPTH;
+    //localparam int unsigned BANK_NUM     = 16;
 
     genvar k;
     generate
         // per bank
-        for (k=0; k<BANK_NUM; k=k+1) begin
+        for (k=0; k<ITCM_BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
+                // 1024*32bit=4KB
                 if (mem_mode=="TCM") begin
                     for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
@@ -331,9 +352,9 @@ module tb();
             end
         end
         // per bank
-        for (k=0; k<BANK_NUM; k=k+1) begin
+        for (k=0; k<DTCM_BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
+                // 1024*32bit=4KB
                 if (mem_mode=="TCM") begin
                     for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
@@ -354,7 +375,7 @@ module tb();
 
     parameter  BAUDRATE = 115200;
 
-    assign uart_rx = dut_uart_tx;
+    assign uart_rx     = dut_uart_tx;
     assign dut_uart_rx = uart_tx;
 
     uart_bus
@@ -388,9 +409,9 @@ module tb();
             .exit            (        ) 
         );
     `else
-        assign tck = 1'b0;
-        assign tms = 1'b0;
-        assign tdi = 1'b0;
+        assign tck    = 1'b0;
+        assign tms    = 1'b0;
+        assign tdi    = 1'b0;
         assign trst_n = 1'b1;
     `endif
 
@@ -398,170 +419,120 @@ module tb();
     // ----------------------------------------------------------------------
     //  AXI master
     // ----------------------------------------------------------------------
-    localparam int unsigned AxiIdWidthMasters =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH;
-    localparam int unsigned AxiIdUsed         =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH; 
-    localparam int unsigned AxiIdWidthSlaves  =  CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH;
-    localparam int unsigned AxiAddrWidth      =  CC_ITF_PKG::XBAR_ADDR_WIDTH;  
-    localparam int unsigned AxiDataWidth      =  CC_ITF_PKG::XBAR_DATA_WIDTH;
-    localparam int unsigned AxiStrbWidth      =  CC_ITF_PKG::XBAR_STRB_WIDTH;
-    localparam int unsigned AxiUserWidth      =  CC_ITF_PKG::XBAR_USER_WIDTH;
-    
-    localparam time ApplTime =  2ns;
-    localparam time TestTime =  8ns;
-    
-    typedef axi_test::axi_rand_master #(
-        // AXI interface parameters
-        .AW ( AxiAddrWidth       ),
-        .DW ( AxiDataWidth       ),
-        .IW ( AxiIdWidthMasters  ),
-        .UW ( AxiUserWidth       ),
-        // Stimuli application and test time
-        .TA ( ApplTime           ),
-        .TT ( TestTime           ),
-        // Maximum number of read and write transactions in flight
-        .MAX_READ_TXNS  ( 4 ) ,
-        .MAX_WRITE_TXNS ( 4 ) ,
-        .AXI_EXCLS      ( 0 ) ,
-        .AXI_ATOPS      ( 0 ) ,
-        .UNIQUE_IDS     ( 0 ) 
-    ) axi_rand_master_t;
-    
-    axi_rand_master_t axi_rand_master ;
+    `ifdef SOPHON_EXT_ACCESS
 
-    AXI_BUS #(
-      .AXI_ADDR_WIDTH ( AxiAddrWidth      ),
-      .AXI_DATA_WIDTH ( AxiDataWidth      ),
-      .AXI_ID_WIDTH   ( AxiIdWidthMasters ),
-      .AXI_USER_WIDTH ( AxiUserWidth      )
-    ) master ();
-    AXI_BUS_DV #(
-      .AXI_ADDR_WIDTH ( AxiAddrWidth      ),
-      .AXI_DATA_WIDTH ( AxiDataWidth      ),
-      .AXI_ID_WIDTH   ( AxiIdWidthMasters ),
-      .AXI_USER_WIDTH ( AxiUserWidth      )
-    ) master_dv (clk);
-    
-    
-    `AXI_ASSIGN           ( master, master_dv        ) 
-    `AXI_ASSIGN_TO_REQ    ( axi_slv_port_req, master ) 
-    `AXI_ASSIGN_FROM_RESP ( master, axi_slv_port_rsp ) 
+        localparam int unsigned AxiIdWidthMasters =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH;
+        localparam int unsigned AxiIdUsed         =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH; 
+        localparam int unsigned AxiIdWidthSlaves  =  CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH;
+        localparam int unsigned AxiAddrWidth      =  CC_ITF_PKG::XBAR_ADDR_WIDTH;  
+        localparam int unsigned AxiDataWidth      =  CC_ITF_PKG::XBAR_DATA_WIDTH;
+        localparam int unsigned AxiStrbWidth      =  CC_ITF_PKG::XBAR_STRB_WIDTH;
+        localparam int unsigned AxiUserWidth      =  CC_ITF_PKG::XBAR_USER_WIDTH;
+        
+        localparam time ApplTime =  2ns;
+        localparam time TestTime =  8ns;
+        
+        typedef axi_test::axi_rand_master #(
+            // AXI interface parameters
+            .AW ( AxiAddrWidth       ),
+            .DW ( AxiDataWidth       ),
+            .IW ( AxiIdWidthMasters  ),
+            .UW ( AxiUserWidth       ),
+            // Stimuli application and test time
+            .TA ( ApplTime           ),
+            .TT ( TestTime           ),
+            // Maximum number of read and write transactions in flight
+            .MAX_READ_TXNS  ( 4 ) ,
+            .MAX_WRITE_TXNS ( 4 ) ,
+            .AXI_EXCLS      ( 0 ) ,
+            .AXI_ATOPS      ( 0 ) ,
+            .UNIQUE_IDS     ( 0 ) 
+        ) axi_rand_master_t;
+        
+        axi_rand_master_t axi_rand_master ;
+
+        AXI_BUS #(
+          .AXI_ADDR_WIDTH ( AxiAddrWidth      ),
+          .AXI_DATA_WIDTH ( AxiDataWidth      ),
+          .AXI_ID_WIDTH   ( AxiIdWidthMasters ),
+          .AXI_USER_WIDTH ( AxiUserWidth      )
+        ) master ();
+        AXI_BUS_DV #(
+          .AXI_ADDR_WIDTH ( AxiAddrWidth      ),
+          .AXI_DATA_WIDTH ( AxiDataWidth      ),
+          .AXI_ID_WIDTH   ( AxiIdWidthMasters ),
+          .AXI_USER_WIDTH ( AxiUserWidth      )
+        ) master_dv (clk);
+        
+        `AXI_ASSIGN           ( master, master_dv        ) 
+        `AXI_ASSIGN_TO_REQ    ( axi_slv_port_req, master ) 
+        `AXI_ASSIGN_FROM_RESP ( master, axi_slv_port_rsp ) 
+
+    `endif
 
 
     // ----------------------------------------------------------------------
     //  TESE START
     // ----------------------------------------------------------------------
-
-    task axi_slv_port_replace_write(input logic [31:0] addr, input logic [63:0] wdata, input logic [2:0] size );
-        logic [63:0] old_rdata;
-        logic [63:0] rdata;
-
-        axi_rand_master.run_read_single(old_rdata, 1,1, addr);
-        axi_rand_master.run_write_word(addr, wdata, 8'd0, size);
-        axi_rand_master.run_read_single(rdata, 1,1, addr);
-        if ( rdata !== wdata ) begin
-            $display("\nAXI_SLV_PORT 0x%h test 1 FAIL!!!: Wdata=%h, rdata=%h", addr,wdata, rdata);
-            `ifndef DBG_ENABLE
-                $finish;
-            `endif
-        end
-        else $display("\nAXI_SLV_PORT 0x%h test 1 PASS: Wdata=%h, rdata=%h",addr, wdata, rdata);
-
-        axi_rand_master.run_write_word(addr, old_rdata, 8'd0, size);
-        axi_rand_master.run_read_single(rdata, 1,1, addr);
-        if ( rdata !== old_rdata ) begin
-            $display("AXI_SLV_PORT 0x%h test 2 FAIL!!!: rdata=%h, old_rdata=%h",addr, rdata, old_rdata);
-            `ifndef DBG_ENABLE
-                $finish;
-            `endif
-        end
-        else $display("AXI_SLV_PORT 0x%h test 2 PASS: rdata=%h, old_rdata=%h",addr, rdata, old_rdata);
-    endtask
-
-
-    logic flag_release_cpu;
-    logic flag_axi_access_itcm;
-    logic flag_axi_access_dtcm;
-    logic flag_core_access_ext_mem;
-
+    reg [8*20:0]  tc;
 
     initial begin
 
-        flag_release_cpu         = 1'b0;
-        flag_axi_access_itcm     = 1'b0;
-        flag_axi_access_dtcm     = 1'b0;
-        flag_core_access_ext_mem = 1'b0;
+        logic flag_release_cpu;
 
-        axi_rand_master = new( master_dv );
-        axi_rand_master.add_memory_region(32'h0000_0000,
-                                          32'hFFFF_FFFF,
-                                          axi_pkg::DEVICE_NONBUFFERABLE);
-        axi_rand_master.reset();
-
-        @(posedge rst_n);
+        $value$plusargs("TC=%s",tc);
+        $display("TC=%s\n",  tc);
 
         `ifdef SOPHON_EXT_ACCESS
+            axi_rand_master = new( master_dv );
+            axi_rand_master.add_memory_region(32'h0000_0000, 32'hFFFF_FFFF, axi_pkg::DEVICE_NONBUFFERABLE);
+            axi_rand_master.reset();
+        `endif
+        `ifdef SOPHON_CLIC  
+            clic_irq_req = 1'b0;
+        `endif
+        irq_mei = 1'b0;
 
+
+        flag_release_cpu = 1'b0;
+        @(posedge rst_n);
+
+        $display("===================================================");
+        if (mem_mode=="EXT") begin
+        `ifdef SOPHON_EXT_ACCESS
+            $display($realtime, ": Memmory used: External Memory");
             $display($realtime, ": Configure: Set Soft Reset = 0......");
             axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
-
-            // Inst RAM
-            flag_axi_access_itcm = 1'b1;
-            $display("\n===================================================");
-            $display($realtime, ": TEST: AXI ACCESS ITCM......");
-            $display("===================================================");
-            axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_0000, 64'h1234_5678_9abc_def0, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_3000, 64'h4554_7545_565c_9847, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_6000, 64'h2346_4425_395b_d450, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_9000, 64'h3425_fb55_cd43_2345, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_fff0, 64'h2435_a845_2345_9864, 3'b011);
-            $display("\n---------------------------------------------------");
-            $display($realtime, ": TEST: AXI ACCESS ITCM PASS!");
-            flag_axi_access_itcm = 1'b0;
-
-            // Data RAM
-            flag_axi_access_dtcm = 1'b1;
-            $display("\n===================================================");
-            $display($realtime, ": TEST: AXI ACCESS DTCM......");
-            $display("===================================================");
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_0000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_1000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_2000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_4000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_4000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_6000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_8000, 64'h2435_a845_2345_9864, 3'b011);
-            axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_fff0, 64'h2435_a845_2345_9864, 3'b011);
-            $display("\n---------------------------------------------------");
-            $display($realtime, ": TEST: AXI ACCESS DTCM PASS!");
-            flag_axi_access_dtcm = 1'b0;
-
-            // // Out of range
-            // axi_rand_master.run_read_single(1,1, 32'h0001_0000);
-            // axi_rand_master.run_read_single(1,1, 32'h0005_0000);
-
-            // sys reg
-            $display("\n===================================================");
-            $display($realtime, ": TEST: AXI ACCESS SYS_REG......");
-            $display("===================================================");
-            if (mem_mode=="EXT") begin
-                $display($realtime, ": Configure: Set bootaddr = 0x1000 (EXT MEM)......");
-                axi_rand_master.run_write_word(32'h0600_0000, 64'h0000_0000_0000_1000, 8'd0, 3'b010);
-            end
+            $display($realtime, ": Configure: Set bootaddr = 0x1000 (EXT MEM)......");
+            axi_rand_master.run_write_word(32'h0600_0000, 64'h0000_0000_0000_1000, 8'd0, 3'b010);
             $display($realtime, ": Configure: Set Soft Reset = 1......");
             axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0001_0000_0000, 8'd0, 3'b010);
-
+            flag_release_cpu = 1'b1;
+        `else
+            $display("External memory is not enabled. ");
+            TODO: Use force to set bootaddr & soft reset
         `endif
-
-        flag_release_cpu = 1'b1;
-        flag_core_access_ext_mem = 1'b1;
-
-        $display("\n===================================================");
-        $display($realtime, ": TEST: Core run software test case......");
-        if (mem_mode=="EXT") 
-            $display($realtime, ": Memmory used: External Memory");
-        else
+        end
+        else begin
+            flag_release_cpu = 1'b1;
             $display($realtime, ": Memmory used: TCM Memory");
+            $display($realtime, ": bootaddr = 0x80000000 ......");
+        end
+        wait (flag_release_cpu==1'b1)
+            $display("release cpu");
         $display("===================================================");
+
+        // -----------------------------------
+        // Test case
+        // -----------------------------------
+        case (tc)
+            "clint"               : clint()                                     ;
+            "ext_access"          : `ifdef SOPHON_EXT_ACCESS ext_access()     `endif;
+            "clic"                : `ifdef SOPHON_CLIC       clic()           `endif;
+            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO   fgpio_uart()     `endif;
+            "fgpio"               : `ifdef SOPHON_EEI_GPIO   fgpio()          `endif;
+            default               : ;
+        endcase
 
     end
 
@@ -569,14 +540,50 @@ module tb();
     // ----------------------------------------------------------------------
     //  Finish Check
     // ----------------------------------------------------------------------
-
+    int fail=0;
     logic  is_ecall;
     logic [31:0] gp;
+    logic [31:0] tohost;
 
     assign is_ecall = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_SOPHON.is_ecall;
     assign gp       = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_SOPHON.regfile[3];
+    initial begin
+        if (mem_mode=="EXT") 
+            `ifndef SOPHON_EXT_INST_DATA
+                $fatal("FATAL: External memory is not enabled.");
+            `else
+                assign tohost = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
+            `endif
+        else
+            assign tohost = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
+    end
+    
 
-    `ifdef VERILATOR
+    `ifndef VERILATOR
+
+        initial begin
+            if ( tc!="FreeRTOS" ) begin
+                wait ( is_ecall );
+                //if ( gp == 32'd1 ) begin
+                if ( tohost == 32'd1 ) begin
+                    $display($realtime, ": Core %0s success\n",  tc_hex);
+                end
+                else begin
+                    $display($realtime, ": Core %0s FAIL\n",  tc_hex);
+                    fail = 1;
+                end
+                if (fail)
+                    $display($realtime, ": Testcase FAIL!!\n\n");
+                else 
+                    $display($realtime, ": Testcase PASS!!\n\n");
+            `ifndef DBG_ENABLE        
+                repeat(100)@(posedge clk);
+                $finish;
+            `endif
+            end
+        end
+
+    `else
 
         localparam int unsigned TO_BIT = 18;
 
@@ -617,69 +624,8 @@ module tb();
             end
         end
 
-    `else
-
-        int fail=0;
-        logic [31:0] tohost;
-
-        initial begin
-            if (mem_mode=="EXT") 
-                `ifndef SOPHON_EXT_INST_DATA
-                    $fatal("FATAL: External memory is not enabled.");
-                `else
-                    assign tohost = U_EXT_MEM.gen_spilt_ram[32].U_BW_SP_RAM.ram_block[0];
-                `endif
-            else
-                assign tohost = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
-        end
-        
-        initial begin
-            wait ( is_ecall );
-
-            //if ( gp == 32'd1 ) begin
-            if ( tohost == 32'd1 ) begin
-                $display($realtime, ": Core %0s success\n",  tc_hex);
-            end
-            else begin
-                $display($realtime, ": Core %0s FAIL\n",  tc_hex);
-                fail = 1;
-            end
-
-            if (fail)
-                $display($realtime, ": Testcase FAIL!!\n\n");
-            else 
-                $display($realtime, ": Testcase PASS!!\n\n");
-
-            `ifndef DBG_ENABLE        
-                repeat(10)@(posedge clk);
-                $finish;
-            `endif
-        end
-
     `endif
 
-    // -----------------------------------
-    // Test case
-    // -----------------------------------
-    initial begin
-
-        reg [8*20:0]  tc;
-
-        $value$plusargs("TC=%s",tc);
-        $display("TC=%s\n",  tc);
-
-        wait (flag_release_cpu==1'b1)
-            $display("release cpu\n");
-
-        case (tc)
-            "clic_shv"            : `ifdef SOPHON_CLIC     clic_shv()       `endif;
-            "clic_no_shv"         ,
-            "clic_no_shv_snapreg" : `ifdef SOPHON_CLIC     clic_no_shv()    `endif;
-            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO fgpio_uart()     `endif;
-            default: ;
-        endcase
-
-    end
 
     // -----------------------------------
     // Timeout 
@@ -691,15 +637,12 @@ module tb();
         if ( $value$plusargs("TC_TYPE=%s",tc_type ) ) begin
             $display("TC_TYPE=%s\n",  tc_type);
         end
-        if (tc_type=="benchmarks") begin
-            $display("TIMEOUTE=500ms\n");
-            #500ms ;
-        end
-        else begin
-            $display("TIMEOUTE=5ms\n");
-            #5ms ;
-        end
 
+        case (tc_type)
+            "benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            "app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            default      : begin $display("TIMEOUTE=3ms\n"  );  #3ms   ; end
+        endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");
 
         `ifndef DBG_ENABLE
@@ -721,9 +664,18 @@ module tb();
     `endif
 
 
+    // ----------------------------------------------------------------------
+    //  include hardware tc
+    // ----------------------------------------------------------------------
+    `include "./tc/clint.sv"
     `ifdef SOPHON_CLIC
-        `include "./tc/clic_shv.sv"
-        `include "./tc/clic_no_shv.sv"
+        `include "./tc/clic.sv"
+    `endif
+    `ifdef SOPHON_EEI_GPIO
+        `include "./tc/fgpio.sv"
+    `endif
+    `ifdef SOPHON_EXT_ACCESS
+        `include "./tc/ext_access.sv"
     `endif
     `ifdef SOPHON_EEI_GPIO
         `include "./tc/fgpio.sv"

@@ -57,6 +57,11 @@ void setStats(int enable)
 void __attribute__((noreturn)) tohost_exit(uintptr_t code)
 {
   tohost = (code << 1) | 1;
+  // Modify(hz) 27/07/24 11:36:45
+  // ecall is used to stop simulation in EDA environment.
+  // For hardware environment, this will cause a loop and destory the data ram because
+  // of the overflow of the SP pointer:
+  // ecall -> trap_entry -> handle_tarp -> tohost_exit -> ecall
   asm volatile("ecall\n");
   while (1);
 }

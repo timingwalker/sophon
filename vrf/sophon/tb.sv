@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-04-19 14:51:40
+// Last Modified : 2024-07-19 20:05:39
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -139,8 +139,8 @@ module tb(
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
-                for ( i = 0; i < 512; i = i + 1 ) begin
+                // 1024*32bit=2KB
+                for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
                         `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
                     end
@@ -150,8 +150,8 @@ module tb(
         // per bank
         for (k=0; k<BANK_NUM; k=k+1) begin
             initial begin
-                // 512*32bit=2KB
-                for ( i = 0; i < 512; i = i + 1 ) begin
+                // 1024*32bit=2KB
+                for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
                         `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
                     end

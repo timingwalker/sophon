@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2023-12-27 14:44:03
+// Last Modified : 2024-08-05 15:12:33
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -29,8 +29,8 @@ module AXI_INTERCONNECT (
     ,output CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req_o
     ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp_i
     // APB Port
-    ,output CC_ITF_PKG::apb_d32_req_t   [2:0] apb_req_o
-    ,input  CC_ITF_PKG::apb_d32_resps_t [2:0] apb_rsp_i
+    ,output CC_ITF_PKG::apb_d32_req_t   [3:0] apb_req_o
+    ,input  CC_ITF_PKG::apb_d32_resps_t [3:0] apb_rsp_i
 );
 
 
@@ -149,17 +149,19 @@ module AXI_INTERCONNECT (
     // -----------------------------------
     // APB port
     // -----------------------------------
-    localparam APB_SLV_NUM  = 3;
+    localparam APB_SLV_NUM  = 4;
     CC_ITF_PKG::apb_d32_req_t   [APB_SLV_NUM-1:0] apb_req;
     CC_ITF_PKG::apb_d32_resps_t [APB_SLV_NUM-1:0] apb_resp;
 
     assign apb_req_o[0] = apb_req[0];
     assign apb_req_o[1] = apb_req[1];
     assign apb_req_o[2] = apb_req[2];
+    assign apb_req_o[3] = apb_req[3];
     
     assign apb_resp[0] = apb_rsp_i[0];
     assign apb_resp[1] = apb_rsp_i[1];
     assign apb_resp[2] = apb_rsp_i[2];
+    assign apb_resp[3] = apb_rsp_i[3];
 
 
 
@@ -244,8 +246,10 @@ module AXI_INTERCONNECT (
         '{idx: 32'd0, start_addr: 32'h0600_0000, end_addr: 32'h0600_4000},
         // UART
         '{idx: 32'd1, start_addr: 32'h0600_4000, end_addr: 32'h0600_5000},
+        // Clint
+        '{idx: 32'd2, start_addr: 32'h0600_5000, end_addr: 32'h0600_6000},
         // CLIC
-        '{idx: 32'd2, start_addr: 32'h0702_0000, end_addr: 32'h0703_0000}
+        '{idx: 32'd3, start_addr: 32'h0702_0000, end_addr: 32'h0703_0000}
     };
 
     axi_lite_to_apb #(

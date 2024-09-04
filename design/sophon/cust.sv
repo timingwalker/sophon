@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 16:52:34
-// Last Modified : 2024-03-22 16:42:29
+// Last Modified : 2024-07-29 11:22:49
 // Description   : Custom execution units
 // ----------------------------------------------------------------------
 
@@ -22,7 +22,6 @@ module CUST(
      input logic                            clk_i
     ,input logic                            clk_neg_i
     ,input logic                            rst_ni
-
 `ifdef SOPHON_EEI
     // eei interface
     ,input  logic                           eei_req
@@ -32,21 +31,20 @@ module CUST(
     ,input  logic [4:0]                     eei_batch_start
     ,input  logic [4:0]                     eei_batch_len
     ,output logic [4:0]                     eei_rd_len  // if eei_rd_op=2, indicate write back rd number
-    ,input  logic [31:0]                    eei_rs_val[SOPHON_PKG::EEI_RS_MAX-1:0]
+    ,input  logic [31:0]                    eei_rs_val[`EEI_RS_MAX-1:0]
     ,output logic                           eei_ack  
     ,output logic [1:0]                     eei_rd_op   // 0: don't write rd
                                                         // 1: write single rd
                                                         // 2: batch write rd
                                                         // TBD: merge this signal with eei_rd_len
     ,output logic                           eei_error
-    ,output logic [31:0]                    eei_rd_val[SOPHON_PKG::EEI_RD_MAX-1:0]
+    ,output logic [31:0]                    eei_rd_val[`EEI_RD_MAX-1:0]
 `endif
-
 `ifdef SOPHON_EEI_GPIO
     // gpio interface 
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir
-    ,input  logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val
-    ,output logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val
+    ,output logic [`FGPIO_NUM-1:0]          gpio_dir
+    ,input  logic [`FGPIO_NUM-1:0]          gpio_in_val
+    ,output logic [`FGPIO_NUM-1:0]          gpio_out_val
 `endif
 
 );
@@ -93,7 +91,7 @@ module CUST(
         logic               sreg_req;
         logic               sreg_ack;
         logic               sreg_error;
-        logic [31:0]        sreg_rd_val[SOPHON_PKG::EEI_RD_MAX-1:0];
+        logic [31:0]        sreg_rd_val[`EEI_RD_MAX-1:0];
 
         assign sreg_req  = eei_req &  eei_ext & ( eei_funct3==3'b000 ) ;
 
@@ -136,7 +134,7 @@ module CUST(
 			`endif
 		end
 
-		for (genvar i=0; i<SOPHON_PKG::EEI_RD_MAX; i++) begin : gen_cust_rd_val
+		for (genvar i=0; i<`EEI_RD_MAX; i++) begin : gen_cust_rd_val
 			if ( i==0 ) begin: gen_cust_rd0
 				always_comb begin
 					eei_rd_val[i] = 32'd0;

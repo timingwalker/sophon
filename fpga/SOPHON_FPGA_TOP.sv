@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2024-07-17 17:30:46
+// Last Modified : 2024-08-05 11:36:49
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ module SOPHON_FPGA_TOP(
     input  UART_RX,
     output UART_TX,
 
-    inout [SOPHON_PKG::FGPIO_NUM-1:0] GPIO,
+    inout [`FGPIO_NUM-1:0] GPIO,
 
     input  JTAG_TCK,
     input  JTAG_TMS,
@@ -74,13 +74,13 @@ module SOPHON_FPGA_TOP(
     `endif
 
     `ifdef SOPHON_EEI_GPIO
-        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_dir;
-        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_in_val;
-        logic [SOPHON_PKG::FGPIO_NUM-1:0] gpio_out_val;
+        logic [`FGPIO_NUM-1:0] gpio_dir;
+        logic [`FGPIO_NUM-1:0] gpio_in_val;
+        logic [`FGPIO_NUM-1:0] gpio_out_val;
 
         genvar t;
         generate
-            for (t=0; t<SOPHON_PKG::FGPIO_NUM; t=t+1) begin:gen_gpio
+            for (t=0; t<`FGPIO_NUM; t=t+1) begin:gen_gpio
                 assign GPIO[t] = gpio_dir[t] ? gpio_out_val[t] : 1'bz;
                 assign gpio_in_val[t] = GPIO[t];
             end
@@ -88,7 +88,7 @@ module SOPHON_FPGA_TOP(
     `else
         genvar t;
         generate
-            for (t=0; t<SOPHON_PKG::FGPIO_NUM; t=t+1) begin:gen_gpio_empty
+            for (t=0; t<`FGPIO_NUM; t=t+1) begin:gen_gpio_empty
                 assign GPIO[t] = 1'b0;
             end
         endgenerate
@@ -99,8 +99,6 @@ module SOPHON_FPGA_TOP(
          ,.rst_ni            ( rstn             ) 
          ,.hart_id_i         ( '0               ) 
          ,.irq_mei_i         ( '0               ) 
-         ,.irq_mti_i         ( '0               ) 
-         ,.irq_msi_i         ( '0               ) 
          ,.tck_i             ( JTAG_TCK         ) 
          ,.tms_i             ( JTAG_TMS         ) 
          ,.trst_n_i          ( rstn             ) 

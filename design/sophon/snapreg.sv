@@ -14,23 +14,27 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-12 10:22:46
-// Last Modified : 2024-03-26 22:26:27
+// Last Modified : 2024-07-29 11:03:34
 // Description   : snapshot regfile     
 // ----------------------------------------------------------------------
 
 module SNAPREG(
+`ifdef SOPHON_EEI_SREG
      input  logic                               clk_i
     ,input  logic                               rst_ni
     ,input  logic                               sreg_req     
     ,input  logic [6:0]                         sreg_funct7  
     ,input  logic [4:0]                         sreg_batch_start 
     ,input  logic [4:0]                         sreg_batch_len 
-    ,input  logic [31:0]                        sreg_rs_val[SOPHON_PKG::EEI_RS_MAX-1:0]    
+    ,input  logic [31:0]                        sreg_rs_val[`EEI_RS_MAX-1:0]    
     ,output logic                               sreg_ack   
     ,output logic                               sreg_error   
-    ,output logic [31:0]                        sreg_rd_val[SOPHON_PKG::EEI_RD_MAX-1:0] 
+    ,output logic [31:0]                        sreg_rd_val[`EEI_RD_MAX-1:0] 
+`endif
 );
 
+
+`ifdef SOPHON_EEI_SREG
 
     logic [31:0]        wr_sreg_bit;
     logic               sreg_wr;
@@ -74,7 +78,7 @@ module SNAPREG(
     assign snapreg[0] = 32'd0;
 
 
-    localparam EXT_RF_LEN  = 32 + SOPHON_PKG::EEI_RD_MAX -1;
+    localparam EXT_RF_LEN  = 32 + `EEI_RD_MAX -1;
     logic  [31:0] ext_snapreg[EXT_RF_LEN-1:0];
     for (genvar i=0; i<EXT_RF_LEN; i++) begin : gen_ext_snapreg
         if ( i<32 ) 
@@ -85,11 +89,12 @@ module SNAPREG(
 
     genvar k;
     generate
-        for (k=0; k<SOPHON_PKG::EEI_RD_MAX; k=k+1) begin:gen_sreg_rd_val
+        for (k=0; k<`EEI_RD_MAX; k=k+1) begin:gen_sreg_rd_val
             assign sreg_rd_val[k] = ext_snapreg[k+sreg_batch_start];
         end
     endgenerate
 
+`endif
 
 endmodule
 
