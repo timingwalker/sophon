@@ -20,8 +20,7 @@ read_ip {\
 
 set_param general.maxThreads 32
 
-# synth_design -top SOPHON_FPGA_TOP -part xc7k325tffg900-2 
-synth_design -flatten_hierarchy none -top SOPHON_FPGA_TOP -part xc7k325tffg900-2 
+synth_design -top SOPHON_FPGA_TOP -part xc7k325tffg900-2 
 write_checkpoint -force $outputDir/post_synth.dcp
 report_timing_summary -file $outputDir/post_synth_timing_summary.rpt
 report_utilization -file $outputDir/post_synth_util.rpt
@@ -30,25 +29,14 @@ report_utilization -file $outputDir/post_synth_util.rpt
 # STEP#4: run logic optimization, placement and physical logic optimization, 
 # write design checkpoint, report utilization and timing estimates
 opt_design
-
-
-# create_pblock pblock_TCM
-# resize_pblock pblock_TCM -add {SLICE_X84Y52:SLICE_X151Y106 DSP48_X3Y22:DSP48_X5Y41 RAMB18_X3Y22:RAMB18_X6Y41 RAMB36_X3Y11:RAMB36_X6Y20}
-# add_cells_to_pblock pblock_TCM [get_cells [list U_CORE_COMPLEX/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_ITCM]] -clear_locs
-# add_cells_to_pblock pblock_TCM [get_cells [list U_CORE_COMPLEX/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_DTCM]] -clear_locs
-
-
-
 place_design
 report_clock_utilization -file $outputDir/clock_util.rpt
 # Optionally run optimization if there are timing violations after placement
-#
-# if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 
-# 0} {
-#     puts "Found setup timing violations => running physical optimization"
+if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 
+0} {
+    puts "Found setup timing violations => running physical optimization"
     phys_opt_design
-# }
-
+}
 write_checkpoint -force $outputDir/post_place.dcp
 report_utilization -hierarchical -file $outputDir/post_place_util.rpt
 report_timing_summary -file $outputDir/post_place_timing_summary.rpt
@@ -69,4 +57,4 @@ write_verilog -force $outputDir/sophon_impl_netlist.v -mode timesim -sdf_anno tr
 write_bitstream -force $outputDir/sophon.bit
 write_debug_probes $outputDir/sophon.ltx
 
-start_gui
+# start_gui

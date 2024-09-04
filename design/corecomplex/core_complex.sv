@@ -101,6 +101,7 @@ module CORE_COMPLEX(
     CC_ITF_PKG::apb_d32_req_t             [3:0] apb_req;
     CC_ITF_PKG::apb_d32_resps_t           [3:0] apb_resp;
 
+
     AXI_INTERCONNECT U_AXI_INTERCONNECT (
         .clk_i               ( clk_i             )
        ,.rst_ni              ( rstn_sync         )
@@ -153,45 +154,11 @@ module CORE_COMPLEX(
     //   Sophon Core
     // ----------------------------------------------------------------------
     `ifdef SOPHON_EXT_ACCESS
-        CC_ITF_PKG::xbar_mst_port_d64_req_t   xbar_slv_d64_req;
-        CC_ITF_PKG::xbar_mst_port_d64_resps_t xbar_slv_d64_rsp;
-        CC_ITF_PKG::axi_mst_side_d32_req_t    sophon_axi_slv_d32_req;
-        CC_ITF_PKG::axi_mst_side_d32_resps_t  sophon_axi_slv_d32_rsp;
+        CC_ITF_PKG::xbar_mst_port_d64_req_t   sophon_axi_slv_d64_req;
+        CC_ITF_PKG::xbar_mst_port_d64_resps_t sophon_axi_slv_d64_rsp;
 
-        // -----------------------------------
-        //  From XBAR: AXI 64
-        // -----------------------------------
-        assign xbar_slv_d64_req     = xbar_mst_port_req[0];
-        assign xbar_mst_port_rsp[0] = xbar_slv_d64_rsp;
-
-        // -----------------------------------
-        //  AXI 64 -> AXI 32
-        // -----------------------------------
-        axi_dw_converter #(
-            .AxiMaxReads         ( 4                                     ) ,
-            .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
-            .AxiMstPortDataWidth ( 32                                    ) ,
-            .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-            .AxiIdWidth          ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH    ) ,
-            .aw_chan_t           ( CC_ITF_PKG::xbar_mst_port_aw_t        ) ,
-            .slv_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-            .b_chan_t            ( CC_ITF_PKG::xbar_mst_port_b_t         ) ,
-            .ar_chan_t           ( CC_ITF_PKG::xbar_mst_port_ar_t        ) ,
-            .slv_r_chan_t        ( CC_ITF_PKG::xbar_mst_port_r_t         ) ,
-            .mst_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-            .mst_r_chan_t        ( CC_ITF_PKG::axi_r_32b_t               ) ,
-            .axi_mst_req_t       ( CC_ITF_PKG::axi_mst_side_d32_req_t    ) ,
-            .axi_mst_resp_t      ( CC_ITF_PKG::axi_mst_side_d32_resps_t  ) ,
-            .axi_slv_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
-            .axi_slv_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) 
-        ) i_axi_dw_64b_32b_converter (
-            .clk_i         ( clk_i                  ) ,
-            .rst_ni        ( rst_ni                 ) ,
-            .slv_req_i     ( xbar_slv_d64_req       ) ,
-            .slv_resp_o    ( xbar_slv_d64_rsp       ) ,
-            .mst_req_o     ( sophon_axi_slv_d32_req ) ,
-            .mst_resp_i    ( sophon_axi_slv_d32_rsp ) 
-        );
+        assign sophon_axi_slv_d64_req = xbar_mst_port_req[0];
+        assign xbar_mst_port_rsp[0] = sophon_axi_slv_d64_rsp;
     `elsif 
         assign xbar_mst_port_rsp[0].aw_ready = 1'b1;
         assign xbar_mst_port_rsp[0].w_ready  = 1'b1;
@@ -201,45 +168,11 @@ module CORE_COMPLEX(
     `endif
     
     `ifdef SOPHON_EXT_INST_DATA
-        CC_ITF_PKG::xbar_slv_port_d64_req_t   xbar_mst_d64_req;
-        CC_ITF_PKG::xbar_slv_port_d64_resps_t xbar_mst_d64_rsp;
-        CC_ITF_PKG::axi_slv_side_d32_req_t    sophon_axi_mst_d32_req;
-        CC_ITF_PKG::axi_slv_side_d32_resps_t  sophon_axi_mst_d32_rsp;
+        CC_ITF_PKG::xbar_slv_port_d64_req_t   sophon_axi_mst_d64_req;
+        CC_ITF_PKG::xbar_slv_port_d64_resps_t sophon_axi_mst_d64_rsp;
 
-        // -----------------------------------
-        //  To XBAR: AXI 64
-        // -----------------------------------
-        assign xbar_slv_port_req[0] = xbar_mst_d64_req;
-        assign xbar_mst_d64_rsp     = xbar_slv_port_rsp[0];
-
-        // -----------------------------------
-        //  AXI 32 -> AXI 64
-        // -----------------------------------
-        axi_dw_converter #(
-            .AxiMaxReads         ( 4                                     ) ,
-            .AxiSlvPortDataWidth ( 32                                    ) ,
-            .AxiMstPortDataWidth ( 64                                    ) ,
-            .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-            .AxiIdWidth          ( CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH    ) ,
-            .aw_chan_t           ( CC_ITF_PKG::xbar_slv_port_aw_t        ) ,
-            .b_chan_t            ( CC_ITF_PKG::xbar_slv_port_b_t         ) ,
-            .ar_chan_t           ( CC_ITF_PKG::xbar_slv_port_ar_t        ) ,
-            .mst_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-            .mst_r_chan_t        ( CC_ITF_PKG::xbar_slv_port_r_t         ) ,
-            .slv_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-            .slv_r_chan_t        ( CC_ITF_PKG::axi_slv_side_r_32b_t      ) ,
-            .axi_mst_req_t       ( CC_ITF_PKG::xbar_slv_port_d64_req_t   ) ,
-            .axi_mst_resp_t      ( CC_ITF_PKG::xbar_slv_port_d64_resps_t ) ,
-            .axi_slv_req_t       ( CC_ITF_PKG::axi_slv_side_d32_req_t    ) ,
-            .axi_slv_resp_t      ( CC_ITF_PKG::axi_slv_side_d32_resps_t  ) 
-        ) i_axi_dw_32b_64b_converter (
-            .clk_i         ( clk_i                  ) ,
-            .rst_ni        ( rst_ni                 ) ,
-            .slv_req_i     ( sophon_axi_mst_d32_req ) ,
-            .slv_resp_o    ( sophon_axi_mst_d32_rsp ) ,
-            .mst_req_o     ( xbar_mst_d64_req       ) ,
-            .mst_resp_i    ( xbar_mst_d64_rsp       ) 
-        );
+        assign xbar_slv_port_req[0] = sophon_axi_mst_d64_req;
+        assign sophon_axi_mst_d64_rsp = xbar_slv_port_rsp[0];
     `elsif 
         assign xbar_slv_port_req[0].aw_valid = 1'b0;
         assign xbar_slv_port_req[0].w_valid  = 1'b0;
@@ -263,14 +196,13 @@ module CORE_COMPLEX(
          ,.irq_msi_i                              ( irq_msi                ) 
     `ifdef SOPHON_RVDEBUG
          ,.dm_req_i                               ( debug_req              ) 
-    `endif
     `ifdef SOPHON_EXT_ACCESS
-         ,.axi_slv_d32_req_i                      ( sophon_axi_slv_d32_req ) 
-         ,.axi_slv_d32_rsp_o                      ( sophon_axi_slv_d32_rsp ) 
+         ,.axi_slv_d64_req_i                      ( sophon_axi_slv_d64_req ) 
+         ,.axi_slv_d64_rsp_o                      ( sophon_axi_slv_d64_rsp ) 
     `endif
     `ifdef SOPHON_EXT_INST_DATA
-         ,.axi_mst_d32_req_o                      ( sophon_axi_mst_d32_req ) 
-         ,.axi_mst_d32_rsp_i                      ( sophon_axi_mst_d32_rsp ) 
+         ,.axi_mst_d64_req_o                      ( sophon_axi_mst_d64_req ) 
+         ,.axi_mst_d64_rsp_i                      ( sophon_axi_mst_d64_rsp ) 
     `endif
     `ifdef SOPHON_CLIC
          ,.clic_irq_req_i                         ( clic_irq_req_i         ) 

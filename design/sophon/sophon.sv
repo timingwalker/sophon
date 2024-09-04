@@ -28,10 +28,8 @@ module SOPHON (
     ,input  logic                        irq_mei_i
     ,input  logic                        irq_mti_i
     ,input  logic                        irq_msi_i
-`ifdef SOPHON_RVDEBUG
     // debug halt request
     ,input  logic                        dm_req_i
-`endif
     // instruction fetch interface
     ,output logic                        inst_req_o
     ,output logic [31:0]                 inst_addr_o
@@ -112,13 +110,21 @@ module SOPHON (
                  rvi_alui, rvi_alu, rvi_system, rvi_fence, rvi_csr
                  `ifdef SOPHON_EEI ,rvi_cust `endif ;
     logic        op_is_branch, op_is_store, op_is_load, op_is_jal, op_is_jalr,
-                 op_is_alui, op_is_alu, op_is_system, op_is_lui, op_is_auipc, op_is_fence ;
+                 op_is_alui, op_is_alu, op_is_csr, op_is_lui, op_is_auipc, op_is_fence ;
+    logic        rvi_other, rvi_jump, rvi_branch, rvi_load, rvi_store,
+                 `ifdef SOPHON_EEI rvi_cust, `endif
+                 rvi_alui, rvi_alu, rvi_system, rvi_fence, rvi_csr;
 
     logic        mstatus_mie, mstatus_mpie;
     logic [1:0]  mstatus_mpp;
     logic [31:0] mie, mscratch, mtval,
                  mtvec,mepc,mcause;
     logic [63:0] mcycle, minstret;
+`ifdef SOPHON_CLIC
+    logic [7:0]  mpil;
+    logic        minhv;
+    logic [31:0] mintthresh, mnxti, mtvt;
+`endif
 
     logic        ex_fetch_access, ex_illg_instr,
                  ex_misalign_fetch, ex_csr_addr;
@@ -176,12 +182,13 @@ module SOPHON (
                  s_b_imm,u_i_imm,u_u_imm;
 
     // ------------------------------------------------
-    //  Delay reset signal inside the core:
+    //  Delay reset signal inside the core
     //   1. Wait the default value of bootaddr_i takes
-    //      effect if it comes from a register.
+    //      effect if it comes from a registers.
     //   2. Align the instruction fetching request to 
     //      the negedge clock.
     // ------------------------------------------------
+    assign rst_dly_neg = &rst_cnt;
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if (~rst_ni) begin
             rst_cnt <= 3'd0;
@@ -191,17 +198,10 @@ module SOPHON (
         end
     end
 
-    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-        if (~rst_ni)
-            rst_dly_neg <= 1'b0;
-        else if (rst_cnt==3'd6)
-            rst_dly_neg <= 1'b1;
-    end
-
     // ------------------------------------------------
     //  npc select signal:
     //   1. change at negedge clock
-    //   2. keep stable when inst_req & ~inst_ack
+    //   2. stable when inst_req & ~inst_ack
     // ------------------------------------------------
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if ( ~rst_ni ) 
@@ -237,7 +237,6 @@ module SOPHON (
 
     logic        npc_sel_clic_vector;
     logic        npc_sel_clic_direct;
-
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             npc_sel_clic_direct <= 1'b0;
@@ -246,7 +245,6 @@ module SOPHON (
         else if ( if_vld ) 
             npc_sel_clic_direct <= 1'b0;
     end
-
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             npc_sel_clic_vector <= 1'b0;
@@ -255,7 +253,6 @@ module SOPHON (
         else if ( if_vld ) 
             npc_sel_clic_vector <= 1'b0;
     end
-
 `endif
 
 `ifdef SOPHON_RVDEBUG
@@ -296,7 +293,6 @@ module SOPHON (
     always_comb begin
         if ( npc_sel_bootaddr ) 
             npc = bootaddr_i;
-    `ifdef SOPHON_RVDEBUG
         // DEBUG MODE: 
         //   1. entering
         else if ( npc_sel_dm_halt )
@@ -307,11 +303,12 @@ module SOPHON (
         //   3. exiting
         else if ( npc_sel_dm_exit ) 
             npc = dpc;
-    `endif
         // EXCEPTION and Interrupt: 
-        //   1. exception outside the debug mode
+        //   1. exception outside the debug mode, all redirect to mtvec-base
+        else if ( npc_sel_ex ) 
+            npc = {mtvec[31:2], 2'b0}; 
         //   2. CLINT irq: direct mode
-        else if ( npc_sel_ex | npc_sel_clint_direct ) 
+        else if ( npc_sel_clint_direct ) 
             npc = {mtvec[31:2], 2'b0}; 
         //   3. CLINT irq: vector mode
         else if ( npc_sel_clint_vector ) 
@@ -327,10 +324,8 @@ module SOPHON (
         else if ( npc_sel_ex_exit )
             npc = mepc;
         // TRANSFER INSTRUCTIONS:
-        else if ( npc_sel_jump ) 
-            npc = jump_target;
-        else if ( npc_sel_branch_taken ) 
-            npc = branch_target;
+        else if ( npc_sel_transfer ) 
+            npc = jump_branch_target;
         else 
             npc = pc+ 32'd4;
     end
@@ -353,18 +348,11 @@ module SOPHON (
     // assign if_err      = inst_req_o & inst_ack_i & inst_error_i;
     assign if_err      = 1'b0;
 
-    assign if_stall       = if_stall_lsu
-    `ifdef SOPHON_RVDEBUG | if_stall_dm  `endif
-    `ifdef SOPHON_EEI     | if_stall_eei  `endif
-    `ifdef SOPHON_CLIC    | if_stall_clic `endif
-                          ;
-
-    always_ff @(posedge clk_i, negedge rst_ni) begin
-        if(~rst_ni)
-            if_vld_pos <= 1'b0;
-        else 
-            if_vld_pos <= if_vld;
-    end
+    assign if_stall    = if_stall_dm
+                       | if_stall_lsu            
+    `ifdef SOPHON_EEI  | if_stall_eei  `endif
+    `ifdef SOPHON_CLIC | if_stall_clic `endif
+                       ;
 
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni)
@@ -453,15 +441,35 @@ module SOPHON (
             inst_data_1d_vld <= 1'b0;
     end
 
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni)
+            if_vld_pos <= 1'b0;
+        else 
+            if_vld_pos <= if_vld;
+    end
+
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni)
+            if_vld_neg <= 1'b0;
+        else 
+            if_vld_neg <= if_vld;
+    end
+
 
     // ----------------------------------------------------------------------
     //  ==== INSTRUCTION DECODE
     // ----------------------------------------------------------------------
+    logic [6:0]     opcode;
+    logic [2:0]     funct3;
+    logic [6:0]     funct7;
+    logic [4:0]     rs1_idx,rs2_idx,rd_idx;
+    logic [32:0]    s_j_imm,s_i_imm,s_s_imm,
+                    s_b_imm,u_i_imm,u_u_imm;
 
     // ------------------------------------------------
     //  common decode
     // ------------------------------------------------
-    assign op_6_2  = inst_data_1d[6:2];
+    assign opcode  = inst_data_1d[6:0];
     assign funct3  = inst_data_1d[14:12];
     assign funct7  = inst_data_1d[31:25];
     assign rs1_idx = inst_data_1d[19:15];
@@ -505,7 +513,7 @@ module SOPHON (
     // ------------------------------------------------
     // jump
     assign is_jal    = op_is_jal;
-    assign is_jalr   = op_is_jalr   && funct3_000 ;
+    assign is_jalr   = op_is_jalr   && (funct3==3'b000);
     // branch
     assign is_beq    = op_is_branch && funct3_000 ;
     assign is_bne    = op_is_branch && funct3_001 ;
@@ -514,37 +522,37 @@ module SOPHON (
     assign is_bltu   = op_is_branch && funct3_110 ;
     assign is_bgeu   = op_is_branch && funct3_111 ;
     // alu - imediate
-    assign is_addi   = op_is_alui   && funct3_000 ;
-    assign is_slti   = op_is_alui   && funct3_010 ;
-    assign is_sltiu  = op_is_alui   && funct3_011 ;
-    assign is_xori   = op_is_alui   && funct3_100 ;
-    assign is_ori    = op_is_alui   && funct3_110 ;
-    assign is_andi   = op_is_alui   && funct3_111 ;
-    assign is_slli   = op_is_alui   && funct3_001 && (funct7==7'b0000000) ;
-    assign is_srli   = op_is_alui   && funct3_101 && (funct7==7'b0000000) ;
-    assign is_srai   = op_is_alui   && funct3_101 && (funct7==7'b0100000) ;
+    assign is_addi   = op_is_alui   && (funct3==3'b000) ;
+    assign is_slti   = op_is_alui   && (funct3==3'b010) ;
+    assign is_sltiu  = op_is_alui   && (funct3==3'b011) ;
+    assign is_xori   = op_is_alui   && (funct3==3'b100) ;
+    assign is_ori    = op_is_alui   && (funct3==3'b110) ;
+    assign is_andi   = op_is_alui   && (funct3==3'b111) ;
+    assign is_slli   = op_is_alui   && (funct3==3'b001) && (funct7==7'b0000000) ;
+    assign is_srli   = op_is_alui   && (funct3==3'b101) && (funct7==7'b0000000) ;
+    assign is_srai   = op_is_alui   && (funct3==3'b101) && (funct7==7'b0100000) ;
     // alu - register
-    assign is_add    = op_is_alu    && funct3_000 && (funct7==7'b0000000) ;
-    assign is_sub    = op_is_alu    && funct3_000 && (funct7==7'b0100000) ;
-    assign is_sll    = op_is_alu    && funct3_001 && (funct7==7'b0000000) ;
-    assign is_slt    = op_is_alu    && funct3_010 && (funct7==7'b0000000) ;
-    assign is_sltu   = op_is_alu    && funct3_011 && (funct7==7'b0000000) ;
-    assign is_xor    = op_is_alu    && funct3_100 && (funct7==7'b0000000) ;
-    assign is_srl    = op_is_alu    && funct3_101 && (funct7==7'b0000000) ;
-    assign is_sra    = op_is_alu    && funct3_101 && (funct7==7'b0100000) ;
-    assign is_or     = op_is_alu    && funct3_110 && (funct7==7'b0000000) ;
-    assign is_and    = op_is_alu    && funct3_111 && (funct7==7'b0000000) ;
+    assign is_add    = op_is_alu    && (funct3==3'b000) && (funct7==7'b0000000) ;
+    assign is_sub    = op_is_alu    && (funct3==3'b000) && (funct7==7'b0100000) ;
+    assign is_sll    = op_is_alu    && (funct3==3'b001) && (funct7==7'b0000000) ;
+    assign is_slt    = op_is_alu    && (funct3==3'b010) && (funct7==7'b0000000) ;
+    assign is_sltu   = op_is_alu    && (funct3==3'b011) && (funct7==7'b0000000) ;
+    assign is_xor    = op_is_alu    && (funct3==3'b100) && (funct7==7'b0000000) ;
+    assign is_srl    = op_is_alu    && (funct3==3'b101) && (funct7==7'b0000000) ;
+    assign is_sra    = op_is_alu    && (funct3==3'b101) && (funct7==7'b0100000) ;
+    assign is_or     = op_is_alu    && (funct3==3'b110) && (funct7==7'b0000000) ;
+    assign is_and    = op_is_alu    && (funct3==3'b111) && (funct7==7'b0000000) ;
     // CSR
-    assign is_csrrw  = op_is_system && funct3_001 ;
-    assign is_csrrs  = op_is_system && funct3_010 ;
-    assign is_csrrc  = op_is_system && funct3_011 ;
-    assign is_csrrwi = op_is_system && funct3_101 ;
-    assign is_csrrsi = op_is_system && funct3_110 ;
-    assign is_csrrci = op_is_system && funct3_111 ;
+    assign is_csrrw  = op_is_csr    && (funct3==3'b001) ;
+    assign is_csrrs  = op_is_csr    && (funct3==3'b010) ;
+    assign is_csrrc  = op_is_csr    && (funct3==3'b011) ;
+    assign is_csrrwi = op_is_csr    && (funct3==3'b101) ;
+    assign is_csrrsi = op_is_csr    && (funct3==3'b110) ;
+    assign is_csrrci = op_is_csr    && (funct3==3'b111) ;
     // others
     assign is_lui    = op_is_lui;
     assign is_auipc  = op_is_auipc;
-    assign is_fence  = op_is_fence  && funct3_000 ;
+    assign is_fence  = op_is_fence & (funct3==3'b000) ;
     // system
     assign is_ecall  = inst_data_1d==32'b000000000000_00000_000_00000_1110011 ;
     assign is_ebreak = inst_data_1d==32'b000000000001_00000_000_00000_1110011 ;
@@ -554,14 +562,12 @@ module SOPHON (
     // ------------------------------------------------
     //  zifencei
     // ------------------------------------------------
-    assign is_fence_i= op_is_fence  && funct3_001 ;
+    assign is_fence_i= op_is_fence & (funct3==3'b001) ;
 
     // ------------------------------------------------
     //  debug
     // ------------------------------------------------
-    `ifdef SOPHON_RVDEBUG
-        assign is_dret   = debug_mode && (inst_data_1d==32'h7b200073);
-    `endif
+    assign is_dret   = debug_mode & (inst_data_1d==32'h7b200073);
 
     // ------------------------------------------------
     //  Instruction type
@@ -589,7 +595,7 @@ module SOPHON (
 
 
     // ----------------------------------------------------------------------
-    //  ==== ALU 
+    //  ==== ALU // TODO: optimize ALU data path
     // ----------------------------------------------------------------------
     logic signed [32:0]  adder_op1, adder_op2, adder_result;
     logic signed [32:0]  branch_adder;
@@ -652,12 +658,47 @@ module SOPHON (
     assign wb_adder     = is_add | is_addi | is_sub | is_auipc;
 
     // ------------------------------------------------
-    //  COMPARE - reuse ADDER for comparison
+    //  COMPARE
     // ------------------------------------------------
-    assign rs1_equal_rs2 = ~|adder_result;
-    assign cmp_result    = adder_result[32]; // rs1<rs2
+    always_comb begin
+        unique case (1)
+            is_slt  , 
+            is_slti : cmp_op1 = $signed( {rs1_val[31], rs1_val} ) ;
+            is_sltu ,
+            is_sltiu: cmp_op1 = $signed( {1'b0, rs1_val}       ) ;
+            is_blt  : cmp_op1 = $signed( {rs1_val[31], rs1_val} ) ;
+            is_bltu : cmp_op1 = $signed( {1'b0, rs1_val}        ) ;
+            is_bge  : cmp_op1 = $signed( {rs1_val[31], rs1_val} ) ;
+            is_bgeu : cmp_op1 = $signed( {1'b0, rs1_val}        ) ;
+            // not use
+            default : cmp_op1 = $signed( {1'b0, rs1_val}        ) ;
+        endcase
+    end
 
-    assign wb_cmp        = is_slt | is_slti | is_sltiu | is_sltu;
+    always_comb begin
+        unique case (1)
+            is_slt   : cmp_op2 = $signed({rs2_val[31], rs2_val} ) ;
+            is_slti  : cmp_op2 = $signed(s_i_imm                ) ;
+            is_sltiu : cmp_op2 = $signed(u_i_imm                ) ;
+            is_sltu  : cmp_op2 = $signed({1'b0, rs2_val}        ) ;
+            is_blt   : cmp_op2 = $signed({rs2_val[31], rs2_val} ) ;
+            is_bltu  : cmp_op2 = $signed({1'b0, rs2_val}        ) ;
+            is_bge   : cmp_op2 = $signed({rs2_val[31], rs2_val} ) ;
+            is_bgeu  : cmp_op2 = $signed({1'b0, rs2_val}        ) ;
+            // not use
+            default  : cmp_op2 = $signed({rs2_val[31], rs2_val});
+        endcase
+    end
+
+    assign cmp_result  = (cmp_op1<cmp_op2) ? 1'b1 : 1'b0;
+    assign wb_cmp      = is_slt | is_slti | is_sltiu | is_sltu;
+
+    // equal
+    assign rs1_equal_rs2 = (rs1_val==rs2_val) ? 1'b1 : 1'b0;
+    assign branch_taken =   (  rs1_equal_rs2  & is_beq           )
+                            | ( ~rs1_equal_rs2  & is_bne           )
+                            | (  cmp_result     & (is_blt|is_bltu) ) 
+                            | ( ~cmp_result     & (is_bge|is_bgeu) ) ;
 
     // ------------------------------------------------
     //  BIT PROCESS
@@ -690,8 +731,9 @@ module SOPHON (
             is_slli : shifter_operand = {1'b0, rs1_value_reverse};
             is_srl  , 
             is_srli : shifter_operand = {1'b0, rs1_val};
-            // use rs1_val as operand: sra/srai
-            default : shifter_operand = {rs1_val[31], rs1_val};
+            is_sra  , 
+            is_srai : shifter_operand = {rs1_val[31], rs1_val};
+            default : shifter_operand = 32'd0;
         endcase
     end
 
@@ -706,19 +748,21 @@ module SOPHON (
     // ------------------------------------------------
     //  Branch
     // ------------------------------------------------
-    assign branch_adder  = $signed({1'b0, pc}) + $signed(s_b_imm);
+    logic pre_dec_jalr;
 
-    assign branch_taken =   (  rs1_equal_rs2  & is_beq           )
-                          | ( ~rs1_equal_rs2  & is_bne           )
-                          | (  cmp_result     & (is_blt|is_bltu) ) 
-                          | ( ~cmp_result     & (is_bge|is_bgeu) ) ;
+    // pre decode jalr to calculate target address
+    assign pre_dec_jalr = if_vld_pos && (inst_data_i[6:0]==7'b1100111) && (inst_data_i[14:12]==3'b000);
 
-    // Jump  : target pc comes from adder
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            rs1_val_org <= 32'd0;
+        else if ( pre_dec_jalr )
+            rs1_val_org <= regfile [ inst_data_i[19:15] ];
+    end
+
+    // Jump & branch: target pc comes from adder
     //  - Jal   : pc=pc+jimm*2
     //  - Jalr  : pc=rs1+iimm, hardware set least-significant bit to zero
-    assign jump_target = {adder_result[31:1], adder_result[0] & ~is_jalr};
-
-    // Branch: 
     //  - Branch: pc=pc+bimm*2, check condition first, 
     assign branch_target = branch_adder[31:0];
 
@@ -817,7 +861,7 @@ module SOPHON (
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) 
-            lsu_post_req <= 1'b0;
+            lsu_req_o <= 1'b0;
         else if (lsu_ack_i)
             lsu_post_req <= 1'b0;
         else if ( lsu_pre_req )
@@ -964,21 +1008,21 @@ module SOPHON (
         else if ( lsu_lb ) begin
             if (lsu_addr_1_0_1d[1:0]==2'd0) 
                 lsu_result = { {24{lsu_rdata_i[7]}}, lsu_rdata_i[7:0] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd1) 
+            else if (lsu_addr_o[1:0]==2'd1) 
                 lsu_result = { {24{lsu_rdata_i[15]}}, lsu_rdata_i[15:8] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd2) 
+            else if (lsu_addr_o[1:0]==2'd2) 
                 lsu_result = { {24{lsu_rdata_i[23]}}, lsu_rdata_i[23:16] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd3) 
+            else if (lsu_addr_o[1:0]==2'd3) 
                 lsu_result = { {24{lsu_rdata_i[31]}}, lsu_rdata_i[31:24] };
         end
         else if ( lsu_lbu ) begin
             if (lsu_addr_1_0_1d[1:0]==2'd0) 
                 lsu_result = { {24'd0}, lsu_rdata_i[7:0] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd1) 
+            else if (lsu_addr_o[1:0]==2'd1) 
                 lsu_result = { {24'd0}, lsu_rdata_i[15:8] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd2) 
+            else if (lsu_addr_o[1:0]==2'd2) 
                 lsu_result = { {24'd0}, lsu_rdata_i[23:16] };
-            else if (lsu_addr_1_0_1d[1:0]==2'd3) 
+            else if (lsu_addr_o[1:0]==2'd3) 
                 lsu_result = { {24'd0}, lsu_rdata_i[31:24] };
         end
     end
@@ -993,8 +1037,8 @@ module SOPHON (
     logic        csr_wr, csr_rd;
     logic [11:0] csr_addr;
     logic [31:0] csr_wdata, csr_rdata;
-    logic [31:0] csr_rdata_rvi `ifdef SOPHON_RVDEBUG ,csr_rdata_dm   `endif
-                               `ifdef SOPHON_CLIC    ,csr_rdata_clic `endif ;
+    logic [31:0] csr_rdata_dm, csr_rdata_rvi `ifdef SOPHON_CLIC ,csr_rdata_clic `endif ;
+
     logic [1:0]  curr_priv;
     logic        is_clic;
     logic        is_csr_rvi `ifdef SOPHON_RVDEBUG ,is_csr_dm   `endif
@@ -1255,14 +1299,16 @@ module SOPHON (
         if ( rvi_csr ) begin
             unique case ( 1 )
                 is_csr_rvi  : csr_rdata = csr_rdata_rvi;
-            `ifdef SOPHON_RVDEBUG
                 is_csr_dm   : csr_rdata = csr_rdata_dm;
-            `endif
             `ifdef SOPHON_CLIC
                 is_csr_clic : csr_rdata = csr_rdata_clic;
             `endif
                 default     : csr_rdata   = 32'd0;
             endcase
+        end
+        else begin
+            csr_rdata   = 32'd0;
+            ex_csr_addr = 1'b0; 
         end
      end
 
@@ -1554,25 +1600,23 @@ module SOPHON (
     // ----------------------------------------------------------------------
     //  ==== DEBUG MODE
     // ----------------------------------------------------------------------
-    `ifdef SOPHON_RVDEBUG
+    logic        [3:0]     xdebugver;
+    logic        [1:0]     prv;
+    logic                  step;
+    logic                  dm_req_neg;
+    logic        [2:0]     dm_cause_d, dm_cause;
+    logic        [31:0]    dscratch0, dscratch1, dscratch2;
 
-        logic        [3:0]     xdebugver;
-        logic        [1:0]     prv;
-        logic                  step;
-        logic                  dm_req_neg;
-        logic        [2:0]     dm_cause_d, dm_cause;
-        logic        [31:0]    dscratch0, dscratch1, dscratch2;
-
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                dm_req_neg <= 1'b0;
-            end
-            else begin
-                dm_req_neg <= dm_req_i;
-            end
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            dm_req_neg <= 1'b0;
         end
+        else begin
+            dm_req_neg <= dm_req_i;
+        end
+    end
 
-        assign if_stall_dm = dm_start;
+    assign if_stall_dm = dm_start;
 
         // TODO: dm_start should be flip-flop
         // dm_start should only ariase when there is no pending instruction fetch 
@@ -1601,70 +1645,75 @@ module SOPHON (
                 dm_cause_d = 3'd0;
             end
         end
-
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                debug_mode <= 1'b0;
-                dm_cause <= 3'd0;
-            end
-            else if ( dm_start ) begin
-                debug_mode <= 1'b1;
-                dm_cause <= dm_cause_d;
-            end
-            else if ( debug_mode & retire_vld & is_dret ) begin
-                debug_mode <= 1'b0;
-                dm_cause <= 3'd0;
-            end
+        else begin
+            dm_start = 1'b0;
+            dm_cause_d = 3'd0;
         end
+    end
 
-        // ------------------------------------------------
-        //  debug mode CSR register write
-        // ------------------------------------------------
-
-        assign xdebugver = 4'd4;
-
-        assign prv = curr_priv;
-
-        always_ff @(posedge clk_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                ebreakm <= 1'b0;
-                step    <= 1'b0;
-            end
-            else if ( debug_mode & rvi_csr & csr_wr & (csr_addr==SOPHON_PKG::CSR_DCSR) ) begin
-                ebreakm <= csr_wdata[15];
-                step    <= csr_wdata[ 2];
-            end
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            debug_mode <= 1'b0;
+            dm_cause <= 3'd0;
         end
-
-        // // dpc
-        always_ff @(posedge clk_i, negedge rst_ni) begin
-            if(~rst_ni) 
-                dpc <= 32'd0;
-            else if ( debug_mode & rvi_csr & csr_wr & (csr_addr==SOPHON_PKG::CSR_DPC) ) 
-                dpc <= csr_wdata;
-            // ebreak records the current pc, debugger takes care of it
-            else if ( ~debug_mode & retire_vld & is_ebreak & ebreakm )
-                dpc <= pc;
-            // step records the next pc
-            else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & step ) 
-                dpc <= npc;
-            // record the last npc before debug mode
-            else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & dm_req_neg)
-               dpc <= npc;
+        else if ( dm_start ) begin
+            debug_mode <= 1'b1;
+            dm_cause <= dm_cause_d;
         end
-
-        always_ff @(posedge clk_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                dscratch0 <= 32'd0;
-                dscratch1 <= 32'd0;
-                dscratch2 <= 32'd0;
-            end
-            else if ( debug_mode & rvi_csr & csr_wr ) begin
-                if (csr_addr==SOPHON_PKG::CSR_DSCRATCH0)  dscratch0 <= csr_wdata;
-                if (csr_addr==SOPHON_PKG::CSR_DSCRATCH1)  dscratch1 <= csr_wdata;
-                if (csr_addr==SOPHON_PKG::CSR_DSCRATCH2)  dscratch2 <= csr_wdata;
-            end
+        else if ( debug_mode & retire_vld & is_dret ) begin
+            debug_mode <= 1'b0;
+            dm_cause <= 3'd0;
         end
+    end
+
+    // ------------------------------------------------
+    //  debug mode CSR register write
+    // ------------------------------------------------
+
+    assign xdebugver = 4'd4;
+
+    assign prv = curr_priv;
+
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            ebreakm <= 1'b0;
+            step    <= 1'b0;
+        end
+        else if ( debug_mode & rvi_csr & csr_wr & (csr_addr==SOPHON_PKG::CSR_DCSR) ) begin
+            ebreakm <= csr_wdata[15];
+            step    <= csr_wdata[ 2];
+        end
+    end
+
+    // // dpc
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            dpc <= 32'd0;
+        else if ( debug_mode & rvi_csr & csr_wr & (csr_addr==SOPHON_PKG::CSR_DPC) ) 
+            dpc <= csr_wdata;
+        // ebreak records the current pc, debugger takes care of it
+        else if ( ~debug_mode & retire_vld & is_ebreak & ebreakm )
+            dpc <= pc;
+        // step records the next pc
+        else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & step ) 
+            dpc <= npc;
+        // record the last npc before debug mode
+        else if ( ~debug_mode & ( retire_vld | (ex_vld&if_vld_neg) ) & dm_req_neg)
+           dpc <= npc;
+    end
+
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            dscratch0 <= 32'd0;
+            dscratch1 <= 32'd0;
+            dscratch2 <= 32'd0;
+        end
+        else if ( debug_mode & rvi_csr & csr_wr ) begin
+            if (csr_addr==SOPHON_PKG::CSR_DSCRATCH0)  dscratch0 <= csr_wdata;
+            if (csr_addr==SOPHON_PKG::CSR_DSCRATCH1)  dscratch1 <= csr_wdata;
+            if (csr_addr==SOPHON_PKG::CSR_DSCRATCH2)  dscratch2 <= csr_wdata;
+        end
+    end
 
         // ------------------------------------------------
         //  debug mode CSR register rdata
@@ -1682,8 +1731,8 @@ module SOPHON (
                 endcase
             end
         end
+    end
 
-    `endif
 
 
     // ----------------------------------------------------------------------
@@ -1712,13 +1761,15 @@ module SOPHON (
     // regfile
     genvar i;
     generate
-        for (i=1; i< REGFILE_LEN; i=i+1) begin:gen_regfile
-            always_ff @(posedge clk_i, negedge rst_ni) begin
-                if(~rst_ni) begin
-                    regfile[i] <= 32'd0;
-                end
-                // Sophon write port
-                else if ( wr_regfile && (rd_idx==i) ) begin
+        for (i=1; i<32; i=i+1) begin:gen_regfile
+            //always_ff @(posedge clk_i, negedge rst_ni) begin
+            always_ff @(posedge clk_i) begin
+                // if(~rst_ni) begin
+                //     regfile[i] <= 32'd0;
+                // end
+                // // Sophon write port
+                // else if ( wr_regfile && (rd_idx==i) ) begin
+                if ( wr_regfile && (rd_idx==i) ) begin
                     regfile[i] <= rd_val;
                 end
             `ifdef SOPHON_EEI

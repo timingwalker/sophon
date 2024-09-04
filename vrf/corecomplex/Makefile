@@ -94,8 +94,6 @@ compile_sw:
 
 compile_rtl:clean
 	vcs  $(CMP_OPTIONS) -top tb -f ./tb.f 
-	#vcs  $(CMP_OPTIONS) -top SOPHON_TOP -f ../../flist/sophon_top.f
-	#vcs  $(CMP_OPTIONS) -top SOPHON_AXI_TOP -f ../../flist/sophon_axi_top.f
 
 compile_rtl_sw:compile_sw compile_rtl
 

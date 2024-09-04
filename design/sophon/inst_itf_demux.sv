@@ -62,7 +62,7 @@ module INST_ITF_DEMUX #(
     //  Channel 1: to ITCM, combinatorial path, negedge
     // ----------------------------------------------------------------------
     always_comb begin
-        if ( (inst_core_addr_i[31:12]>=CH1_NEG_BASE[31:12]) && (inst_core_addr_i[31:12]<=CH1_NEG_END[31:12]) )
+        if ( (inst_core_addr_i>=CH1_NEG_BASE) && (inst_core_addr_i<=CH1_NEG_END) )
             inst_neg_req_o = inst_core_req_i;
         else
             inst_neg_req_o = 1'b0;

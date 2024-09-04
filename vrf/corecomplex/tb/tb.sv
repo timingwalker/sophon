@@ -282,13 +282,12 @@ module tb();
     // -----------------------------------
     //  Preload external memory
     // -----------------------------------
+    `ifdef SOPHON_EXT_INST_DATA
 
-        `ifdef SOPHON_EXT_INST_DATA
-
-            `ifndef ASIC
-                `define EXT_MEM(bankaddr) U_EXT_MEM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
-            `else
-            `endif
+        `ifndef ASIC
+            `define EXT_MEM(bankaddr) U_EXT_MEM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
+        `else
+        `endif
 
             localparam int unsigned EXT_MEM_BASE = CC_CFG_PKG::EXT_MEM_BASE;
             localparam int unsigned E_BANK_DEPTH = 1024;
@@ -314,9 +313,10 @@ module tb();
                         end
                     end
                 end
-            endgenerate
+            end
+        endgenerate
 
-        `endif
+    `endif
 
 
     // -----------------------------------
@@ -343,9 +343,9 @@ module tb();
             initial begin
                 // 1024*32bit=4KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 1024; i = i + 1 ) begin
+                    for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
+                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*2048 + i*4+by];
                         end
                     end
                 end
@@ -356,9 +356,9 @@ module tb();
             initial begin
                 // 1024*32bit=4KB
                 if (mem_mode=="TCM") begin
-                    for ( i = 0; i < 1024; i = i + 1 ) begin
+                    for ( i = 0; i < 512; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
+                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*2048 + i*4+by];
                         end
                     end
                 end
@@ -372,6 +372,7 @@ module tb();
     // ----------------------------------------------------------------------
     logic uart_tx;  
     logic uart_rx;  
+
     parameter  BAUDRATE = 115200;
 
     assign uart_rx     = dut_uart_tx;
@@ -654,7 +655,6 @@ module tb();
     // ----------------------------------------------------------------------
     //  Dump waveform
     // ----------------------------------------------------------------------
-
     `ifndef VERILATOR
         initial begin
           $fsdbDumpfile("test.fsdb"); 
@@ -676,6 +676,9 @@ module tb();
     `endif
     `ifdef SOPHON_EXT_ACCESS
         `include "./tc/ext_access.sv"
+    `endif
+    `ifdef SOPHON_EEI_GPIO
+        `include "./tc/fgpio.sv"
     `endif
 
 endmodule
