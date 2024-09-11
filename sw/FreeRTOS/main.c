@@ -43,10 +43,10 @@ void init_task1(void *pvParameters)
     {
         printf("TASK1....%d\r\n", counter);
         counter++;
-		//vTaskDelay(1000);
+		vTaskDelay(500);
         if (counter%2==0){
             tohost = 11;
-            taskYIELD();
+            //taskYIELD();
             //vTaskPrioritySet( xHandle_task1, tskIDLE_PRIORITY + 8 );
         }
     }
@@ -61,10 +61,10 @@ void init_task2(void *pvParameters)
     {
         printf("TASK2....%d\r\n", counter);
         counter++;
-		//vTaskDelay(1000);
+		vTaskDelay(500);
         if (counter%2==0){
             tohost = 22;
-            taskYIELD();
+            //taskYIELD();
             //vTaskPrioritySet( xHandle_task1, tskIDLE_PRIORITY + 8 );
         }
     }

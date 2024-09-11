@@ -44,10 +44,16 @@ SECTIONS
 
   /* bss segment */
   .sbss : {
+    . = ALIGN(4);
+    _bss_start = .;
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
   }
-  .bss : { *(.bss) }
+
+  .bss : {
+      *(.bss) 
+    _bss_end = .;
+  }
 
   /* thread-local data segment */
   .tdata :

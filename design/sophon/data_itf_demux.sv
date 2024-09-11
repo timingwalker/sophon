@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-06 11:28:20
-// Last Modified : 2024-07-25 15:41:15
+// Last Modified : 2024-09-10 14:35:36
 // Description   : Demux lsu interface    
 //                 NOTE: the addr decode granularity is 4KB
 // ----------------------------------------------------------------------
@@ -27,6 +27,8 @@ module DATA_ITF_DEMUX #(
 )(
      input logic                    clk_i
     ,input logic                    rst_ni
+    ,input logic                    clk_neg_i
+    ,input logic                    rst_neg_ni
     ,input  SOPHON_PKG::lsu_req_t   lsu_req_i
     ,output SOPHON_PKG::lsu_ack_t   lsu_ack_o
     ,output SOPHON_PKG::lsu_req_t   lsu_req_1ch_o
@@ -122,9 +124,20 @@ module DATA_ITF_DEMUX #(
             lsu_ack_o.error = 1'b1;    
         end
     end
-    
-    assign lsu_ack_o.rdata = lsu_req_2ch_o.req ? lsu_ack_2ch_i.rdata : lsu_ack_1ch_i.rdata;
 
+    // make sure lsu access external memory has the same timing behavior as accessing TCM
+    logic lsu_req_2ch_ack_toneg;
+    always @(posedge clk_neg_i or negedge rst_neg_ni) begin
+    	if(~rst_neg_ni) begin
+            lsu_req_2ch_ack_toneg <= 1'b0;
+        end
+        else begin
+            lsu_req_2ch_ack_toneg <= lsu_ack_2ch_i.ack;
+        end
+    end
+
+    //assign lsu_ack_o.rdata = lsu_req_2ch_o.req ? lsu_ack_2ch_i.rdata : lsu_ack_1ch_i.rdata;
+    assign lsu_ack_o.rdata = lsu_req_2ch_ack_toneg ? lsu_ack_2ch_i.rdata : lsu_ack_1ch_i.rdata;
 
 endmodule
 

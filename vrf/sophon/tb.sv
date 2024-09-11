@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-07-19 20:05:39
+// Last Modified : 2024-09-11 17:06:57
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -72,7 +72,7 @@ module tb(
          ,.data_wdata_o           (              ) 
          ,.data_amo_o             (              ) 
          ,.data_strb_o            (              ) 
-         ,.data_valid_i           ( 1'b1         ) 
+         ,.data_valid_i           ( 1'b0         ) 
          ,.data_error_i           ( 1'b1         ) 
          ,.data_rdata_i           ( 32'd0        ) 
          `endif

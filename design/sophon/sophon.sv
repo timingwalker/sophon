@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2024-08-16 16:27:33
+// Last Modified : 2024-09-10 16:12:08
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -136,11 +136,11 @@ module SOPHON (
     logic [7:0]  mpil;
     logic        minhv;
     logic [31:0] mintthresh, mnxti, mtvt;
-    logic        clic_npc_load, clic_npc_load_1d;
-    logic [4:0]  clic_irq_id_i_1d;
     logic        clic_en_pending;
+    logic        clic_npc_load, clic_npc_load_last;
     logic        clic_irq_direct_vld, clic_irq_vector_vld;
-    logic [31:0] clic_npc_vector;
+    logic [31:0] clic_npc_vector, clic_npc_vector_lock;
+    logic [4:0]  clic_irq_id;
 `endif
 
 
@@ -236,6 +236,8 @@ module SOPHON (
 `ifdef SOPHON_CLIC
 
     logic        npc_sel_clic_vector;
+    logic        npc_sel_clic_vector_1d;
+    logic        npc_sel_clic_vector_pos;
     logic        npc_sel_clic_direct;
 
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -250,10 +252,18 @@ module SOPHON (
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
         if(~rst_ni) 
             npc_sel_clic_vector <= 1'b0;
-        else if ( clic_npc_load & lsu_valid ) 
+        else if ( clic_npc_load & (lsu_req_o&lsu_ack_i) ) 
             npc_sel_clic_vector <= 1'b1;
         else if ( if_vld ) 
             npc_sel_clic_vector <= 1'b0;
+    end
+
+    assign npc_sel_clic_vector_pos = npc_sel_clic_vector & ~npc_sel_clic_vector_1d;
+    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
+        if(~rst_ni) 
+            npc_sel_clic_vector_1d <= 1'b0;
+        else 
+            npc_sel_clic_vector_1d <= npc_sel_clic_vector;
     end
 
 `endif
@@ -811,9 +821,10 @@ module SOPHON (
     assign lsu_req_o = lsu_pre_req | lsu_post_req;
 
     // lsu pre request can only be araise when there are no lsu addr misalign exceptions & interrupt
-    assign lsu_pre_req = if_vld_pos & ~irq_vld & ( ( (pre_is_lw|pre_is_sw           ) & ~(|lsu_addr_o[1:0]) )
-                                                 | ( (pre_is_lh|pre_is_lhu|pre_is_sh) & ~lsu_addr_o[0]      )
-                                                 | ( (pre_is_lb|pre_is_lbu|pre_is_sb)                       ) );
+    assign lsu_pre_req = ( if_vld_pos & ~irq_vld & ( ( (pre_is_lw|pre_is_sw           ) & ~(|lsu_addr_o[1:0]) )
+                                                   | ( (pre_is_lh|pre_is_lhu|pre_is_sh) & ~lsu_addr_o[0]      )
+                                                   | ( (pre_is_lb|pre_is_lbu|pre_is_sb)                       ) ))
+    `ifdef SOPHON_CLIC | ( clic_irq_vector_vld                                                                   ) `endif ;
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) 
@@ -822,11 +833,6 @@ module SOPHON (
             lsu_post_req <= 1'b0;
         else if ( lsu_pre_req )
             lsu_post_req <= 1'b1;
-    `ifdef SOPHON_CLIC
-        // clic load npc
-        else if ( clic_irq_vector_vld )
-            lsu_post_req <= 1'b1;
-    `endif
     end
 
     // capture at negedge
@@ -858,10 +864,11 @@ module SOPHON (
     // ------------------------------------------------
     //  LSU interface: addr/size/we/amo
     // ------------------------------------------------
+
     always_comb begin
     `ifdef SOPHON_CLIC
         if ( clic_npc_load )
-            lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id_i_1d<<2);
+            lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id<<2);
         else
     `endif
         if ( lsu_load )
@@ -1401,48 +1408,46 @@ module SOPHON (
         assign clic_mnxti_id_o  = mnxti_id;
 
         assign is_clic          = (mtvec[5:0]==6'b0000_11) ? 1'b1 : 1'b0;
-        assign if_stall_clic    = clic_npc_load;
 
-        always_ff @(posedge clk_i, negedge rst_ni) begin
+        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
             if (~rst_ni) begin
-                clic_irq_id_i_1d <= 5'd0;
+                if_stall_clic <= 1'b0;
             end
-            else if ( clic_irq_req_i & clic_irq_ack_o )
-                clic_irq_id_i_1d <= clic_irq_id_i;
-            else if ( is_mret & retire_vld )
-                clic_irq_id_i_1d <= 5'd0;
+            else if ( clic_npc_load & lsu_req_o & lsu_ack_i ) begin
+                if_stall_clic <= 1'b0;
+            end
+            else if ( clic_npc_load ) begin
+                if_stall_clic <= 1'b1;
+            end
         end
 
         // ------------------------------------------------
         //  CLIC vector mode
         // ------------------------------------------------
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                clic_npc_load <= 1'b0;
-            end
-            else if ( clic_irq_vector_vld ) begin
-                clic_npc_load <= 1'b1;
-            end
-            else if ( clic_npc_load & lsu_valid ) begin
-                clic_npc_load <= 1'b0;
-            end
-        end
-
-        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-            if(~rst_ni) 
-                clic_npc_load_1d <= 1'b0;
-            else
-                clic_npc_load_1d <= clic_npc_load;
-        end
-
         always_ff @(posedge clk_i, negedge rst_ni) begin
+            if(~rst_ni) begin
+                clic_npc_load_last <= 1'b0;
+            end
+            else if ( clic_npc_load & lsu_req_o & lsu_ack_i ) begin
+                clic_npc_load_last <= 1'b0;
+            end
+            else if ( clic_npc_load ) begin
+                clic_npc_load_last <= 1'b1;
+            end
+        end
+        assign clic_npc_load = clic_irq_vector_vld | clic_npc_load_last;
+
+        always_ff @(posedge clk_neg_i, negedge rst_ni) begin
             if(~rst_ni) 
-                clic_npc_vector <= 32'd0;
-            else if (clic_npc_load & lsu_req_o & lsu_ack_i)
-                clic_npc_vector <= lsu_rdata_i;
+                clic_npc_vector_lock <= 32'd0;
+            else if (npc_sel_clic_vector_pos)
+                clic_npc_vector_lock <= lsu_rdata_i;
         end
 
-        assign clic_npc_load_error = clic_npc_load & lsu_valid & lsu_error;
+        // if this is a long instruction fetch, make sure npc is stable
+        assign clic_npc_vector = npc_sel_clic_vector_pos ? lsu_rdata_i : clic_npc_vector_lock;
+
+        assign clic_npc_load_error = clic_npc_load & lsu_req_o & lsu_ack_i & lsu_error_i;
 
         // ------------------------------------------------
         //  current clic level
@@ -1491,10 +1496,10 @@ module SOPHON (
         always_ff @(posedge clk_i, negedge rst_ni) begin
             if (~rst_ni) 
                 minhv <= 1'b0;
-            else if ( clic_irq_vector_vld ) 
-                minhv <= 1'b1;
             else if ( clic_npc_load & lsu_valid & (~lsu_error) ) 
                 minhv <= 1'b0;
+            else if ( clic_irq_vector_vld ) 
+                minhv <= 1'b1;
             else if ( rvi_csr && csr_wr && is_clic && (csr_addr==SOPHON_PKG::CSR_MCAUSE) ) 
                 minhv <= csr_wdata[30];
         end
@@ -1771,29 +1776,48 @@ module SOPHON (
 
         assign clic_en_pending = is_clic & mstatus_mie & clic_irq_req_i & (clic_irq_level_i>curr_clic_level) ;
 
-        always_ff @(posedge clk_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                clic_irq_direct_vld <= 1'b0;
+        `ifndef SOPHON_CLIC_ACK_FF
+            // irq_vld is set as soon as possible, this will reduce 1 cycle of interrupt latency
+            assign clic_irq_vector_vld = clic_en_pending & if_vld_pos & clic_irq_shv_i;
+            assign clic_irq_direct_vld = clic_en_pending & if_vld_pos & ~clic_irq_shv_i;
+            assign clic_irq_id         = clic_irq_id_i;
+        `else
+            // cut off combinational path between clic_req and clic_ack if the clic controller has special requirement
+            always_ff @(posedge clk_i, negedge rst_ni) begin
+                if(~rst_ni) begin
+                    clic_irq_vector_vld <= 1'b0;
+                end
+                else if (clic_irq_vector_vld) begin
+                    clic_irq_vector_vld <= 1'b0;
+                end
+                else if (clic_en_pending & if_vld) begin
+                    clic_irq_vector_vld <=  clic_irq_shv_i;
+                end
             end
-            else if (clic_irq_direct_vld) begin
-                clic_irq_direct_vld <= 1'b0;
-            end
-            else if (clic_en_pending & if_vld) begin
-                clic_irq_direct_vld <= ~clic_irq_shv_i;
-            end
-        end
 
-        always_ff @(posedge clk_i, negedge rst_ni) begin
-            if(~rst_ni) begin
-                clic_irq_vector_vld <= 1'b0;
+            always_ff @(posedge clk_i, negedge rst_ni) begin
+                if(~rst_ni) begin
+                    clic_irq_direct_vld <= 1'b0;
+                end
+                else if (clic_irq_direct_vld) begin
+                    clic_irq_direct_vld <= 1'b0;
+                end
+                else if (clic_en_pending & if_vld) begin
+                    clic_irq_direct_vld <= ~clic_irq_shv_i;
+                end
             end
-            else if (clic_irq_vector_vld) begin
-                clic_irq_vector_vld <= 1'b0;
+
+            logic [4:0]  clic_irq_id_1d;
+            always_ff @(posedge clk_i, negedge rst_ni) begin
+                if (~rst_ni) begin
+                    clic_irq_id_1d <= 5'd0;
+                end
+                else if ( clic_en_pending & if_vld )
+                    clic_irq_id_1d <= clic_irq_id_i;
             end
-            else if (clic_en_pending & if_vld) begin
-                clic_irq_vector_vld <=  clic_irq_shv_i;
-            end
-        end
+            assign clic_irq_id = clic_irq_id_1d;
+
+        `endif 
 
         assign clic_irq_vld = clic_irq_direct_vld | clic_irq_vector_vld;
 
