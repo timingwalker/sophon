@@ -78,7 +78,8 @@ clear_bss_end:
   la t0, 1f
   csrw mtvec, t0
   la t0, vector_table
-  csrw mtvt, t0
+  # csrw mtvt, t0
+  csrw 0x307, t0
 1:
   # initialize trap vector
   la t0, trap_entry
