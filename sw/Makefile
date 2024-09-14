@@ -25,6 +25,10 @@ endif
 # ------------------------------------------------
 #  target
 # ------------------------------------------------
+hello: clean_hello
+	cd hello &&\
+	make
+
 fgpio_uart: clean_fgpio_uart
 	cd fgpio_uart &&\
 	make
@@ -71,25 +75,28 @@ coremark:
 # ------------------------------------------------
 #  clean
 # ------------------------------------------------
-clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_fgpio_uart clean_FreeRTOS
+clean: clean_benchmarks clean_isa clean_sanity-tests clean_coremark clean_hello clean_fgpio_uart clean_FreeRTOS
 
 clean_coremark:
 	[ ! -d build/coremark ]     || rm -rf ./build/coremark
 
+clean_hello:
+	[ ! -d build/hello ]        || rm -rf ./build/hello
+
 clean_fgpio_uart:
-	[ ! -d build/fgpio_uart ]     || rm -rf ./build/fgpio_uart
+	[ ! -d build/fgpio_uart ]   || rm -rf ./build/fgpio_uart
 
 clean_FreeRTOS:
 	[ ! -d build/FreeRTOS ]     || rm -rf ./build/FreeRTOS
 
 clean_benchmarks:
-	[ ! -d build/benchmarks ]     || $(MAKE) -C $(BMARKS_SRC_DIR)  clean ; rm -rf ./build/benchmarks
+	[ ! -d build/benchmarks ]   || $(MAKE) -C $(BMARKS_SRC_DIR)  clean ; rm -rf ./build/benchmarks
 	
 clean_isa:
-	[ ! -d build/isa ]    || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa
+	[ ! -d build/isa ]          || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa
 
 clean_sanity-tests:
-	[ ! -d build/sanity-tests ]     || rm -rf ./build/sanity-tests
+	[ ! -d build/sanity-tests ] || rm -rf ./build/sanity-tests
 
 subfold=$(shell find * -maxdepth 0 -type d)
 .PHONY: $(subfold)

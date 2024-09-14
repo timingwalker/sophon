@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-07-29 10:55:02
+// Last Modified : 2024-09-10 14:35:47
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -240,6 +240,8 @@ module SOPHON_TOP (
         (
             .clk_i         ( clk_i          ) ,
             .rst_ni        ( rst_ni         ) ,
+            .clk_neg_i     ( clk_neg_i      ) ,
+            .rst_neg_ni    ( rstn_neg_sync  ) ,
             .lsu_req_i     ( ext_access_req ) ,
             .lsu_ack_o     ( ext_access_ack ) ,
             .lsu_req_1ch_o ( ext_itcm_req   ) ,
@@ -306,6 +308,7 @@ module SOPHON_TOP (
 
         SOPHON_PKG::lsu_req_t   lsu_ext_req;
         SOPHON_PKG::lsu_ack_t   lsu_ext_ack;
+        logic [31:0]            data_rdata_toneg;
 
         DATA_ITF_DEMUX 
         #(
@@ -318,6 +321,8 @@ module SOPHON_TOP (
         (
             .clk_i         ( clk_i         ) ,
             .rst_ni        ( rst_ni        ) ,
+            .clk_neg_i     ( clk_neg_i     ) ,
+            .rst_neg_ni    ( rstn_neg_sync ) ,
             .lsu_req_i     ( lsu_core_req  ) ,
             .lsu_ack_o     ( lsu_core_ack  ) ,
             .lsu_req_1ch_o ( core_dtcm_req ) ,
@@ -336,7 +341,18 @@ module SOPHON_TOP (
 
         assign lsu_ext_ack.ack   = data_valid_i;
         assign lsu_ext_ack.error = data_error_i;
-        assign lsu_ext_ack.rdata = data_rdata_i; 
+        assign lsu_ext_ack.rdata = data_rdata_toneg;
+        //assign lsu_ext_ack.rdata = data_rdata_i; 
+
+        // make sure lsu access external memory has the same timing behavior as accessing TCM
+        always @(posedge clk_neg_i or negedge rstn_neg_sync) begin
+        	if(~rstn_neg_sync) begin
+                data_rdata_toneg <= 32'd0;
+            end
+            else if (data_req_o & data_valid_i) begin
+                data_rdata_toneg  <= data_rdata_i;
+            end
+        end
     `else
         assign core_dtcm_req = lsu_core_req;
         assign lsu_core_ack  = core_dtcm_ack;

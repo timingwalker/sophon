@@ -18,6 +18,10 @@
 // Description   : 
 // ----------------------------------------------------------------------
 
+`ifndef FGPIO_NUM
+    `define FGPIO_NUM 4
+`endif
+
 module SOPHON_FPGA_TOP(
 
 	input SYSCLK_P,
