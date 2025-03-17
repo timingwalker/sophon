@@ -1,4 +1,4 @@
-PROGRAM ?= hello
+PROGRAM ?= fgpio_spi
 
 default:run
 

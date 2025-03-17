@@ -1,5 +1,5 @@
-ext_access
-clint
-exception
-fgpio
-clic
+tc_ext_access
+tc_clint
+tc_exception
+tc_fgpio
+tc_clic

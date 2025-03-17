@@ -1,31 +1,41 @@
-NAME ?= NONE
+PROGRAM    ?= NONE
+SIMPLE_CRT ?= NO
+MARCH      ?= rv32ia
+MABI       ?= ilp32
+DEFINE     ?= -D__RV32E=0
+LDS_FILE   ?= link.ld
 
+# ----------------------------------------------------------------------
+#  Parameters
+# ----------------------------------------------------------------------
+COM_DIR     = .
+SW_DIR      = ../$(PROGRAM)
+BUILD_DIR   = ../build/$(PROGRAM)
 
-COM_DIR   = .
-SW_DIR    = ../$(NAME)
-BUILD_DIR = ../build/$(NAME)
+ifeq ($(SIMPLE_CRT), YES)
+	COM_SRC = syscalls_simple.c
+else 
+	COM_SRC = $(filter-out syscalls_simple.c, $(wildcard $(COM_DIR)/*.c))
+endif
+COM_ASM  = $(wildcard $(COM_DIR)/*.S)
 
-COM_SRC = $(wildcard $(COM_DIR)/*.c)
-COM_ASM = $(wildcard $(COM_DIR)/*.S)
 SW_SRC  ?= $(wildcard $(SW_DIR)/*.c)
-SW_ASM  = $(wildcard $(SW_DIR)/*.s)
+SW_ASM  ?= $(wildcard $(SW_DIR)/*.S)
 
 COM_OBJC = $(COM_SRC:.c=.com.c.o)
 COM_OBJS = $(COM_ASM:.S=.com.s.o)
 SW_OBJC  = $(SW_SRC:.c=.sw.c.o)
-SW_OBJS  = $(SW_ASM:.s=.sw.s.o)
-OBJ = $(notdir $(COM_OBJC) $(COM_OBJS) $(SW_OBJC) $(SW_OBJS))
+SW_OBJS  = $(SW_ASM:.S=.sw.s.o) 
+OBJ      = $(notdir $(COM_OBJC) $(COM_OBJS) $(SW_OBJC) $(SW_OBJS))
 
+CC       = riscv64-unknown-elf-gcc
+CFLAGS   = -march=$(MARCH) -mabi=$(MABI) -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR) $(DEFINE)
+LDFLAGS  = -static -nostdlib -nostartfiles -lm -lgcc 
+LINKER   = ../../common/$(LDS_FILE)
 
-CC      = riscv64-unknown-elf-gcc
-CFLAGS  = -march=rv32i_zicsr -mabi=ilp32 -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR)
-LDFLAGS = -static -nostdlib -nostartfiles -lm -lgcc 
-LINKER  = ../../common/link.ld
-# CFLAGS  = -march=rv32i -mabi=ilp32 -static -O2 -g -mcmodel=medany -ffunction-sections -fdata-sections \
-# 		  --specs=nano.specs -DMTIME_RATE_HZ_DEF=32768 -DSLEN=512 -DVLEN=512
-# LDFLAGS = -Wl,--gc-sections -Wl,-Map,psv.map -nostartfiles -nostdlib -lm -lc -lgcc
-
-
+# ----------------------------------------------------------------------
+#  Target
+# ----------------------------------------------------------------------
 default:all
 
 init:
@@ -43,7 +53,7 @@ clean:
 %.com.s.o: $(COM_DIR)/%.S init
 	$(CC) $(CFLAGS) -c $< -o $(BUILD_DIR)/$@
 
-%.sw.s.o: $(SW_DIR)/%.s init
+%.sw.s.o: $(SW_DIR)/%.S init
 	$(CC) $(CFLAGS) -c $< -o $(BUILD_DIR)/$@
 
 %.elf: $(OBJ)
@@ -64,7 +74,7 @@ clean:
 	riscv64-unknown-elf-objcopy -O verilog $^ $@ &&\
 	sed -i 's/@800/@000/g' $@
  
-all: $(NAME).hex $(NAME).dump $(NAME).bin $(NAME).elf 
+all: $(PROGRAM).hex $(PROGRAM).dump $(PROGRAM).bin $(PROGRAM).elf 
 
 debug:
 	echo $(OBJ)

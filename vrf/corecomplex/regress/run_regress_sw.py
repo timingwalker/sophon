@@ -31,8 +31,16 @@ def run_test_group (f_tc, sw_type):
     os.chdir(parent_pwd)
 
     os.system("make clean" )
-    os.system("make compile_sw TC_TYPE=" + sw_type )
     os.system("make compile_rtl" )
+
+    # compile software
+    #   sanity-tests (app) should be compiled one by one,
+    #   while isa/benchmarks can be compiled with sw_type
+    if sw_type=="app":
+        for tc in regress_tc:
+            os.system("make compile_sw TC=" + tc )
+    else:
+        os.system("make compile_sw TC_TYPE=" + sw_type )
 
     #----------------------- simulation ----------------------------------------------
     regress_result=[]
@@ -51,6 +59,8 @@ def run_test_group (f_tc, sw_type):
         for line in lines:
             if "Testcase PASS!" in line:
                 tc_result = "PASS"
+            elif "TC SKIP!" in line:
+                tc_result = "SKIP"
         f.close()
 
         regress_result.append( "%-20s : %6s :   %s\n" % (tc, tc_result, cmd_make_sim) )
@@ -99,15 +109,12 @@ if __name__ == "__main__":
             file.write( "Run test groups : %s\n" % (f_tc) )
             file.write( "="*72 + "\n")
 
-        if 'benchmarks' in f_tc:
-            sw_type = "benchmarks"
-            print ("benchmarks")
-        elif 'rv32' in f_tc:
+        if 'rv32' in f_tc:
             sw_type = "isa"
             print ("isa")
-        elif 'sanity' in f_tc:
-            sw_type = "sanity-tests"
-            print ("sanity-tests")
+        else :
+            sw_type = "app"
+            print ("app")
 
         # run test cases
         result_group = run_test_group(f_tc, sw_type)

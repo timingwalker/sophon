@@ -50,9 +50,9 @@ uint8_t gpio_input()
 
     // IO.in.bit
     asm volatile("li x6, 3 \n");
-    asm volatile("li x7, 7 \n");
+    asm volatile("li x7, 2 \n");
     asm volatile( ".insn r 0x0b,0,0x1,%0,x6,x7":"=r"(in_val) );
-    if (in_val!=0x80)
+    if (in_val!=0x6)
         rvalue = 1;
     
     return rvalue;

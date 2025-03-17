@@ -30,6 +30,7 @@ _start:
   li  x13,0
   li  x14,0
   li  x15,0
+#if __RV32E == 0
   li  x16,0
   li  x17,0
   li  x18,0
@@ -40,24 +41,14 @@ _start:
   li  x23,0
   li  x24,0
   li  x25,0
-  # li  x26,0
-  # li  x27,0
+  li  x26,0
+  li  x27,0
   li  x28,0
   li  x29,0
   li  x30,0
   li  x31,0
+#endif
 
-  # clear BSS
-  la x26, _bss_start
-  la x27, _bss_end
-  bge x26, x27, clear_bss
-clear_bss:
-  sw x0, 0(x26)
-  addi x26, x26, 4
-  ble x26,x27, clear_bss
-clear_bss_end:
-  li  x26,0
-  li  x27,0
 
   # make sure XLEN agrees with compilation choice
   li t0, 1
@@ -74,6 +65,7 @@ clear_bss_end:
 1:
 
 
+#if __RVZICSR == 1
   # set mtvt of CLIC mode
   la t0, 1f
   csrw mtvec, t0
@@ -84,6 +76,7 @@ clear_bss_end:
   # initialize trap vector
   la t0, trap_entry
   csrw mtvec, t0
+#endif
 
 
   # initialize global pointer
@@ -97,20 +90,41 @@ clear_bss_end:
   and tp, tp, -64
 
 
+#if __RVZICSR == 1
   # get core id
   csrr a0, mhartid
+#else
+  li a0, 0
+#endif
   # for now, assume only 1 core
   li a1, 1
 1:bgeu a0, a1, 1b
-  // Modify(hz) 11/01/24 11:02:03
+
   # give each core 16KB of stack + TLS
+#if __RV32E == 0
 #define STKSHIFT 14
+#else
+  # give each core 2KB of stack + TLS
+#define STKSHIFT 11
+#endif
   add sp, a0, 1
   sll sp, sp, STKSHIFT
   add sp, sp, tp
   sll a2, a0, STKSHIFT
   add tp, tp, a2
 
+
+  # clear BSS
+  la x6, _bss_start
+  la x7, _bss_end
+  bge x6, x7, clear_bss
+clear_bss:
+  sw x0, 0(x6)
+  addi x6, x6, 4
+  ble x6,x7, clear_bss
+clear_bss_end:
+  li  x6,0
+  li  x7,0
     
   j _init
 
@@ -135,6 +149,7 @@ trap_entry:
   SREG x13, 13*REGBYTES(sp)
   SREG x14, 14*REGBYTES(sp)
   SREG x15, 15*REGBYTES(sp)
+#if __RV32E == 0
   SREG x16, 16*REGBYTES(sp)
   SREG x17, 17*REGBYTES(sp)
   SREG x18, 18*REGBYTES(sp)
@@ -151,16 +166,20 @@ trap_entry:
   SREG x29, 29*REGBYTES(sp)
   SREG x30, 30*REGBYTES(sp)
   SREG x31, 31*REGBYTES(sp)
+#endif
 
+#if __RVZICSR == 1
   csrr a0, mcause
   csrr a1, mepc
+#endif
   mv a2, sp
   jal handle_trap
+#if __RVZICSR == 1
   csrw mepc, a0
-
   # Remain in M-mode after eret
   li t0, MSTATUS_MPP
   csrs mstatus, t0
+#endif
 
   LREG x1, 1*REGBYTES(sp)
   LREG x2, 2*REGBYTES(sp)
@@ -177,6 +196,7 @@ trap_entry:
   LREG x13, 13*REGBYTES(sp)
   LREG x14, 14*REGBYTES(sp)
   LREG x15, 15*REGBYTES(sp)
+#if __RV32E == 0
   LREG x16, 16*REGBYTES(sp)
   LREG x17, 17*REGBYTES(sp)
   LREG x18, 18*REGBYTES(sp)
@@ -193,6 +213,7 @@ trap_entry:
   LREG x29, 29*REGBYTES(sp)
   LREG x30, 30*REGBYTES(sp)
   LREG x31, 31*REGBYTES(sp)
+#endif
 
   addi sp, sp, 272
   mret

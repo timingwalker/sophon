@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 16:52:34
-// Last Modified : 2024-07-29 11:22:49
+// Last Modified : 2025-03-14 14:56:10
 // Description   : Custom execution units
 // ----------------------------------------------------------------------
 
@@ -60,23 +60,26 @@ module CUST(
         logic               fgpio_req;
         logic               fgpio_ack;
         logic               fgpio_error;
-        logic [31:0]        fgpio_rd_val;
+        logic [31:0]        fgpio_rd_val[`EEI_RD_MAX-1:0];
 
-        assign fgpio_req = eei_req & ~eei_ext & ( eei_funct3==3'b000 ) ;
+        // fgpio uses both regular EEI and enhanced EEI instructions
+        assign fgpio_req = eei_req & ( eei_funct3==3'b000 ) ;
 
         FGPIO U_FGPIO (
-            .clk_neg_i     ( clk_neg_i     ) ,
-            .rst_ni        ( rst_ni        ) ,
-            .fgpio_req     ( fgpio_req     ) ,
-            .fgpio_funct7  ( eei_funct7    ) ,
-            .fgpio_rs1_val ( eei_rs_val[0] ) ,
-            .fgpio_rs2_val ( eei_rs_val[1] ) ,
-            .fgpio_ack     ( fgpio_ack     ) ,
-            .fgpio_error   ( fgpio_error   ) ,
-            .fgpio_rd_val  ( fgpio_rd_val  ) ,
-            .gpio_dir      ( gpio_dir      ) ,
-            .gpio_in_val   ( gpio_in_val   ) ,
-            .gpio_out_val  ( gpio_out_val  ) 
+            .clk_i           ( clk_i         ) ,
+            .clk_neg_i       ( clk_neg_i     ) ,
+            .rst_ni          ( rst_ni        ) ,
+            .eei_ext         ( eei_ext       ) ,
+            .fgpio_req       ( fgpio_req     ) ,
+            .fgpio_funct7    ( eei_funct7    ) ,
+            .fgpio_batch_len ( eei_batch_len ) ,
+            .fgpio_rs_val    ( eei_rs_val    ) ,
+            .fgpio_ack       ( fgpio_ack     ) ,
+            .fgpio_error     ( fgpio_error   ) ,
+            .fgpio_rd_val    ( fgpio_rd_val  ) ,
+            .gpio_dir        ( gpio_dir      ) ,
+            .gpio_in_val     ( gpio_in_val   ) ,
+            .gpio_out_val    ( gpio_out_val  ) 
         );
 
     `endif
@@ -93,7 +96,8 @@ module CUST(
         logic               sreg_error;
         logic [31:0]        sreg_rd_val[`EEI_RD_MAX-1:0];
 
-        assign sreg_req  = eei_req &  eei_ext & ( eei_funct3==3'b000 ) ;
+        assign sreg_req  = eei_req &  eei_ext & ( eei_funct3==3'b001 ) ;
+        //assign sreg_req  = eei_req &  eei_ext & ( eei_funct3==3'b000 ) ;
 
         SNAPREG U_SNAPREG (
             .clk_i              ( clk_i           ) ,
@@ -135,36 +139,50 @@ module CUST(
 		end
 
 		for (genvar i=0; i<`EEI_RD_MAX; i++) begin : gen_cust_rd_val
-			if ( i==0 ) begin: gen_cust_rd0
-				always_comb begin
-					eei_rd_val[i] = 32'd0;
-					`ifdef SOPHON_EEI_GPIO
-						if ( fgpio_req )
-							eei_rd_val[i] = fgpio_rd_val;
-					`endif
-					`ifdef SOPHON_EEI_SREG
-						if ( sreg_req )
-							eei_rd_val[i] = sreg_rd_val[i];
-					`endif
-				end
-			end
-			else begin: gen_cust_rd_extend
-				always_comb begin
-					eei_rd_val[i] = 32'd0;
-					`ifdef SOPHON_EEI_SREG
-						if ( sreg_req )
-							eei_rd_val[i] = sreg_rd_val[i];
-					`endif
-				end
-			end
+            // TODO: 
+			`ifdef SOPHON_EEI_GPIO
+                assign eei_rd_val[i]=fgpio_rd_val[i];
+            `else
+                assign eei_rd_val[i]='0;
+            `endif
+			// if ( i==0 ) begin: gen_cust_rd0
+			// 	always_comb begin
+			// 		eei_rd_val[i] = 32'd0;
+			// 		`ifdef SOPHON_EEI_GPIO
+			// 			if ( fgpio_req )
+			// 				eei_rd_val[i] = fgpio_rd_val[i];
+			// 		`endif
+			// 		`ifdef SOPHON_EEI_SREG
+			// 			if ( sreg_req )
+			// 				eei_rd_val[i] = sreg_rd_val[i];
+			// 		`endif
+			// 	end
+			// end
+			// else begin: gen_cust_rd_extend
+			// 	always_comb begin
+			// 		eei_rd_val[i] = 32'd0;
+			// 		`ifdef SOPHON_EEI_GPIO
+			// 			if ( fgpio_req )
+			// 				eei_rd_val[i] = fgpio_rd_val[i];
+			// 		`endif
+			// 		`ifdef SOPHON_EEI_SREG
+			// 			if ( sreg_req )
+			// 				eei_rd_val[i] = sreg_rd_val[i];
+			// 		`endif
+			// 	end
+			// end
 		end
 
 		always_comb begin
 			eei_rd_op  = 2'd0;
 			eei_rd_len = 5'd0;
 			`ifdef SOPHON_EEI_GPIO
-				if (fgpio_req) 
+				if (fgpio_req & ~eei_ext) 
 					eei_rd_op = 2'd1;
+				else if (fgpio_req & eei_ext) begin
+					eei_rd_op = 2'd3;
+					eei_rd_len = eei_batch_len;
+				end
 			`endif
 			`ifdef SOPHON_EEI_SREG
 				if (sreg_req ) begin

@@ -14,12 +14,12 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2024-08-05 11:36:49
+// Last Modified : 2024-11-13 10:09:48
 // Description   : 
 // ----------------------------------------------------------------------
 
 `ifndef FGPIO_NUM
-    `define FGPIO_NUM 4
+    `define FGPIO_NUM 32
 `endif
 
 module SOPHON_FPGA_TOP(

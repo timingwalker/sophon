@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-08-30 09:44:12
+// Last Modified : 2025-03-14 15:43:31
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ module tb();
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
-            .ClkPeriod    ( 25ns ),
+            .ClkPeriod    ( 20ns ),
             .RstClkCycles ( 5    )
         ) u_clk_gen 
         (
@@ -525,11 +525,12 @@ module tb();
         // Test case
         // -----------------------------------
         case (tc)
-            "clint"               : clint()                                     ;
-            "ext_access"          : `ifdef SOPHON_EXT_ACCESS ext_access()     `endif;
-            "clic"                : `ifdef SOPHON_CLIC       clic()           `endif;
+            "tc_clint"            : clint()                                     ;
+            "tc_ext_access"       : `ifdef SOPHON_EXT_ACCESS ext_access()     `endif;
+            "tc_clic"             : `ifdef SOPHON_CLIC       clic()           `endif;
+            "tc_fgpio"            : `ifdef SOPHON_EEI_GPIO   fgpio()          `endif;
             "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO   fgpio_uart()     `endif;
-            "fgpio"               : `ifdef SOPHON_EEI_GPIO   fgpio()          `endif;
+            "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO   fgpio_spi()      `endif;
             default               : ;
         endcase
 
@@ -631,16 +632,15 @@ module tb();
     // -----------------------------------
     initial begin
 
-        reg [8*20:0]  tc_type;
+        //reg [8*20:0]  tc_type;
+        //if ( $value$plusargs("TC_TYPE=%s",tc_type ) ) begin
+        //    $display("TC_TYPE=%s\n",  tc_type);
+        //end
 
-        if ( $value$plusargs("TC_TYPE=%s",tc_type ) ) begin
-            $display("TC_TYPE=%s\n",  tc_type);
-        end
-
-        case (tc_type)
-            "benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
-            "app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
-            default      : begin $display("TIMEOUTE=3ms\n"  );  #3ms   ; end
+        case (tc)
+            //"benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            //"app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            default        : begin $display("TIMEOUTE=10ms\n"  ); #10ms  ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");
 

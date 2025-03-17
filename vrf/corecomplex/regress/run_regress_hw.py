@@ -3,21 +3,13 @@
 import os
 import time
 
-# hw_feature_group = ["SOPHON_EXT_ACCESS", \
-#                     "SOPHON_EEI SOPHON_CLIC"\
-#                     ]
-
-hw_feature_group = ["SOPHON_EXT_ACCESS", \
-                    "SOPHON_EXT_INST", \
-                    "SOPHON_EXT_DATA", \
-                    "SOPHON_EEI", \
+hw_feature_group = ["SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
                     "SOPHON_CLIC", \
-                    "SOPHON_RVDEBUG", \
-                    "SOPHON_EXT_INST SOPHON_EXT_DATA", \
-                    "SOPHON_EXT_ACCESS SOPHON_EXT_INST SOPHON_EXT_DATA", \
-                    "SOPHON_EEI SOPHON_CLIC",\
-                    "SOPHON_EEI SOPHON_CLIC SOPHON_EXT_ACCESS SOPHON_EXT_INST SOPHON_EXT_DATA" \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_CLIC", \
+                    "SOPHON_RVE", \
                     ]
+
+always_on_hw_feature = "SOPHON_CLINT SOPHON_ZICSR SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EXT_ACCESS"
 
 # relative to regress directory
 cfg_path = "../../../design/config/"
@@ -49,6 +41,8 @@ if __name__ == "__main__":
         with open(cfg_file, "w") as file:
             file.write( "// hw regress test\n")
 
+        hw_feature = always_on_hw_feature + " " + hw_feature
+
         hw_feature_spilt = hw_feature.split(" ")
         log_sub_dir = ""
         for feature in hw_feature_spilt:
@@ -58,8 +52,8 @@ if __name__ == "__main__":
                 file.write('\n')
 
         # call software regress test
-        # os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc benchmarks.tc")
-        os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc")
+        os.system("./run_regress_sw.py sw_tmp_log sanity-tests.tc rv32ui.tc benchmarks.tc")
+        # os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc")
 
         # check result
         hw_feature_result = "PASS"

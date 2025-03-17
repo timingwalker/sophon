@@ -1,3 +1,5 @@
+#include "encoding.h"
+
 .align 6
 .global trap_entry
 trap_entry:
@@ -9,15 +11,17 @@ trap_entry:
     sw a3, 4*4(sp)
     sw a4, 5*4(sp)
     sw a5, 6*4(sp)
-    sw a6, 7*4(sp)
-    sw a7, 8*4(sp)
     sw t0, 9*4(sp)
     sw t1, 10*4(sp)
     sw t2, 11*4(sp)
+#if __RV32E == 0
+    sw a6, 7*4(sp)
+    sw a7, 8*4(sp)
     sw t3, 12*4(sp)
     sw t4, 13*4(sp)
     sw t5, 14*4(sp)
     sw t6, 15*4(sp)
+#endif
 
     #csrrsi a0, mnxti, 0x1    # Get highest current interrupt, but disable MIE
     csrrsi a0, 0x345, 0x1    # Get highest current interrupt, but disable MIE
@@ -38,15 +42,17 @@ service_loop:
     lw a3, 4*4(sp)
     lw a4, 5*4(sp)
     lw a5, 6*4(sp)
-    lw a6, 7*4(sp)
-    lw a7, 8*4(sp)
     lw t0, 9*4(sp)
     lw t1, 10*4(sp)
     lw t2, 11*4(sp)
+#if __RV32E == 0
+    lw a6, 7*4(sp)
+    lw a7, 8*4(sp)
     lw t3, 12*4(sp)
     lw t4, 13*4(sp)
     lw t5, 14*4(sp)
     lw t6, 15*4(sp)
+#endif
  exit:   
     addi sp, sp, 16*4
 
@@ -59,7 +65,12 @@ service_loop:
 .global trap_entry_snapreg
 trap_entry_snapreg:
     # .insn r 0x2b,0,0x0,x1,x30,x0
+#if __RV32E == 0
     .insn r 0x2b,0,0x0,x0,x1,x30
+#else
+    .insn r 0x2b,1,0x0,x0,x1,x15
+    //snapreg_save(x0,x1,x15)
+#endif
 
     #csrrsi a0, mnxti, 0x1    # Get highest current interrupt, but disable MIE
     csrrsi a0, 0x345, 0x1    # Get highest current interrupt, but disable MIE
@@ -74,7 +85,12 @@ service_loop2:
     bnez a0, service_loop2   # Loop to service any interrupt.
 
     # .insn r 0x2b,0,0x40,x1,x30,x0
+#if __RV32E == 0
      .insn r 0x2b,0,0x40,x0,x1,x30
+#else
+    //snapreg_recover(x0,x1,x15)
+     .insn r 0x2b,1,0x40,x0,x1,x15
+#endif
  exit2:   
     mret
 

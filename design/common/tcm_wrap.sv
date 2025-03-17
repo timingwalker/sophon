@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-09 16:42:12
-// Last Modified : 2024-07-29 14:56:12
+// Last Modified : 2024-11-26 15:21:47
 // Description   : TCM wrapper
 // ----------------------------------------------------------------------
 
@@ -36,8 +36,9 @@ module TCM_WRAP
     // spilt to several bank
     localparam int unsigned BANK_DEPTH        = 1024;
     localparam int unsigned BANK_NUM          = DEPTH / BANK_DEPTH;
-    localparam int unsigned BANK_ADDR_WIDTH   = $clog2(BANK_NUM); 
-    localparam int unsigned COMMON_ADDR_WIDTH = ADDR_WIDTH-BANK_ADDR_WIDTH; 
+    //localparam int unsigned BANK_ADDR_WIDTH = $clog2(BANK_NUM); 
+    localparam int unsigned BANK_ADDR_WIDTH   = (BANK_NUM==1) ? 1 : $clog2(BANK_NUM); 
+    localparam int unsigned COMMON_ADDR_WIDTH = (BANK_NUM==1) ? ADDR_WIDTH : ADDR_WIDTH-BANK_ADDR_WIDTH; 
     
     logic [BANK_ADDR_WIDTH-1:0]             bank_addr;
     logic [BANK_ADDR_WIDTH-1:0]             bank_addr_q;
@@ -46,7 +47,7 @@ module TCM_WRAP
     logic [COMMON_ADDR_WIDTH-1:0]           addr_common;
     
     // addr_i = { bank_addr, addr_common }
-    assign bank_addr   = addr_i[ADDR_WIDTH-1 -: BANK_ADDR_WIDTH]; // select bank ram
+    assign bank_addr   = (BANK_NUM==1) ? 1'b0 :addr_i[ADDR_WIDTH-1 -: BANK_ADDR_WIDTH]; // select bank ram
     assign addr_common = addr_i[COMMON_ADDR_WIDTH-1:0 ];          // addr inside bank
 
 
@@ -63,7 +64,7 @@ module TCM_WRAP
 
     genvar i;
     generate
-        for (i=0; i<BANK_NUM; i=i+1) begin:gen_spilt_ram // 512*32bit=2KB
+        for (i=0; i<BANK_NUM; i=i+1) begin:gen_spilt_ram // 1024*32bit=4KB
 
             assign bank_en[i] = en_i & (bank_addr==BANK_ADDR_WIDTH'(i));
     
@@ -102,7 +103,8 @@ module TCM_WRAP
 
 
     // Spilt rdata mux to optimize timing
-    localparam int unsigned RDATA_MUX_NUM = BANK_NUM / 4;
+    //localparam int unsigned RDATA_MUX_NUM = BANK_NUM / 4;
+    localparam int unsigned RDATA_MUX_NUM = (BANK_NUM<4) ? 1 : BANK_NUM / 4;
     logic [DATA_WIDTH-1:0]  rdata_mux[RDATA_MUX_NUM-1:0];
     genvar m,n;
 
@@ -112,20 +114,25 @@ module TCM_WRAP
     end
 
     generate
-    for (m=0; m<RDATA_MUX_NUM; m=m+1) begin:gen_rdata_l1
-        always_comb begin
-            case (bank_addr_q[1:0])
-                2'b00  : rdata_mux[m] = bank_rdata[m*4+0];
-                2'b01  : rdata_mux[m] = bank_rdata[m*4+1];
-                2'b10  : rdata_mux[m] = bank_rdata[m*4+2];
-                2'b11  : rdata_mux[m] = bank_rdata[m*4+3];
-                default: rdata_mux[m] = '0;
-            endcase
+        if (BANK_NUM==1)
+            assign rdata_o = bank_rdata[0];
+        else if (BANK_NUM==2)
+            assign rdata_o = bank_addr_q ? bank_rdata[1] : bank_rdata[0];
+        else begin
+            for (m=0; m<RDATA_MUX_NUM; m=m+1) begin:gen_rdata_l1
+                always_comb begin
+                    case (bank_addr_q[1:0])
+                        2'b00  : rdata_mux[m] = bank_rdata[m*4+0];
+                        2'b01  : rdata_mux[m] = bank_rdata[m*4+1];
+                        2'b10  : rdata_mux[m] = bank_rdata[m*4+2];
+                        2'b11  : rdata_mux[m] = bank_rdata[m*4+3];
+                        default: rdata_mux[m] = '0;
+                    endcase
+                end
+            end
+            assign rdata_o = rdata_mux[bank_addr_q[BANK_ADDR_WIDTH-1:2]];
         end
-    end
     endgenerate
-
-    assign rdata_o = rdata_mux[bank_addr_q[BANK_ADDR_WIDTH-1:2]];
 
 endmodule
 
