@@ -66,10 +66,10 @@ service_loop:
 trap_entry_snapreg:
     # .insn r 0x2b,0,0x0,x1,x30,x0
 #if __RV32E == 0
-    .insn r 0x2b,0,0x0,x0,x1,x30
+    .insn r 0x2b,1,0x0,x0,x1,x30
+    #snapreg_save(x0,x1,x30)
 #else
     .insn r 0x2b,1,0x0,x0,x1,x15
-    //snapreg_save(x0,x1,x15)
 #endif
 
     #csrrsi a0, mnxti, 0x1    # Get highest current interrupt, but disable MIE
@@ -86,9 +86,9 @@ service_loop2:
 
     # .insn r 0x2b,0,0x40,x1,x30,x0
 #if __RV32E == 0
-     .insn r 0x2b,0,0x40,x0,x1,x30
+    .insn r 0x2b,1,0x40,x0,x1,x30
+    #snapreg_recover(x0,x1,x30)
 #else
-    //snapreg_recover(x0,x1,x15)
      .insn r 0x2b,1,0x40,x0,x1,x15
 #endif
  exit2:   

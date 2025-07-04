@@ -15,6 +15,7 @@
 
 extern volatile uint64_t tohost;
 extern volatile uint64_t fromhost;
+extern volatile uint64_t hwinfo;
 
 static uintptr_t syscall(uintptr_t which, uint64_t arg0, uint64_t arg1, uint64_t arg2)
 {
@@ -78,10 +79,7 @@ void abort()
 
 void printstr(const char* s)
 {
-
-  // syscall(SYS_write, 1, (uintptr_t)s, strlen(s));
-  
-  // Modify(hz) 07/06/23 17:00:28
+  if (hwinfo & (1<<HWINFO_EXT_DATA)){
     while (*s) 
     {		
         if (*s == '\n') 
@@ -91,6 +89,10 @@ void printstr(const char* s)
         uart_putc(g_console_port, *s);
         s++;
     }
+  }
+  else {
+    //syscall(SYS_write, 1, (uintptr_t)s, strlen(s));
+  }
 }
 
 void __attribute__((weak)) thread_entry(int cid, int nc)
@@ -119,11 +121,15 @@ static void init_tls()
 
 void _init(int cid, int nc)
 {
+
+  asm volatile("csrr %0, 0xcc0":"=r"(hwinfo));
+
   init_tls();
   thread_entry(cid, nc);
 
-  // Modify(hz) 09/06/23 09:09:17
-  uart_init();
+  if (hwinfo & (1<<HWINFO_EXT_DATA)){
+    uart_init();
+  }
 
   // only single-threaded programs should ever get here.
   int ret = main(0, 0);

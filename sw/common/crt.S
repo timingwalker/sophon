@@ -125,7 +125,7 @@ clear_bss:
 clear_bss_end:
   li  x6,0
   li  x7,0
-    
+
   j _init
 
 
@@ -253,3 +253,6 @@ tohost: .dword 0
 .align 6
 .globl fromhost
 fromhost: .dword 0
+.align 6
+.globl hwinfo
+hwinfo: .dword 0

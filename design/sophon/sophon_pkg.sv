@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2025-03-03 17:11:09
+// Last Modified : 2025-07-03 16:43:57
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2025-03-03 17:11:09
+// Last Modified : 2025-07-03 16:43:57
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -108,6 +108,9 @@ package SOPHON_PKG;
     localparam CSR_DSCRATCH1    = 12'h7b3;
     localparam CSR_DSCRATCH2    = 12'h7b4;
 
+    // custom CSR
+    // hardware parameter infomation
+    localparam CSR_HW_PARAMETER = 12'hcc0;
 
     localparam BIT_MSI          = 3;
     localparam BIT_MTI          = 7;

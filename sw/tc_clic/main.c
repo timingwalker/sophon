@@ -25,10 +25,12 @@ int main()
     counter     = 0;
     counter_old = 0;
 
-    // CLIC mode : bit[1:0]=11
+    // set interrupt to CLIC mode : bit[1:0]=11
     asm volatile("csrs mtvec, %0"::"r"(3));
+
     // // mie is replace by clicintie in CLIC controller
     // asm volatile("csrs mie, %0"::"r"(1<<11));
+
     // enable interrupt
     asm volatile("csrs mstatus, %0"::"r"(1<<3));
 

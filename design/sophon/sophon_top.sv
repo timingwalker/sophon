@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2024-09-10 14:35:47
+// Last Modified : 2025-07-04 15:03:02
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -297,8 +297,18 @@ module SOPHON_TOP (
         assign inst_pos_ack.error = inst_ext_error_i;
 
     `else
-        assign core_itcm_req = inst_core_req;
-        assign inst_core_ack = core_itcm_ack;
+        // assign core_itcm_req = inst_core_req;
+        // assign inst_core_ack = core_itcm_ack;
+        logic addr_inside_itcm;
+
+        assign addr_inside_itcm = ( (inst_core_req.addr[31:12]>=SOPHON_PKG::ITCM_BASE[31:12]) && (inst_core_req.addr[31:12]<=SOPHON_PKG::ITCM_END[31:12]) ) ? 1'b1 : 1'b0;
+
+        assign core_itcm_req.req   = inst_core_req.req & addr_inside_itcm;
+        assign core_itcm_req.addr  = inst_core_req.addr;
+
+        assign inst_core_ack.ack    = addr_inside_itcm ? core_itcm_ack.ack : inst_core_req.req;
+        assign inst_core_ack.error  = inst_core_ack.ack & ~addr_inside_itcm;
+        assign inst_core_ack.rdata  = core_itcm_ack.rdata;
     `endif
 
     // -----------------------------------
@@ -354,8 +364,21 @@ module SOPHON_TOP (
             end
         end
     `else
-        assign core_dtcm_req = lsu_core_req;
-        assign lsu_core_ack  = core_dtcm_ack;
+        logic addr_inside_dtcm;
+
+        assign addr_inside_dtcm = ( (lsu_core_req.addr[31:12]>=SOPHON_PKG::DTCM_BASE[31:12]) && (lsu_core_req.addr[31:12]<=SOPHON_PKG::DTCM_END[31:12]) ) ? 1'b1 : 1'b0;
+
+        assign core_dtcm_req.req   = lsu_core_req.req & addr_inside_dtcm  ;
+        assign core_dtcm_req.we    = lsu_core_req.we   ;
+        assign core_dtcm_req.addr  = lsu_core_req.addr ;
+        assign core_dtcm_req.wdata = lsu_core_req.wdata;
+        assign core_dtcm_req.amo   = lsu_core_req.amo  ;
+        assign core_dtcm_req.size  = lsu_core_req.size ;
+        assign core_dtcm_req.strb  = lsu_core_req.strb ;
+
+        assign lsu_core_ack.ack    = addr_inside_dtcm ? core_dtcm_ack.ack : lsu_core_req.req;
+        assign lsu_core_ack.error  = lsu_core_ack.ack & ~addr_inside_dtcm;
+        assign lsu_core_ack.rdata  = core_dtcm_ack.rdata;
     `endif
 
 
@@ -486,13 +509,14 @@ module SOPHON_TOP (
         );
 
     `else
+        // the access address is checked in upstream
         assign dtcm_req            = core_dtcm_req.req;
         assign dtcm_addr           = core_dtcm_req.addr;
         assign dtcm_wdata          = core_dtcm_req.wdata;
         assign dtcm_we             = core_dtcm_req.we;
         assign dtcm_be             = core_dtcm_req.strb;
         assign core_dtcm_ack.ack   = core_dtcm_req.req; 
-        assign core_dtcm_ack.error = 1'b0; // TODO: if addr from core out of DTCM range 
+        assign core_dtcm_ack.error = 1'b0; 
         assign core_dtcm_ack.rdata = dtcm_rdata;
     `endif
 

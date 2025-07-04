@@ -3,13 +3,24 @@
 import os
 import time
 
-hw_feature_group = ["SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
+# hw_feature_group = ["SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
+#                     "SOPHON_CLIC", \
+#                     "SOPHON_EEI SOPHON_EEI_SREG SOPHON_CLIC", \
+#                     "SOPHON_RVE", \
+#                     ]
+
+# always_on_hw_feature = "SOPHON_CLINT SOPHON_ZICSR SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EXT_ACCESS"
+
+hw_feature_group = ["SOPHON_EXT_INST", \
+                    "SOPHON_EXT_DATA", \
+                    "SOPHON_EXT_INST SOPHON_EXT_DATA", \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
                     "SOPHON_CLIC", \
                     "SOPHON_EEI SOPHON_EEI_SREG SOPHON_CLIC", \
                     "SOPHON_RVE", \
+                    "SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO SOPHON_CLIC", \
                     ]
-
-always_on_hw_feature = "SOPHON_CLINT SOPHON_ZICSR SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EXT_ACCESS"
+always_on_hw_feature = "SOPHON_EXT_ACCESS SOPHON_CLINT SOPHON_ZICSR"
 
 # relative to regress directory
 cfg_path = "../../../design/config/"

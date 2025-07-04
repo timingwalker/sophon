@@ -35,5 +35,9 @@ typedef __u32 u32;
 
 int printf(const char* fmt, ...);
 
+#define HWINFO_EXT_INST   0
+#define HWINFO_EXT_DATA   1
+#define HWINFO_EXT_ACCESS 2
+
 
 #endif 

@@ -11,7 +11,8 @@ uintptr_t handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
 {
     // MEI
     if (cause== (1<<31|IRQ_M_EXT) ){
-        counter = counter + 3;
+        //counter = counter + 3;
+        counter = 66;
     }
     // MTI
     else if (cause==(1<<31|IRQ_M_TIMER)){
@@ -43,7 +44,7 @@ int main()
     // enable MIE
     asm volatile("csrs mstatus, %0"::"r"(1<<3));
 
-    while( tohost!=12 ) {
+    while( tohost!=66 ) {
         if (counter_old != counter){
             counter_old = counter;
             tohost  = counter;

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2025-01-07 14:13:40
+// Last Modified : 2025-07-04 14:38:20
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -1216,7 +1216,7 @@ module SOPHON (
                                                      SOPHON_PKG::CSR_MSTATUS, SOPHON_PKG::CSR_MISA, SOPHON_PKG::CSR_MIE, SOPHON_PKG::CSR_MTVEC, 
                                                      SOPHON_PKG::CSR_MSCRATCH, SOPHON_PKG::CSR_MEPC, SOPHON_PKG::CSR_MCAUSE, SOPHON_PKG::CSR_MTVAL, 
                                                      SOPHON_PKG::CSR_MIP, SOPHON_PKG::CSR_MCYCLE, SOPHON_PKG::CSR_MCYCLEH, SOPHON_PKG::CSR_MINSTRET, 
-                                                     SOPHON_PKG::CSR_MINSTRETH };
+                                                     SOPHON_PKG::CSR_MINSTRETH, SOPHON_PKG::CSR_HW_PARAMETER };
 
     `ifdef SOPHON_CLIC
     assign is_csr_clic = rvi_csr & csr_addr inside { SOPHON_PKG::CSR_MTVT, SOPHON_PKG::CSR_MINTSTATUS, 
@@ -1251,44 +1251,48 @@ module SOPHON (
         csr_rdata_rvi   = 32'b0;
         if ( rvi_csr & csr_rd ) begin
             unique case ( csr_addr )
-                SOPHON_PKG::CSR_MVENDORID , 
-                SOPHON_PKG::CSR_MARCHID   , 
-                SOPHON_PKG::CSR_MIMPID    : csr_rdata_rvi = 32'd0;
-                SOPHON_PKG::CSR_MHARTID   : csr_rdata_rvi = hart_id_i;
-                SOPHON_PKG::CSR_MSTATUS   : csr_rdata_rvi = { 19'd0        , 
-                                              mstatus_mpp  , 3'b0, 
-                                              mstatus_mpie , 3'b0,
-                                              mstatus_mie  , 3'd0 };
-                SOPHON_PKG::CSR_MISA      : csr_rdata_rvi = { 2'b01 , // RV32
-                                              4'd0  , // WLRL
-                                              26'd0   // Extensions
-                                            }
-                                            // I ISA
-                                            | 32'd1 << 8 ;
-                SOPHON_PKG::CSR_MIE       : csr_rdata_rvi = {32{~is_clic}} & mie;
-                SOPHON_PKG::CSR_MTVEC     : csr_rdata_rvi = mtvec;
-                SOPHON_PKG::CSR_MSCRATCH  : csr_rdata_rvi = mscratch;
-                SOPHON_PKG::CSR_MEPC      : csr_rdata_rvi = mepc;
-                SOPHON_PKG::CSR_MCAUSE    : csr_rdata_rvi = `ifdef SOPHON_CLIC is_clic ? { mcause[31], 
-                                                                                           minhv, 
-                                                                                           mstatus_mpp, 
-                                                                                           mstatus_mpie, 
-                                                                                           3'd0, 
-                                                                                           mpil, 
-                                                                                           4'd0, 
-                                                                                           mcause[11:0] }
-                                                                                       : `endif
-                                                            mcause ;
-                SOPHON_PKG::CSR_MTVAL     : csr_rdata_rvi = mtval;
-                SOPHON_PKG::CSR_MIP       : csr_rdata_rvi = {32{~is_clic}} & { 19'd0     ,  
-                                                                               irq_mei_i , 3'b0, 
-                                                                               irq_mti_i , 3'b0,
-                                                                               irq_msi_i , 3'd0 };
-                SOPHON_PKG::CSR_MCYCLE    : csr_rdata_rvi = mcycle[31:0];
-                SOPHON_PKG::CSR_MCYCLEH   : csr_rdata_rvi = mcycle[63:32];
-                SOPHON_PKG::CSR_MINSTRET  : csr_rdata_rvi = minstret[31:0];
-                SOPHON_PKG::CSR_MINSTRETH : csr_rdata_rvi = minstret[63:32];
-                default                 : csr_rdata_rvi   = 32'd0;
+                SOPHON_PKG::CSR_MVENDORID    , 
+                SOPHON_PKG::CSR_MARCHID      , 
+                SOPHON_PKG::CSR_MIMPID       : csr_rdata_rvi = 32'd0;
+                SOPHON_PKG::CSR_MHARTID      : csr_rdata_rvi = hart_id_i;
+                SOPHON_PKG::CSR_MSTATUS      : csr_rdata_rvi = { 19'd0        , 
+                                                 mstatus_mpp  , 3'b0, 
+                                                 mstatus_mpie , 3'b0,
+                                                 mstatus_mie  , 3'd0 };
+                SOPHON_PKG::CSR_MISA         : csr_rdata_rvi = { 2'b01 , // RV32
+                                                 4'd0  , // WLRL
+                                                 26'd0   // Extensions
+                                               }
+                                               // I ISA
+                                               | 32'd1 << 8 ;
+                SOPHON_PKG::CSR_MIE          : csr_rdata_rvi = {32{~is_clic}} & mie;
+                SOPHON_PKG::CSR_MTVEC        : csr_rdata_rvi = mtvec;
+                SOPHON_PKG::CSR_MSCRATCH     : csr_rdata_rvi = mscratch;
+                SOPHON_PKG::CSR_MEPC         : csr_rdata_rvi = mepc;
+                SOPHON_PKG::CSR_MCAUSE       : csr_rdata_rvi = `ifdef SOPHON_CLIC is_clic ? { mcause[31], 
+                                                                                              minhv, 
+                                                                                              mstatus_mpp, 
+                                                                                              mstatus_mpie, 
+                                                                                              3'd0, 
+                                                                                              mpil, 
+                                                                                              4'd0, 
+                                                                                              mcause[11:0] }
+                                                                                          : `endif
+                                                               mcause ;
+                SOPHON_PKG::CSR_MTVAL        : csr_rdata_rvi = mtval;
+                SOPHON_PKG::CSR_MIP          : csr_rdata_rvi = {32{~is_clic}} & { 19'd0     ,  
+                                                                                  irq_mei_i , 3'b0, 
+                                                                                  irq_mti_i , 3'b0,
+                                                                                  irq_msi_i , 3'd0 };
+                SOPHON_PKG::CSR_MCYCLE       : csr_rdata_rvi = mcycle[31:0];
+                SOPHON_PKG::CSR_MCYCLEH      : csr_rdata_rvi = mcycle[63:32];
+                SOPHON_PKG::CSR_MINSTRET     : csr_rdata_rvi = minstret[31:0];
+                SOPHON_PKG::CSR_HW_PARAMETER : csr_rdata_rvi = 32'd0 
+                                                            `ifdef SOPHON_EXT_INST   | 1<<0  `endif
+                                                            `ifdef SOPHON_EXT_DATA   | 1<<1  `endif
+                                                            `ifdef SOPHON_EXT_ACCESS | 1<<2  `endif
+                                                            ;
+                default                      : csr_rdata_rvi   = 32'd0;
             endcase
         end
     end
@@ -2006,8 +2010,10 @@ module SOPHON (
             ex_store_access <= 1'b0;
         end
         else if ( lsu_req_o & lsu_ack_i & lsu_error_i ) begin
-            ex_load_access  <= post_rvi_load `ifdef SOPHON_CLIC  | clic_npc_load `endif ;
-            ex_store_access <= post_rvi_store ;
+            // ex_load_access  <= post_rvi_load `ifdef SOPHON_CLIC  | clic_npc_load `endif ;
+            // ex_store_access <= post_rvi_store ;
+            ex_load_access  <= lsu_load `ifdef SOPHON_CLIC  | clic_npc_load `endif ;
+            ex_store_access <= lsu_store ;
         end
         else if (if_vld) begin
             ex_load_access  <= 1'b0;

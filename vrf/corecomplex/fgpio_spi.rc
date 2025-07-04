@@ -1,0 +1,115 @@
+Magic 271485
+Revision Verdi_N-2017.12
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 28 1920 732 294 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/home/huangzhe/projects/tw/sophon/vrf/corecomplex/test.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 124709700.634005 194069349.214592
+cursor 291675000.000000
+marker 291675000.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 32
+; marker line index
+markerPos 61
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "instruction"
+activeDirFile "" "/home/huangzhe/projects/tw/sophon/vrf/corecomplex/test.fsdb"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/clk_i
+addSignal -h 15 -UNSIGNED -HEX -holdScope pc[31:0]
+addSignal -h 15 -holdScope retire_vld
+addSignal -h 15 -UNSIGNED -HEX -holdScope inst_data_1d[31:0]
+addSignal -h 15 -holdScope inst_data_1d_vld
+addGroup "ra"
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[1][31:0]
+addGroup "sp"
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[2][31:0]
+addGroup "exception"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/ex_vld
+addSignal -h 15 -holdScope irq_vld
+addGroup "G7"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/lsu_req_o
+addSignal -h 15 -holdScope lsu_we_o
+addSignal -h 15 -UNSIGNED -HEX -holdScope lsu_addr_o[31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope lsu_wdata_o[31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope lsu_rdata_i[31:0]
+addGroup "G16"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/axi_slv_d32_req_i.aw_valid
+addSignal -h 15 -holdScope axi_slv_d32_req_i.aw
+addGroup "G17"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[3]
+addSignal -h 15 -holdScope gpio_out_val[2]
+addSignal -h 15 -holdScope gpio_out_val[1]
+addSignal -h 15 -holdScope gpio_out_val[0]
+addGroup "G9"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[7]
+addSignal -h 15 -holdScope gpio_out_val[6]
+addSignal -h 15 -holdScope gpio_out_val[5]
+addSignal -h 15 -holdScope gpio_out_val[4]
+addGroup "G10"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[11]
+addSignal -h 15 -holdScope gpio_out_val[10]
+addSignal -h 15 -holdScope gpio_out_val[9]
+addSignal -h 15 -holdScope gpio_out_val[8]
+addGroup "G11"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[15]
+addSignal -h 15 -holdScope gpio_out_val[14]
+addSignal -h 15 -holdScope gpio_out_val[13]
+addSignal -h 15 -holdScope gpio_out_val[12]
+addGroup "G12"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[19]
+addSignal -h 15 -holdScope gpio_out_val[18]
+addSignal -h 15 -holdScope gpio_out_val[17]
+addSignal -h 15 -holdScope gpio_out_val[16]
+addGroup "G13"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[23]
+addSignal -h 15 -holdScope gpio_out_val[22]
+addSignal -h 15 -holdScope gpio_out_val[21]
+addSignal -h 15 -holdScope gpio_out_val[20]
+addGroup "G14"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[27]
+addSignal -h 15 -holdScope gpio_out_val[26]
+addSignal -h 15 -holdScope gpio_out_val[25]
+addSignal -h 15 -holdScope gpio_out_val[24]
+addGroup "G15"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_CUST/U_FGPIO/gpio_out_val[31]
+addSignal -h 15 -holdScope gpio_out_val[30]
+addSignal -h 15 -holdScope gpio_out_val[29]
+addSignal -h 15 -holdScope gpio_out_val[28]
+addGroup "G19"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+
