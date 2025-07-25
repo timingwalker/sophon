@@ -133,6 +133,21 @@ cd vrf/riscv-tests/debug
 ./gdbserver.py targets/RISC-V/sophon.py
 ```
 
+You can also download your programe with OpenOCD and gdb:
+
+1. OpenOCD
+```sh
+openocd -f ./sw/common/sophon.cfg
+```
+
+2. gdb
+```sh
+target remote localhost:3333
+file ./sw/build/$(your_program)/$(your_program).elf
+load
+c
+```
+
 
 # software
 
@@ -144,15 +159,9 @@ cd sw
 cp hello yourapp
 ```
 
-2. Modify the variable `PROGRAM` in the Makefile
+2. Compile
 ```sh
-cd yourapp
-vim Makefile
-```
-
-3. Compile
-```sh
-make
+make yourapp
 ```
 
 The generated files are stored in sw/build/yourapp. You can download it (yourapp.elf) to the FPGA using Openocd/gdb. The Openocd configuration file is:

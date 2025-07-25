@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2025-03-14 15:43:31
+// Last Modified : 2025-07-25 15:09:09
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ module tb();
         assign rst_n = rst_ni;
     `else
         clk_rst_gen #(
-            .ClkPeriod    ( 20ns ),
+            .ClkPeriod    ( 25ns ),
             .RstClkCycles ( 5    )
         ) u_clk_gen 
         (
@@ -619,7 +619,7 @@ module tb();
                 end
             end
             else if ( &timeout_cnt ) begin
-                $display($realtime, ": Core %0s TIMEOUT!!!\n",  tc_hex);
+                $display($realtime, ": Core %0s TIMEOUT!!! \n",  tc_hex);
                 $finish;
             end
         end
@@ -640,6 +640,11 @@ module tb();
         case (tc)
             //"benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
             //"app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
+            //default      : begin $display("TIMEOUTE=10ms\n"  ); #10ms  ; end
+            "multiply"     : begin $display("TIMEOUTE=20ms\n"  ); #20ms  ; end
+            "rsort"        : begin $display("TIMEOUTE=100ms\n" ); #100ms  ; end
+            "dhrystone"    : begin $display("TIMEOUTE=500ms\n"  ); #500ms  ; end
+            "FreeRTOS"     : begin $display("TIMEOUTE=5000ms\n"  ); #5000ms  ; end
             default        : begin $display("TIMEOUTE=10ms\n"  ); #10ms  ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");

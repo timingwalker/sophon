@@ -33,8 +33,13 @@ clean_app : $(CLEAN_APP)
 # ----------------------------------------------------------------------
 ISA_SRC_DIR    := ../vrf/riscv-tests/isa
 BMARKS_SRC_DIR := ../vrf/riscv-tests/benchmarks
+
+# ----------------------------------------------------------------------
+#  Uses common/Makefile
+# ----------------------------------------------------------------------
+
 # ------------------------------------------------
-#  benchmarks, uses common/Makefile
+#  benchmarks
 # ------------------------------------------------
 bmark_subfold = $(notdir $(shell find $(BMARKS_SRC_DIR)/* -maxdepth 0 -type d))
 MAKE_BMARK   := $(filter-out common mm mt-% vec-%,$(bmark_subfold))
@@ -50,6 +55,14 @@ benchmarks       : $(MAKE_BMARK)
 clean_benchmarks : $(CLEAN_BMARK)
 
 # ------------------------------------------------
+#  FreeRTOS
+# ------------------------------------------------
+FreeRTOS: clean_FreeRTOS
+	cd FreeRTOS &&\
+	make init &&\
+	make LDS_FILE=$(LDS_FILE)
+
+# ------------------------------------------------
 #  isa, uses makefile in vrf/riscv-tests/isa
 # ------------------------------------------------
 rv32ui:
@@ -57,14 +70,12 @@ rv32ui:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32ui lds_dir=../../../sw/common/$(LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32ui-* build/isa/
 
-# rv32si:
-# 	mkdir -p build/isa/
-# 	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=../../../sw/common/$(LDS_FILE)
-# 	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
+rv32si:
+	mkdir -p build/isa/
+	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=../../../sw/common/$(LDS_FILE)
+	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
 
-#isa:rv32ui rv32si
-
-isa:rv32ui 
+isa:rv32ui rv32si
 
 clean_isa:
 	[ ! -d build/isa ]          || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa
@@ -73,11 +84,6 @@ clean_isa:
 # TBD: Others software
 # ----------------------------------------------------------------------
 CM_SRC_DIR     := ./coremark
-
-FreeRTOS: clean_FreeRTOS
-	cd FreeRTOS &&\
-	make init &&\
-	make LINKER=$(APP_LDS_FILE)
 
 coremark:
 	mkdir -p build/coremark/

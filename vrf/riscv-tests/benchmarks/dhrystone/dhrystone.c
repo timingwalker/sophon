@@ -182,5 +182,6 @@ Enumeration Enum_Par_Val;
 
 void debug_printf(const char* str, ...)
 {
-    printstr(str);
+    //printstr(str);
+    printf(str);
 }

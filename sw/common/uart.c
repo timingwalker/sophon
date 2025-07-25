@@ -10,6 +10,7 @@ void uart_init()
     volatile uint32_t value;
 
     clock    = 40000000; // 40M
+    //clock    = 50000000; // 50M
     baudrate = 115200; 
 
     // set LCR.DALB=1 to config DLL/DLM

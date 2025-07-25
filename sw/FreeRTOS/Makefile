@@ -1,5 +1,7 @@
 NAME ?= FreeRTOS
 
+LDS_FilE ?= link.ld
+
 COM_DIR   = ../common
 SW_DIR    = .
 BUILD_DIR = ../build/$(NAME)
@@ -36,7 +38,7 @@ CC      = riscv64-unknown-elf-gcc
 CFLAGS  = -march=rv32ia -mabi=ilp32 -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns $(INCLUDE_DIRS) 
 LDFLAGS = -static -nostdlib -nostartfiles -lm -lgcc
 # in BUILD_DIR
-LINKER  = ../../common/link.ld
+LINKER  = ../../common/$(LDS_FilE)
 
 # ------------------------------------------------
 #  Target
