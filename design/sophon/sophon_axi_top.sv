@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-07-29 10:55:25
+// Last Modified : 2025-09-25 10:36:16
 // Description   : Top module of SOPHON with AXI interfaces
 // ----------------------------------------------------------------------
 
@@ -27,9 +27,11 @@ module SOPHON_AXI_TOP #(
     ,input logic                                    rst_soft_ni 
     ,input logic [31:0]                             bootaddr_i
     ,input logic [31:0]                             hart_id_i
+`ifdef SOPHON_CLINT
     ,input logic                                    irq_mei_i 
     ,input logic                                    irq_mti_i 
     ,input logic                                    irq_msi_i 
+`endif
 `ifdef SOPHON_RVDEBUG
     ,input  logic                                   dm_req_i
 `endif
@@ -63,17 +65,22 @@ module SOPHON_AXI_TOP #(
 
 
 `ifdef SOPHON_EXT_INST
-    SOPHON_PKG::inst_req_t      ext_inst_inst_req;
-    SOPHON_PKG::inst_ack_t      ext_inst_inst_ack;
-    CC_ITF_PKG::reqrsp_d32_req_t    ext_inst_req;
-    CC_ITF_PKG::reqrsp_d32_resps_t  ext_inst_rsp;
+    SOPHON_PKG::mem_req_t          ext_inst_inst_req;
+    SOPHON_PKG::mem_ack_t          ext_inst_inst_ack;
+    CC_ITF_PKG::reqrsp_d32_req_t   ext_inst_req;
+    CC_ITF_PKG::reqrsp_d32_resps_t ext_inst_rsp;
 `endif
 `ifdef SOPHON_EXT_DATA
-    SOPHON_PKG::lsu_req_t       ext_data_lsu_req;
-    SOPHON_PKG::lsu_ack_t       ext_data_lsu_ack;
-    CC_ITF_PKG::reqrsp_d32_req_t    ext_data_req;
-    CC_ITF_PKG::reqrsp_d32_resps_t  ext_data_rsp;
+    SOPHON_PKG::mem_req_t          ext_data_lsu_req;
+    SOPHON_PKG::mem_ack_t          ext_data_lsu_ack;
+    CC_ITF_PKG::reqrsp_d32_req_t   ext_data_req;
+    CC_ITF_PKG::reqrsp_d32_resps_t ext_data_rsp;
 `endif
+`ifdef SOPHON_EXT_ACCESS
+    SOPHON_PKG::mem_req_t          ext_access_req;
+    SOPHON_PKG::mem_ack_t          ext_access_ack;
+`endif
+
 
 
     // ----------------------------------------------------------------------
@@ -86,43 +93,43 @@ module SOPHON_AXI_TOP #(
         ,.rst_soft_ni             ( rst_soft_ni             )
         ,.bootaddr_i              ( bootaddr_i              )
         ,.hart_id_i               ( HART_ID[31:0]           )
+    `ifdef SOPHON_CLINT
         ,.irq_mei_i               ( irq_mei_i               )
         ,.irq_mti_i               ( irq_mti_i               )
         ,.irq_msi_i               ( irq_msi_i               )
-        `ifdef SOPHON_RVDEBUG
+    `endif
+    `ifdef SOPHON_RVDEBUG
         ,.dm_req_i                ( dm_req_i                )
-        `endif
+    `endif
         ,.dummy_o                 (                         )
-        `ifdef SOPHON_EXT_INST
+    `ifdef SOPHON_EXT_INST
         ,.inst_ext_req_o          ( ext_inst_inst_req.req   )
         ,.inst_ext_addr_o         ( ext_inst_inst_req.addr  )
         ,.inst_ext_ack_i          ( ext_inst_inst_ack.ack   )
         ,.inst_ext_rdata_i        ( ext_inst_inst_ack.rdata )
         ,.inst_ext_error_i        ( ext_inst_inst_ack.error )
-        `endif
-        `ifdef SOPHON_EXT_DATA
+    `endif
+    `ifdef SOPHON_EXT_DATA
         ,.data_req_o              ( ext_data_lsu_req.req    )
         ,.data_we_o               ( ext_data_lsu_req.we     )
         ,.data_addr_o             ( ext_data_lsu_req.addr   )
         ,.data_wdata_o            ( ext_data_lsu_req.wdata  )
-        ,.data_amo_o              ( ext_data_lsu_req.amo    )
-        ,.data_strb_o             ( ext_data_lsu_req.strb   )
-        ,.data_size_o             ( ext_data_lsu_req.size   )
-        ,.data_valid_i            ( ext_data_lsu_ack.ack    )
+        ,.data_wstrb_o            ( ext_data_lsu_req.wstrb  )
+        ,.data_ack_i              ( ext_data_lsu_ack.ack    )
         ,.data_error_i            ( ext_data_lsu_ack.error  )
         ,.data_rdata_i            ( ext_data_lsu_ack.rdata  )
-        `endif
-        `ifdef SOPHON_EXT_ACCESS
+    `endif
+    `ifdef SOPHON_EXT_ACCESS
         ,.ext_req_i               ( ext_access_req.req      )
         ,.ext_we_i                ( ext_access_req.we       )
-        ,.ext_strb_i              ( ext_access_req.strb     )
+        ,.ext_strb_i              ( ext_access_req.wstrb    )
         ,.ext_addr_i              ( ext_access_req.addr     )
         ,.ext_wdata_i             ( ext_access_req.wdata    )
         ,.ext_ack_o               ( ext_access_ack.ack      )
         ,.ext_error_o             ( ext_access_ack.error    )
         ,.ext_rdata_o             ( ext_access_ack.rdata    )
-        `endif
-        `ifdef SOPHON_CLIC
+    `endif
+    `ifdef SOPHON_CLIC
         ,.clic_irq_req_i          ( clic_irq_req_i          )
         ,.clic_irq_shv_i          ( clic_irq_shv_i          )
         ,.clic_irq_id_i           ( clic_irq_id_i           )
@@ -131,17 +138,21 @@ module SOPHON_AXI_TOP #(
         ,.clic_irq_intthresh_o    ( clic_irq_intthresh_o    )
         ,.clic_mnxti_clr_o        ( clic_mnxti_clr_o        )
         ,.clic_mnxti_id_o         ( clic_mnxti_id_o         )
-        `endif
-        `ifdef SOPHON_EEI_GPIO
+    `endif
+    `ifdef SOPHON_EEI_GPIO
         ,.gpio_dir_o              ( gpio_dir_o              )
         ,.gpio_in_val_i           ( gpio_in_val_i           )
         ,.gpio_out_val_o          ( gpio_out_val_o          )
-        `endif
-        `ifdef PROBE
+    `endif
+    `ifdef PROBE
         ,.probe_o                 (probe_o                  )
-        `endif
-    
+    `endif
     );
+`ifdef SOPHON_EXT_INST
+    assign ext_inst_inst_req.we    = '0;
+    assign ext_inst_inst_req.wstrb = '0;
+    assign ext_inst_inst_req.wdata = '0;
+`endif
 
 
     // ----------------------------------------------------------------------
@@ -188,11 +199,12 @@ module SOPHON_AXI_TOP #(
     assign ext_inst_req.q_valid = q_valid;
 
     assign ext_inst_req.q.write = 1'b0;
-    assign ext_inst_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_inst_req.q.data  = '0;
     assign ext_inst_req.q.strb  = '1;
     assign ext_inst_req.q.size  = 3'b010;
+    assign ext_inst_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_inst_req.p_ready = 1'b1;
+
 
     assign ext_inst_inst_ack.ack   = ext_inst_req.p_ready & ext_inst_rsp.p_valid;
     assign ext_inst_inst_ack.rdata = ext_inst_rsp.p.data;
@@ -217,11 +229,11 @@ module SOPHON_AXI_TOP #(
 
     assign ext_data_req.q_valid = ext_data_lsu_req.req & ~is_ext_data_pending;
     assign ext_data_req.q.addr  = ext_data_lsu_req.addr;
-    assign ext_data_req.q.size  = {1'b0, 2'b10};
-    assign ext_data_req.q.strb  = ext_data_lsu_req.strb;
+    assign ext_data_req.q.strb  = ext_data_lsu_req.wstrb;
     assign ext_data_req.q.data  = ext_data_lsu_req.wdata;
-    assign ext_data_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_data_req.q.write = ext_data_lsu_req.we;
+    assign ext_data_req.q.size  = {1'b0, 2'b10};
+    assign ext_data_req.q.amo   = reqrsp_pkg::AMONone;
     assign ext_data_req.p_ready = ext_data_lsu_req.req;
 
     assign ext_data_lsu_ack.ack   = ext_data_rsp.p_valid & ext_data_req.p_ready;
@@ -316,7 +328,6 @@ module SOPHON_AXI_TOP #(
     // ----------------------------------------------------------------------
     //  External access path
     // ----------------------------------------------------------------------
-
 `ifdef SOPHON_EXT_ACCESS
     // -----------------------------------
     //          32b data width
@@ -324,9 +335,6 @@ module SOPHON_AXI_TOP #(
     // -----------------------------------
     CC_ITF_PKG::reqrsp_d32_req_t      reqresp_d32_req;
     CC_ITF_PKG::reqrsp_d32_resps_t    reqresp_d32_rsp;
-
-    SOPHON_PKG::lsu_req_t       ext_access_req;
-    SOPHON_PKG::lsu_ack_t       ext_access_ack;
 
     logic             axi_mem_req   ;
     logic             axi_mem_gnt   ;
@@ -379,7 +387,7 @@ module SOPHON_AXI_TOP #(
 
     assign ext_access_req.req   = axi_mem_req;
     assign ext_access_req.we    = axi_mem_we;
-    assign ext_access_req.strb  = axi_mem_be;
+    assign ext_access_req.wstrb = axi_mem_be;
     assign ext_access_req.addr  = axi_addr;
     assign ext_access_req.wdata = axi_mem_wdata;
     assign axi_mem_gnt          = ext_access_ack.ack;

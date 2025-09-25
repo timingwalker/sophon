@@ -1,17 +1,17 @@
 // ----------------------------------------------------------------------
 //  Feature define
 // ----------------------------------------------------------------------
-`define SOPHON_EXT_INST
-`define SOPHON_EXT_DATA
-`define SOPHON_EXT_ACCESS
+
+`define CORE_COMPLEX_AXI_MST
+`define CORE_COMPLEX_AXI_SLV
 
 `define SOPHON_RVDEBUG
-`define SOPHON_CLIC
 `define SOPHON_EEI
 //`define SOPHON_RVE
 
-`define SOPHON_CLINT
 `define SOPHON_ZICSR
+`define SOPHON_CLINT
+//`define SOPHON_CLIC
                                 
 // SubFeature
 `ifdef SOPHON_EEI

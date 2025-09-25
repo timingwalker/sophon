@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2024 TimingWalker
+// Copyright 2025 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2025-07-04 15:03:02
+// Last Modified : 2025-09-25 10:34:32
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -30,10 +30,12 @@ module SOPHON_TOP (
     ,input logic                              rst_soft_ni
     ,input logic [31:0]                       bootaddr_i
     ,input logic [31:0]                       hart_id_i
+`ifdef SOPHON_CLINT
     // interupt 
     ,input logic                              irq_mei_i 
     ,input logic                              irq_mti_i 
     ,input logic                              irq_msi_i 
+`endif
 `ifdef SOPHON_RVDEBUG
     // debug halt request
     ,input  logic                             dm_req_i
@@ -52,10 +54,8 @@ module SOPHON_TOP (
     ,output logic                             data_we_o
     ,output logic [31:0]                      data_addr_o
     ,output logic [31:0]                      data_wdata_o
-    ,output logic [3:0]                       data_amo_o
-    ,output logic [3:0]                       data_strb_o
-    ,output logic [1:0]                       data_size_o
-    ,input  logic                             data_valid_i
+    ,output logic [3:0]                       data_wstrb_o
+    ,input  logic                             data_ack_i
     ,input  logic                             data_error_i
     ,input  logic [31:0]                      data_rdata_i
 `endif
@@ -95,15 +95,15 @@ module SOPHON_TOP (
     logic                   rstn_sync;
     logic                   rstn_neg_sync;
 
-    SOPHON_PKG::lsu_req_t   lsu_core_req;
-    SOPHON_PKG::lsu_ack_t   lsu_core_ack;
-    SOPHON_PKG::lsu_req_t   core_dtcm_req;
-    SOPHON_PKG::lsu_ack_t   core_dtcm_ack;
+    SOPHON_PKG::mem_req_t  lsu_req;
+    SOPHON_PKG::mem_ack_t  lsu_ack;
+    SOPHON_PKG::mem_req_t  inst_req;
+    SOPHON_PKG::mem_ack_t  inst_ack;
 
-    SOPHON_PKG::inst_req_t  inst_core_req;
-    SOPHON_PKG::inst_ack_t  inst_core_ack;
-    SOPHON_PKG::inst_req_t  core_itcm_req;
-    SOPHON_PKG::inst_ack_t  core_itcm_ack;
+    SOPHON_PKG::mem_req_t  core_dtcm_req;
+    SOPHON_PKG::mem_ack_t  core_dtcm_ack;
+    SOPHON_PKG::mem_req_t  core_itcm_req;
+    SOPHON_PKG::mem_ack_t  core_itcm_ack;
 
 `ifdef SOPHON_EEI
     logic                   eei_req;
@@ -151,27 +151,27 @@ module SOPHON_TOP (
          ,.rst_ni             ( rst_soft_ni          ) 
          ,.bootaddr_i         ( bootaddr_i           ) 
          ,.hart_id_i          ( hart_id_i            ) 
-         ,.inst_req_o         ( inst_core_req.req    ) 
-         ,.inst_addr_o        ( inst_core_req.addr   ) 
-         ,.inst_error_i       ( inst_core_ack.error  ) 
-         ,.inst_ack_i         ( inst_core_ack.ack    ) 
-         ,.inst_data_i        ( inst_core_ack.rdata  ) 
+         ,.inst_req_o         ( inst_req.req         ) 
+         ,.inst_addr_o        ( inst_req.addr        ) 
+         ,.inst_error_i       ( inst_ack.error       ) 
+         ,.inst_ack_i         ( inst_ack.ack         ) 
+         ,.inst_rdata_i       ( inst_ack.rdata       ) 
+    `ifdef SOPHON_CLINT
          ,.irq_mei_i          ( irq_mei_i            ) 
          ,.irq_mti_i          ( irq_mti_i            ) 
          ,.irq_msi_i          ( irq_msi_i            ) 
+    `endif
     `ifdef SOPHON_RVDEBUG
          ,.dm_req_i           ( dm_req_i             ) 
     `endif
-         ,.lsu_req_o          ( lsu_core_req.req     ) 
-         ,.lsu_we_o           ( lsu_core_req.we      ) 
-         ,.lsu_addr_o         ( lsu_core_req.addr    ) 
-         ,.lsu_wdata_o        ( lsu_core_req.wdata   ) 
-         ,.lsu_strb_o         ( lsu_core_req.strb    ) 
-         ,.lsu_amo_o          ( lsu_core_req.amo     ) 
-         ,.lsu_size_o         ( lsu_core_req.size    ) 
-         ,.lsu_ack_i          ( lsu_core_ack.ack     ) 
-         ,.lsu_error_i        ( lsu_core_ack.error   ) 
-         ,.lsu_rdata_i        ( lsu_core_ack.rdata   ) 
+         ,.lsu_req_o          ( lsu_req.req          ) 
+         ,.lsu_we_o           ( lsu_req.we           ) 
+         ,.lsu_addr_o         ( lsu_req.addr         ) 
+         ,.lsu_wdata_o        ( lsu_req.wdata        ) 
+         ,.lsu_wstrb_o        ( lsu_req.wstrb        ) 
+         ,.lsu_ack_i          ( lsu_ack.ack          ) 
+         ,.lsu_error_i        ( lsu_ack.error        ) 
+         ,.lsu_rdata_i        ( lsu_ack.rdata        ) 
     `ifdef SOPHON_EEI
         ,.eei_req_o           ( eei_req              ) 
         ,.eei_ext_o           ( eei_ext              ) 
@@ -200,6 +200,9 @@ module SOPHON_TOP (
        ,.probe_sophon_o       ( probe_sophon_core    )
     `endif
     );
+    assign inst_req.we    = '0;
+    assign inst_req.wdata = '0;
+    assign inst_req.wstrb = '0;
 
 
     // ----------------------------------------------------------------------
@@ -211,20 +214,18 @@ module SOPHON_TOP (
     // -----------------------------------
     `ifdef SOPHON_EXT_ACCESS
 
-        SOPHON_PKG::lsu_req_t   ext_access_req;
-        SOPHON_PKG::lsu_ack_t   ext_access_ack;
-        SOPHON_PKG::lsu_req_t   ext_itcm_req;
-        SOPHON_PKG::lsu_ack_t   ext_itcm_ack;
-        SOPHON_PKG::lsu_req_t   ext_dtcm_req;
-        SOPHON_PKG::lsu_ack_t   ext_dtcm_ack;
+        SOPHON_PKG::mem_req_t   ext_access_req;
+        SOPHON_PKG::mem_ack_t   ext_access_ack;
+        SOPHON_PKG::mem_req_t   ext_itcm_req;
+        SOPHON_PKG::mem_ack_t   ext_itcm_ack;
+        SOPHON_PKG::mem_req_t   ext_dtcm_req;
+        SOPHON_PKG::mem_ack_t   ext_dtcm_ack;
 
         assign ext_access_req.req   = ext_req_i;
         assign ext_access_req.we    = ext_we_i;
         assign ext_access_req.addr  = ext_addr_i;
         assign ext_access_req.wdata = ext_wdata_i;
-        assign ext_access_req.size  = 2'b11;
-        assign ext_access_req.amo   = '0;
-        assign ext_access_req.strb  = ext_strb_i;
+        assign ext_access_req.wstrb = ext_strb_i;
         assign ext_ack_o            = ext_access_ack.ack;
         assign ext_error_o          = ext_access_ack.error;
         assign ext_rdata_o          = ext_access_ack.rdata;
@@ -257,8 +258,8 @@ module SOPHON_TOP (
     // -----------------------------------
     `ifdef SOPHON_EXT_INST
 
-        SOPHON_PKG::inst_req_t   inst_pos_req;
-        SOPHON_PKG::inst_ack_t   inst_pos_ack;
+        SOPHON_PKG::mem_req_t   inst_ext_req;
+        SOPHON_PKG::mem_ack_t   inst_ext_ack;
 
         INST_ITF_DEMUX #(
             .CH1_NEG_BASE ( SOPHON_PKG::ITCM_BASE     ) ,
@@ -271,11 +272,11 @@ module SOPHON_TOP (
             .clk_neg_i          ( clk_neg_i           ) ,
             .rst_neg_ni         ( rstn_neg_sync       ) ,
 
-            .inst_core_req_i    ( inst_core_req.req   ) ,
-            .inst_core_addr_i   ( inst_core_req.addr  ) ,
-            .inst_core_error_o  ( inst_core_ack.error ) ,
-            .inst_core_ack_o    ( inst_core_ack.ack   ) ,
-            .inst_core_data_o   ( inst_core_ack.rdata ) ,
+            .inst_core_req_i    ( inst_req.req        ) ,
+            .inst_core_addr_i   ( inst_req.addr       ) ,
+            .inst_core_error_o  ( inst_ack.error      ) ,
+            .inst_core_ack_o    ( inst_ack.ack        ) ,
+            .inst_core_data_o   ( inst_ack.rdata      ) ,
 
             .inst_neg_req_o     ( core_itcm_req.req   ) ,
             .inst_neg_addr_o    ( core_itcm_req.addr  ) ,
@@ -283,32 +284,40 @@ module SOPHON_TOP (
             .inst_neg_ack_i     ( core_itcm_ack.ack   ) ,
             .inst_neg_data_i    ( core_itcm_ack.rdata ) ,
 
-            .inst_pos_req_o     ( inst_pos_req.req    ) ,
-            .inst_pos_addr_o    ( inst_pos_req.addr   ) ,
-            .inst_pos_error_i   ( inst_pos_ack.error  ) ,
-            .inst_pos_ack_i     ( inst_pos_ack.ack    ) ,
-            .inst_pos_data_i    ( inst_pos_ack.rdata  ) 
+            .inst_pos_req_o     ( inst_ext_req.req    ) ,
+            .inst_pos_addr_o    ( inst_ext_req.addr   ) ,
+            .inst_pos_error_i   ( inst_ext_ack.error  ) ,
+            .inst_pos_ack_i     ( inst_ext_ack.ack    ) ,
+            .inst_pos_data_i    ( inst_ext_ack.rdata  ) 
         );
 
-        assign inst_ext_req_o     = inst_pos_req.req;
-        assign inst_ext_addr_o    = inst_pos_req.addr;
-        assign inst_pos_ack.ack   = inst_ext_ack_i;
-        assign inst_pos_ack.rdata = inst_ext_rdata_i;
-        assign inst_pos_ack.error = inst_ext_error_i;
+        assign inst_ext_req_o     = inst_ext_req.req;
+        assign inst_ext_addr_o    = inst_ext_req.addr;
+        assign inst_ext_ack.ack   = inst_ext_ack_i;
+        assign inst_ext_ack.rdata = inst_ext_rdata_i;
+        assign inst_ext_ack.error = inst_ext_error_i;
 
+        assign core_itcm_req.we    ='0;
+        assign core_itcm_req.wdata ='0;
+        assign core_itcm_req.wstrb ='0;
+
+        assign inst_ext_req.we    ='0;
+        assign inst_ext_req.wdata ='0;
+        assign inst_ext_req.wstrb ='0;
     `else
-        // assign core_itcm_req = inst_core_req;
-        // assign inst_core_ack = core_itcm_ack;
         logic addr_inside_itcm;
 
-        assign addr_inside_itcm = ( (inst_core_req.addr[31:12]>=SOPHON_PKG::ITCM_BASE[31:12]) && (inst_core_req.addr[31:12]<=SOPHON_PKG::ITCM_END[31:12]) ) ? 1'b1 : 1'b0;
+        assign addr_inside_itcm = ( (inst_req.addr[31:12]>=SOPHON_PKG::ITCM_BASE[31:12]) && (inst_req.addr[31:12]<=SOPHON_PKG::ITCM_END[31:12]) ) ? 1'b1 : 1'b0;
 
-        assign core_itcm_req.req   = inst_core_req.req & addr_inside_itcm;
-        assign core_itcm_req.addr  = inst_core_req.addr;
+        assign core_itcm_req.req   = inst_req.req & addr_inside_itcm;
+        assign core_itcm_req.addr  = inst_req.addr;
+        assign core_itcm_req.we    ='0;
+        assign core_itcm_req.wdata ='0;
+        assign core_itcm_req.wstrb ='0;
 
-        assign inst_core_ack.ack    = addr_inside_itcm ? core_itcm_ack.ack : inst_core_req.req;
-        assign inst_core_ack.error  = inst_core_ack.ack & ~addr_inside_itcm;
-        assign inst_core_ack.rdata  = core_itcm_ack.rdata;
+        assign inst_ack.ack    = addr_inside_itcm ? core_itcm_ack.ack : inst_req.req;
+        assign inst_ack.error  = inst_ack.ack & ~addr_inside_itcm;
+        assign inst_ack.rdata  = core_itcm_ack.rdata;
     `endif
 
     // -----------------------------------
@@ -316,8 +325,8 @@ module SOPHON_TOP (
     // -----------------------------------
     `ifdef SOPHON_EXT_DATA
 
-        SOPHON_PKG::lsu_req_t   lsu_ext_req;
-        SOPHON_PKG::lsu_ack_t   lsu_ext_ack;
+        SOPHON_PKG::mem_req_t   lsu_ext_req;
+        SOPHON_PKG::mem_ack_t   lsu_ext_ack;
         logic [31:0]            data_rdata_toneg;
 
         DATA_ITF_DEMUX 
@@ -333,8 +342,8 @@ module SOPHON_TOP (
             .rst_ni        ( rst_ni        ) ,
             .clk_neg_i     ( clk_neg_i     ) ,
             .rst_neg_ni    ( rstn_neg_sync ) ,
-            .lsu_req_i     ( lsu_core_req  ) ,
-            .lsu_ack_o     ( lsu_core_ack  ) ,
+            .lsu_req_i     ( lsu_req       ) ,
+            .lsu_ack_o     ( lsu_ack       ) ,
             .lsu_req_1ch_o ( core_dtcm_req ) ,
             .lsu_ack_1ch_i ( core_dtcm_ack ) ,
             .lsu_req_2ch_o ( lsu_ext_req   ) ,
@@ -345,40 +354,35 @@ module SOPHON_TOP (
         assign data_we_o    = lsu_ext_req.we;
         assign data_addr_o  = lsu_ext_req.addr;
         assign data_wdata_o = lsu_ext_req.wdata;
-        assign data_amo_o   = lsu_ext_req.amo;
-        assign data_size_o  = lsu_ext_req.size;
-        assign data_strb_o  = lsu_ext_req.strb;
+        assign data_wstrb_o = lsu_ext_req.wstrb;
 
-        assign lsu_ext_ack.ack   = data_valid_i;
+        assign lsu_ext_ack.ack   = data_ack_i;
         assign lsu_ext_ack.error = data_error_i;
         assign lsu_ext_ack.rdata = data_rdata_toneg;
-        //assign lsu_ext_ack.rdata = data_rdata_i; 
 
         // make sure lsu access external memory has the same timing behavior as accessing TCM
         always @(posedge clk_neg_i or negedge rstn_neg_sync) begin
         	if(~rstn_neg_sync) begin
                 data_rdata_toneg <= 32'd0;
             end
-            else if (data_req_o & data_valid_i) begin
+            else if (data_req_o & data_ack_i) begin
                 data_rdata_toneg  <= data_rdata_i;
             end
         end
     `else
         logic addr_inside_dtcm;
 
-        assign addr_inside_dtcm = ( (lsu_core_req.addr[31:12]>=SOPHON_PKG::DTCM_BASE[31:12]) && (lsu_core_req.addr[31:12]<=SOPHON_PKG::DTCM_END[31:12]) ) ? 1'b1 : 1'b0;
+        assign addr_inside_dtcm = ( (lsu_req.addr[31:12]>=SOPHON_PKG::DTCM_BASE[31:12]) && (lsu_req.addr[31:12]<=SOPHON_PKG::DTCM_END[31:12]) ) ? 1'b1 : 1'b0;
 
-        assign core_dtcm_req.req   = lsu_core_req.req & addr_inside_dtcm  ;
-        assign core_dtcm_req.we    = lsu_core_req.we   ;
-        assign core_dtcm_req.addr  = lsu_core_req.addr ;
-        assign core_dtcm_req.wdata = lsu_core_req.wdata;
-        assign core_dtcm_req.amo   = lsu_core_req.amo  ;
-        assign core_dtcm_req.size  = lsu_core_req.size ;
-        assign core_dtcm_req.strb  = lsu_core_req.strb ;
+        assign core_dtcm_req.req   = lsu_req.req & addr_inside_dtcm  ;
+        assign core_dtcm_req.we    = lsu_req.we   ;
+        assign core_dtcm_req.addr  = lsu_req.addr ;
+        assign core_dtcm_req.wdata = lsu_req.wdata;
+        assign core_dtcm_req.wstrb = lsu_req.wstrb;
 
-        assign lsu_core_ack.ack    = addr_inside_dtcm ? core_dtcm_ack.ack : lsu_core_req.req;
-        assign lsu_core_ack.error  = lsu_core_ack.ack & ~addr_inside_dtcm;
-        assign lsu_core_ack.rdata  = core_dtcm_ack.rdata;
+        assign lsu_ack.ack    = addr_inside_dtcm ? core_dtcm_ack.ack : lsu_req.req;
+        assign lsu_ack.error  = lsu_ack.ack & ~addr_inside_dtcm;
+        assign lsu_ack.rdata  = core_dtcm_ack.rdata;
     `endif
 
 
@@ -514,7 +518,7 @@ module SOPHON_TOP (
         assign dtcm_addr           = core_dtcm_req.addr;
         assign dtcm_wdata          = core_dtcm_req.wdata;
         assign dtcm_we             = core_dtcm_req.we;
-        assign dtcm_be             = core_dtcm_req.strb;
+        assign dtcm_be             = core_dtcm_req.wstrb;
         assign core_dtcm_ack.ack   = core_dtcm_req.req; 
         assign core_dtcm_ack.error = 1'b0; 
         assign core_dtcm_ack.rdata = dtcm_rdata;

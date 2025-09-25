@@ -5,6 +5,26 @@
 // -----------------------------------
 // Do NOT CHANGE
 // -----------------------------------
+
+// `ifdef CORE_COMPLEX_AXI_MST
+//     `define SOPHON_EXT_INST
+//     `define SOPHON_EXT_DATA
+// `endif
+
+// `ifdef CORE_COMPLEX_AXI_SLV
+//     `define SOPHON_EXT_ACCESS
+// `endif
+
+`ifdef SOPHON_CLINT
+    `define SOPHON_EXT_DATA
+`endif
+
+`ifdef SOPHON_RVDEBUG
+    `define SOPHON_EXT_ACCESS
+    `define SOPHON_EXT_INST
+    `define SOPHON_EXT_DATA
+`endif
+
 `ifdef SOPHON_EXT_INST
     `define SOPHON_EXT_INST_DATA
 `endif

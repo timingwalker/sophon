@@ -23,6 +23,7 @@ endif
 # ----------------------------------------------------------------------
 CFG_FILE := ../../design/config/config_feature.sv
 
+SOPHON_CLINT    := NONE
 SOPHON_CLIC     := NONE
 SOPHON_RVE      := NONE
 SOPHON_ZICSR    := NONE
@@ -31,6 +32,11 @@ SOPHON_EEI      := NONE
 SOPHON_EEI_GPIO := NONE
 SOPHON_EEI_SREG := NONE
 
+CORE_COMPLEX_AXI_SLV := NONE
+
+ifneq ($(shell grep "^[\ ]*\`define SOPHON_CLINT[\ ]*$$" $(CFG_FILE)),)
+    SOPHON_CLINT := YES
+endif
 ifneq ($(shell grep "^[\ ]*\`define SOPHON_CLIC[\ ]*$$" $(CFG_FILE)),)
     SOPHON_CLIC := YES
 endif
@@ -49,14 +55,19 @@ endif
 ifneq ($(shell grep "^[\ ]*\`define SOPHON_EEI_SREG[\ ]*$$" $(CFG_FILE)),)
     SOPHON_EEI_SREG := YES
 endif
+ifneq ($(shell grep "^[\ ]*\`define CORE_COMPLEX_AXI_SLV[\ ]*$$" $(CFG_FILE)),)
+    CORE_COMPLEX_AXI_SLV := YES
+endif
 
 print_hw_para:
 	@echo SOPHON_EEI=$(SOPHON_EEI)
 	@echo SOPHON_EEI_GPIO=$(SOPHON_EEI_GPIO)
 	@echo SOPHON_EEI_SREG=$(SOPHON_EEI_SREG)
 	@echo SOPHON_CLIC=$(SOPHON_CLIC)
+	@echo SOPHON_CLINT=$(SOPHON_CLINT)
 	@echo SOPHON_RVE=$(SOPHON_RVE)
 	@echo SOPHON_ZICSR=$(SOPHON_ZICSR)
+	@echo CORE_COMPLEX_AXI_SLV=$(CORE_COMPLEX_AXI_SLV)
 	@echo SW_DEFINE=$(SW_DEFINE)
 .PHONY: print_hw_para
 
@@ -75,6 +86,17 @@ ifeq ($(TC),tc_fgpio)
         TC_SKIP   := 1
         SKIP_INFO += "TC SKIP! Check hardware parameter SOPHON_EEI_GPIO!"
     endif
+    ifneq ($(SOPHON_CLINT), YES)
+        TC_SKIP   := 1
+        SKIP_INFO += "TC SKIP! Check hardware parameter SOPHON_CLINT! This testcase uses interrupt MEI."
+    endif
+endif
+
+ifeq ($(TC),tc_clint)
+    ifneq ($(SOPHON_CLINT), YES)
+        TC_SKIP   := 1
+        SKIP_INFO += "TC SKIP! Check hardware parameter SOPHON_CLINT!"
+    endif
 endif
 
 ifeq ($(TC),tc_clic)
@@ -92,6 +114,12 @@ ifeq ($(TC),tc_clic)
     endif
 endif
 
+ifeq ($(TC),tc_ext_access)
+    ifneq ($(CORE_COMPLEX_AXI_SLV), YES)
+        TC_SKIP   := 1
+        SKIP_INFO := "TC SKIP! Check hardware parameter CORE_COMPLEX_AXI_SLV!"
+    endif
+endif
 
 # ----------------------------------------------------------------------
 #  compile software

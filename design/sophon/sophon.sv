@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Copyright 2024 TimingWalker
+// Copyright 2025 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2025-07-04 14:38:20
+// Last Modified : 2025-09-25 10:34:17
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -24,10 +24,12 @@ module SOPHON (
     ,input  logic                        rst_ni
     ,input  logic [31:0]                 bootaddr_i
     ,input  logic [31:0]                 hart_id_i
-    // irq
+`ifdef SOPHON_CLINT
+    // interupt 
     ,input  logic                        irq_mei_i
     ,input  logic                        irq_mti_i
     ,input  logic                        irq_msi_i
+`endif
 `ifdef SOPHON_RVDEBUG
     // debug halt request
     ,input  logic                        dm_req_i
@@ -36,16 +38,14 @@ module SOPHON (
     ,output logic                        inst_req_o
     ,output logic [31:0]                 inst_addr_o
     ,input  logic                        inst_ack_i
-    ,input  logic [31:0]                 inst_data_i
+    ,input  logic [31:0]                 inst_rdata_i
     ,input  logic                        inst_error_i
     // lsu interface
     ,output logic                        lsu_req_o
     ,output logic                        lsu_we_o
-    ,output logic [31:0]                 lsu_addr_o
+    ,output logic [31:0]                 lsu_addr_o //align to 4 bytes
     ,output logic [31:0]                 lsu_wdata_o
-    ,output logic [3:0]                  lsu_amo_o
-    ,output logic [1:0]                  lsu_size_o
-    ,output logic [3:0]                  lsu_strb_o
+    ,output logic [3:0]                  lsu_wstrb_o
     ,input  logic                        lsu_ack_i
     ,input  logic                        lsu_error_i
     ,input  logic [31:0]                 lsu_rdata_i
@@ -58,7 +58,7 @@ module SOPHON (
     ,output logic [4:0]                  eei_batch_start_o
     ,output logic [4:0]                  eei_batch_len_o
     ,output logic [31:0]                 eei_rs_val_o[`EEI_RS_MAX-1:0]
-    ,input  logic                        eei_ack_i  //nedege
+    ,input  logic                        eei_ack_i //nedege
     ,input  logic [1:0]                  eei_rd_op_i
     ,input  logic [4:0]                  eei_rd_len_i
     ,input  logic                        eei_error_i
@@ -422,7 +422,7 @@ module SOPHON (
         if(~rst_ni) 
             rs1_val_org <= 32'd0;
         else if ( if_vld_pos )
-            rs1_val_org <= regfile [ inst_data_i[19:15] ];
+            rs1_val_org <= regfile [ inst_rdata_i[19:15] ];
     end
 
     // pre-capture rs2 can slightly decrease LUTs utilization from the synthesized result
@@ -430,18 +430,18 @@ module SOPHON (
         if(~rst_ni) 
             rs2_val_org <= 32'd0;
         else if ( if_vld_pos )
-            rs2_val_org <= regfile [ inst_data_i[24:20] ];
+            rs2_val_org <= regfile [ inst_rdata_i[24:20] ];
     end
 
     // pre decode load/store instructions to launch lsu_pre_req before the negedge
     // clock to achieve one-cycle lsu latency. 
-    assign pre_op_is_load  = inst_data_i[6:0] == 7'b0000011                                                     ; 
-    assign pre_op_is_store = inst_data_i[6:0] == 7'b0100011                                                     ; 
-    assign pre_funct3      = inst_data_i[14:12]                                                                 ; 
-    assign pre_rs1_val     = regfile[ inst_data_i[19:15] ]                                                      ; 
-    assign pre_rs2_val     = regfile[ inst_data_i[24:20] ]                                                      ; 
-    assign pre_s_i_imm     = { {22{inst_data_i[31]}}, inst_data_i[30:25], inst_data_i[24:21], inst_data_i[20] } ; 
-    assign pre_s_s_imm     = { {21{inst_data_i[31]}}, inst_data_i[31:25], inst_data_i[11:7]}                    ; 
+    assign pre_op_is_load  = inst_rdata_i[6:0] == 7'b0000011                                                     ; 
+    assign pre_op_is_store = inst_rdata_i[6:0] == 7'b0100011                                                     ; 
+    assign pre_funct3      = inst_rdata_i[14:12]                                                                 ; 
+    assign pre_rs1_val     = regfile[ inst_rdata_i[19:15] ]                                                      ; 
+    assign pre_rs2_val     = regfile[ inst_rdata_i[24:20] ]                                                      ; 
+    assign pre_s_i_imm     = { {22{inst_rdata_i[31]}}, inst_rdata_i[30:25], inst_rdata_i[24:21], inst_rdata_i[20] } ; 
+    assign pre_s_s_imm     = { {21{inst_rdata_i[31]}}, inst_rdata_i[31:25], inst_rdata_i[11:7]}                    ; 
 
     assign pre_is_lb       = pre_op_is_load  && pre_funct3==3'b000 ;
     assign pre_is_lh       = pre_op_is_load  && pre_funct3==3'b001 ;
@@ -467,7 +467,7 @@ module SOPHON (
         if (~rst_ni)
             inst_data_1d <= 32'd0;
         else if (if_vld)
-            inst_data_1d <= inst_data_i;
+            inst_data_1d <= inst_rdata_i;
     end
 
     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -612,7 +612,7 @@ module SOPHON (
     assign rvi_csr        = op_is_system &&  (funct3[1] |  funct3[0]);
 `endif
 
-    // NOTE: post_rvi_load/store are post decode signals, which are used in teh internal logic 
+    // NOTE: post_rvi_load/store are post decode signals, which are used in the internal logic 
     //       of Sophon, they can not be used in the LSU interface.
     assign post_rvi_load  = op_is_load  & ( ~funct3[1] | ~(funct3[0]|funct3[2]) );
     assign post_rvi_store = op_is_store & ( ~funct3[2] & ~(funct3[1]&funct3[0]) );
@@ -776,6 +776,7 @@ module SOPHON (
                         lsu_sh_pending, lsu_sw_pending;
     logic               lsu_load_pending, lsu_store_pending,
                         lsu_load, lsu_store;
+    logic [31:0]        lsu_addr;
 
     // if lsu ack can not return in 1 cycle, pending signals are used to
     // keep lsu request stable.
@@ -841,8 +842,8 @@ module SOPHON (
     assign lsu_req_o = lsu_pre_req | lsu_post_req;
 
     // lsu pre request can only be araise when there are no lsu addr misalign exceptions & interrupt
-    assign lsu_pre_req = ( if_vld_pos & ~irq_vld & ( ( (pre_is_lw|pre_is_sw           ) & ~(|lsu_addr_o[1:0]) )
-                                                   | ( (pre_is_lh|pre_is_lhu|pre_is_sh) & ~lsu_addr_o[0]      )
+    assign lsu_pre_req = ( if_vld_pos & ~irq_vld & ( ( (pre_is_lw|pre_is_sw           ) & ~(|lsu_addr[1:0]) )
+                                                   | ( (pre_is_lh|pre_is_lhu|pre_is_sh) & ~lsu_addr[0]      )
                                                    | ( (pre_is_lb|pre_is_lbu|pre_is_sb)                       ) ))
     `ifdef SOPHON_CLIC | ( clic_irq_vector_vld                                                                   ) `endif ;
 
@@ -882,79 +883,71 @@ module SOPHON (
     end
 
     // ------------------------------------------------
-    //  LSU interface: addr/size/we/amo
+    //  LSU interface: addr/we
     // ------------------------------------------------
+
+    // lsu_addr   : the original load/store address, align to 1 byte.
+    // lsu_addr_o : address sent to the external memory, align to 4 bytes, which equals to the lsu interface.
+    //              for store, the wstrb signal indicates the exactly byte field to write to the memory;
+    //              for load, the sophon core selects the correct field from the 4 bytes read data to update the register file.
 
     always_comb begin
     `ifdef SOPHON_CLIC
         if ( clic_npc_load )
-            lsu_addr_o = {mtvt[31:6], 6'd0} + (clic_irq_id<<2);
+            lsu_addr = {mtvt[31:6], 6'd0} + (clic_irq_id<<2);
         else
     `endif
         if ( lsu_load )
-            lsu_addr_o =$signed({lsu_rs1_val[31], lsu_rs1_val[31:0]}) + $signed(lsu_s_i_imm[31:0]);
+            lsu_addr =$signed({lsu_rs1_val[31], lsu_rs1_val[31:0]}) + $signed(lsu_s_i_imm[31:0]);
         else if ( lsu_store )
-            lsu_addr_o =$signed({lsu_rs1_val[31], lsu_rs1_val[31:0]}) + $signed(lsu_s_s_imm[31:0]);
+            lsu_addr =$signed({lsu_rs1_val[31], lsu_rs1_val[31:0]}) + $signed(lsu_s_s_imm[31:0]);
         else
-            lsu_addr_o = 'b0;
+            lsu_addr = 'b0;
     end
 
-    always_comb begin
-        unique case (1)
-            lsu_lh,
-            lsu_sh,
-            lsu_lhu: lsu_size_o = 2'b01;
-            lsu_lb,
-            lsu_sb,
-            lsu_lbu: lsu_size_o = 2'b00;
-            // 1. should be 2'b10, CLIC load 4 byte
-            // 2. lw/sw use default value
-            default : lsu_size_o = 2'b10;
-        endcase
-    end
+    assign lsu_addr_o = {lsu_addr[31:2],2'd0};
     assign lsu_we_o  = `ifdef SOPHON_CLIC clic_npc_load ? 1'b0: `endif lsu_store ? 1'b1 : 1'b0 ;
-    assign lsu_amo_o = 4'd0; 
 
     // ------------------------------------------------
     //  LSU interface: strb/wdata
     // ------------------------------------------------
     always_comb begin
-        lsu_strb_o  = 4'b0000;
+        lsu_wstrb_o  = 4'b0000;
         lsu_wdata_o = 32'd0;
         if (lsu_sw) begin
-            lsu_strb_o  = 4'b1111;
+            lsu_wstrb_o  = 4'b1111;
             lsu_wdata_o = lsu_rs2_val;
         end
         else if (lsu_sh) begin
-            if (lsu_addr_o[1]==1'b1) begin
-                lsu_strb_o  = 4'b1100;
+            if (lsu_addr[1]==1'b1) begin
+                lsu_wstrb_o  = 4'b1100;
                 lsu_wdata_o = {lsu_rs2_val[15:0], 16'd0};
             end
             else begin
-                lsu_strb_o  = 4'b0011;
+                lsu_wstrb_o  = 4'b0011;
                 lsu_wdata_o = { 16'd0, lsu_rs2_val[15:0]};
             end
         end
         else if (lsu_sb) begin
-            if (lsu_addr_o[1:0]==2'd0) begin
-                lsu_strb_o  = 4'b0001;
+            if (lsu_addr[1:0]==2'd0) begin
+                lsu_wstrb_o  = 4'b0001;
                 lsu_wdata_o = { 24'd0, lsu_rs2_val[7:0]};
             end
-            else if (lsu_addr_o[1:0]==2'd1) begin
-                lsu_strb_o  = 4'b0010;
+            else if (lsu_addr[1:0]==2'd1) begin
+                lsu_wstrb_o  = 4'b0010;
                 lsu_wdata_o = { 16'd0, lsu_rs2_val[7:0], 8'd0};
             end
-            else if (lsu_addr_o[1:0]==2'd2) begin
-                lsu_strb_o  = 4'b0100;
+            else if (lsu_addr[1:0]==2'd2) begin
+                lsu_wstrb_o  = 4'b0100;
                 lsu_wdata_o = { 8'd0, lsu_rs2_val[7:0], 16'd0};
             end
-            else if (lsu_addr_o[1:0]==2'd3) begin
-                lsu_strb_o  = 4'b1000;
+            else if (lsu_addr[1:0]==2'd3) begin
+                lsu_wstrb_o  = 4'b1000;
                 lsu_wdata_o = { lsu_rs2_val[7:0], 24'd0};
             end
         end
         else begin
-            lsu_strb_o  = 4'b0000;
+            lsu_wstrb_o  = 4'b0000;
             lsu_wdata_o = 32'd0;
         end
     end
@@ -968,7 +961,7 @@ module SOPHON (
         if(~rst_ni) 
             lsu_addr_1_0_1d <= 2'd0;
         else
-            lsu_addr_1_0_1d <= lsu_addr_o[1:0];
+            lsu_addr_1_0_1d <= lsu_addr[1:0];
     end
 
     always_comb begin
@@ -1010,8 +1003,8 @@ module SOPHON (
         end
     end
 
-    assign wb_lsu       =lsu_valid & post_rvi_load  & ~ex_load_access;
-    assign retire_store =lsu_valid & post_rvi_store & ~ex_store_access;
+    assign wb_lsu       = lsu_valid & post_rvi_load  & ~ex_load_access;
+    assign retire_store = lsu_valid & post_rvi_store & ~ex_store_access;
 
 
 `ifdef SOPHON_ZICSR
@@ -1174,15 +1167,17 @@ module SOPHON (
         else if (ex_fetch_access           ) mtval <= inst_addr_o;
         else if (ex_illg_instr|ex_csr_addr ) mtval <= inst_data_1d;
         else if (is_ebreak                 ) mtval <= 32'd0;
-        else if (ex_misalign_load          ) mtval <= lsu_addr_o;
-        else if (ex_load_access            ) mtval <= lsu_addr_o;
-        else if (ex_misalign_store         ) mtval <= lsu_addr_o;
-        else if (ex_store_access           ) mtval <= lsu_addr_o;
+        else if (ex_misalign_load          ) mtval <= lsu_addr;
+        else if (ex_load_access            ) mtval <= lsu_addr;
+        else if (ex_misalign_store         ) mtval <= lsu_addr;
+        else if (ex_store_access           ) mtval <= lsu_addr;
         else if (is_ecall                  ) mtval <= 32'd0;
+    `ifdef SOPHON_CLINT
         // interrupt
         else if (msi_en_pending            ) mtval <= 32'd0;
         else if (mti_en_pending            ) mtval <= 32'd0;
         else if (mei_en_pending            ) mtval <= 32'd0;
+    `endif
         // software write
         else if ( rvi_csr && (csr_addr==SOPHON_PKG::CSR_MTVAL) ) mtval <= csr_wdata;
     end
@@ -1281,9 +1276,9 @@ module SOPHON (
                                                                mcause ;
                 SOPHON_PKG::CSR_MTVAL        : csr_rdata_rvi = mtval;
                 SOPHON_PKG::CSR_MIP          : csr_rdata_rvi = {32{~is_clic}} & { 19'd0     ,  
-                                                                                  irq_mei_i , 3'b0, 
-                                                                                  irq_mti_i , 3'b0,
-                                                                                  irq_msi_i , 3'd0 };
+                                                              `ifdef SOPHON_CLINT irq_mei_i `else 1'b0 `endif , 3'b0,
+                                                              `ifdef SOPHON_CLINT irq_mti_i `else 1'b0 `endif , 3'b0,
+                                                              `ifdef SOPHON_CLINT irq_msi_i `else 1'b0 `endif , 3'b0 };
                 SOPHON_PKG::CSR_MCYCLE       : csr_rdata_rvi = mcycle[31:0];
                 SOPHON_PKG::CSR_MCYCLEH      : csr_rdata_rvi = mcycle[63:32];
                 SOPHON_PKG::CSR_MINSTRET     : csr_rdata_rvi = minstret[31:0];
@@ -1352,7 +1347,7 @@ module SOPHON (
             mepc <= pc;
     `ifdef SOPHON_CLIC
         else if ( clic_npc_load_error )
-            mepc <= lsu_addr_o;
+            mepc <= lsu_addr;
     `endif
     `ifdef SOPHON_ZICSR
         else if ( rvi_csr && csr_wr && (csr_addr==SOPHON_PKG::CSR_MEPC) ) begin
@@ -1401,10 +1396,10 @@ module SOPHON (
         // cycle (such as fGPIO extension), eei_rs_val should be launched by filp-flop
         `ifdef SOPHON_EEI_RS_LOCK
             logic pre_op_is_cust0, pre_op_is_cust1;
-            assign rs_idx[0] = inst_data_i[19:15];
-            assign rs_idx[1] = inst_data_i[24:20];
-            assign pre_op_is_cust0 = inst_data_i[6:0]==7'b0001011;
-            assign pre_op_is_cust1 = inst_data_i[6:0]==7'b0101011;
+            assign rs_idx[0] = inst_rdata_i[19:15];
+            assign rs_idx[1] = inst_rdata_i[24:20];
+            assign pre_op_is_cust0 = inst_rdata_i[6:0]==7'b0001011;
+            assign pre_op_is_cust1 = inst_rdata_i[6:0]==7'b0101011;
             for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
                 if ( i<2 ) begin: gen_eei_rs0_rs1_lock
                     always_ff @(posedge clk_neg_i, negedge rst_ni) begin
@@ -1985,9 +1980,9 @@ module SOPHON (
         if(~rst_ni) 
             ex_misalign_load <= 1'b0;
         else if (pre_is_lw & if_vld_pos)
-            ex_misalign_load <= |lsu_addr_o[1:0] ;
+            ex_misalign_load <= |lsu_addr[1:0] ;
         else if ((pre_is_lh|pre_is_lhu) & if_vld_pos)
-            ex_misalign_load <= lsu_addr_o[0] ;
+            ex_misalign_load <= lsu_addr[0] ;
         else if (if_vld_pos)
             ex_misalign_load <= 1'b0;
     end
@@ -1996,9 +1991,9 @@ module SOPHON (
         if(~rst_ni) 
             ex_misalign_store <= 1'b0;
         else if (pre_is_sw & if_vld_pos)
-            ex_misalign_store <= |lsu_addr_o[1:0] ;
+            ex_misalign_store <= |lsu_addr[1:0] ;
         else if (pre_is_sh & if_vld_pos)
-            ex_misalign_store <= lsu_addr_o[0] ;
+            ex_misalign_store <= lsu_addr[0] ;
         else if (if_vld_pos)
             ex_misalign_store <= 1'b0;
     end
@@ -2067,7 +2062,7 @@ module SOPHON (
                                 else $fatal(1,"Instruction fetcing interface unstable!");
     
         inst_lsu_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
-                                           ((lsu_req_o && !lsu_ack_i) |=> $stable({lsu_we_o, lsu_addr_o, lsu_wdata_o, lsu_amo_o, lsu_size_o, lsu_strb_o})) ) 
+                                           ((lsu_req_o && !lsu_ack_i) |=> $stable({lsu_we_o, lsu_addr_o, lsu_wdata_o, lsu_wstrb_o})) ) 
                                 else $fatal(1,"LSU interface unstable!");
     
     `endif

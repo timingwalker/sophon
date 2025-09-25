@@ -14,17 +14,17 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-14 17:39:40
-// Last Modified : 2024-07-25 14:55:30
+// Last Modified : 2025-09-02 17:10:52
 // Description   : Arbiter of DTCM interface
 // ----------------------------------------------------------------------
 
 module DATA_ITF_ARBITER(
     // channel 1, form core
-     input  SOPHON_PKG::lsu_req_t  core_dtcm_req
-    ,output SOPHON_PKG::lsu_ack_t  core_dtcm_ack
+     input  SOPHON_PKG::mem_req_t  core_dtcm_req
+    ,output SOPHON_PKG::mem_ack_t  core_dtcm_ack
     // channel 2, form external interface
-    ,input  SOPHON_PKG::lsu_req_t  ext_dtcm_req
-    ,output SOPHON_PKG::lsu_ack_t  ext_dtcm_ack
+    ,input  SOPHON_PKG::mem_req_t  ext_dtcm_req
+    ,output SOPHON_PKG::mem_ack_t  ext_dtcm_ack
     // output, to sram
     ,output logic                 dtcm_req
     ,output logic [31:0]          dtcm_addr
@@ -40,7 +40,7 @@ module DATA_ITF_ARBITER(
     assign dtcm_addr  = ext_dtcm_req.req ? ext_dtcm_req.addr  : core_dtcm_req.addr ; 
     assign dtcm_wdata = ext_dtcm_req.req ? ext_dtcm_req.wdata : core_dtcm_req.wdata; 
     assign dtcm_we    = ext_dtcm_req.req ? ext_dtcm_req.we    : core_dtcm_req.we   ; 
-    assign dtcm_be    = ext_dtcm_req.req ? ext_dtcm_req.strb  : core_dtcm_req.strb ; 
+    assign dtcm_be    = ext_dtcm_req.req ? ext_dtcm_req.wstrb : core_dtcm_req.wstrb; 
     
     assign ext_dtcm_ack.ack   = ext_dtcm_req.req;
     assign ext_dtcm_ack.error = 1'b0;

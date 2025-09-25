@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2024-08-05 15:18:01
+// Last Modified : 2025-09-25 10:39:06
 // Description   : Core Complex
 //                  - Sophon
 //                  - AXI INTERCONNECT
@@ -28,7 +28,9 @@ module CORE_COMPLEX(
      input logic                                    clk_i
     ,input logic                                    rst_ni
     ,input logic [31:0]                             hart_id_i
+`ifdef SOPHON_CLINT
     ,input logic                                    irq_mei_i 
+`endif
 `ifdef SOPHON_CLIC
     ,input  logic                                   clic_irq_req_i      
     ,input  logic                                   clic_irq_shv_i      
@@ -46,19 +48,21 @@ module CORE_COMPLEX(
     ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
     ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
 `endif
+`ifdef SOPHON_RVDEBUG
     ,input                                          tck_i
     ,input                                          tms_i
     ,input                                          trst_n_i
     ,input                                          tdi_i
     ,output                                         tdo_o
     ,output                                         tdo_oe_o
+`endif
     ,input                                          uart_rx_i
     ,output                                         uart_tx_o
-`ifdef SOPHON_EXT_ACCESS
+`ifdef CORE_COMPLEX_AXI_SLV
     ,input  CC_ITF_PKG::xbar_slv_port_d64_req_t     axi_slv_port_req_i
     ,output CC_ITF_PKG::xbar_slv_port_d64_resps_t   axi_slv_port_rsp_o
 `endif
-`ifdef SOPHON_EXT_INST_DATA
+`ifdef CORE_COMPLEX_AXI_MST
     ,output CC_ITF_PKG::xbar_mst_port_d64_req_t     axi_mst_port_req_o
     ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_mst_port_rsp_i
 `endif
@@ -117,36 +121,63 @@ module CORE_COMPLEX(
     // ----------------------------------------------------------------------
     //  External interface
     // ----------------------------------------------------------------------
-    `ifdef SOPHON_EXT_ACCESS
+    // TODO: if not enabled, reduce xbar_port
+    `ifdef CORE_COMPLEX_AXI_SLV
         assign axi_slv_port_rsp_o   = xbar_slv_port_rsp[2];
         assign xbar_slv_port_req[2] = axi_slv_port_req_i;
+    `else
+        assign xbar_slv_port_req[2].aw_valid = 1'b0;
+        assign xbar_slv_port_req[2].w_valid  = 1'b0;
+        assign xbar_slv_port_req[2].ar_valid = 1'b0;
+        assign xbar_slv_port_req[2].b_ready  = 1'b1;
+        assign xbar_slv_port_req[2].r_ready  = 1'b1;
     `endif
-    `ifdef SOPHON_EXT_INST_DATA
+    `ifdef CORE_COMPLEX_AXI_MST
         assign axi_mst_port_req_o   = xbar_mst_port_req[2];
         assign xbar_mst_port_rsp[2] = axi_mst_port_rsp_i;
+    `else
+        assign xbar_mst_port_rsp[2].aw_ready = 1'b1;
+        assign xbar_mst_port_rsp[2].w_ready  = 1'b1;
+        assign xbar_mst_port_rsp[2].ar_ready = 1'b1;
+        assign xbar_mst_port_rsp[2].b_valid  = 1'b0;
+        assign xbar_mst_port_rsp[2].r_valid  = 1'b0;
     `endif
 
 
     // ----------------------------------------------------------------------
     //   Debug Module
     // ----------------------------------------------------------------------
-    debugger #(
-        .CC_NUM(1)
-    ) U_DEBUGGER(
-         .clk_i            ( clk_i                )
-        ,.rst_ni           ( rstn_sync            )
-        ,.debug_req        ( debug_req            )
-        ,.axi_sba_mst_req  ( xbar_slv_port_req[1] )
-        ,.axi_sba_mst_resp ( xbar_slv_port_rsp[1] )
-        ,.axi_dbg_slv_req  ( xbar_mst_port_req[1] )
-        ,.axi_dbg_slv_resp ( xbar_mst_port_rsp[1] )
-        ,.tck              ( tck_i                )
-        ,.tms              ( tms_i                )
-        ,.trst_n           ( trst_n_i             )
-        ,.tdi              ( tdi_i                )
-        ,.tdo              ( tdo_o                )
-        ,.tdo_oe           ( tdo_oe_o             )
-    );
+    `ifdef SOPHON_RVDEBUG
+        debugger #(
+            .CC_NUM(1)
+        ) U_DEBUGGER(
+             .clk_i            ( clk_i                )
+            ,.rst_ni           ( rstn_sync            )
+            ,.debug_req        ( debug_req            )
+            ,.axi_sba_mst_req  ( xbar_slv_port_req[1] )
+            ,.axi_sba_mst_resp ( xbar_slv_port_rsp[1] )
+            ,.axi_dbg_slv_req  ( xbar_mst_port_req[1] )
+            ,.axi_dbg_slv_resp ( xbar_mst_port_rsp[1] )
+            ,.tck              ( tck_i                )
+            ,.tms              ( tms_i                )
+            ,.trst_n           ( trst_n_i             )
+            ,.tdi              ( tdi_i                )
+            ,.tdo              ( tdo_o                )
+            ,.tdo_oe           ( tdo_oe_o             )
+        );
+    `else
+        assign xbar_slv_port_req[1].aw_valid = 1'b0;
+        assign xbar_slv_port_req[1].w_valid  = 1'b0;
+        assign xbar_slv_port_req[1].ar_valid = 1'b0;
+        assign xbar_slv_port_req[1].b_ready  = 1'b1;
+        assign xbar_slv_port_req[1].r_ready  = 1'b1;
+
+        assign xbar_mst_port_rsp[1].aw_ready = 1'b1;
+        assign xbar_mst_port_rsp[1].w_ready  = 1'b1;
+        assign xbar_mst_port_rsp[1].ar_ready = 1'b1;
+        assign xbar_mst_port_rsp[1].b_valid  = 1'b0;
+        assign xbar_mst_port_rsp[1].r_valid  = 1'b0;
+    `endif
 
 
     // ----------------------------------------------------------------------
@@ -245,7 +276,7 @@ module CORE_COMPLEX(
         assign xbar_slv_port_req[0].w_valid  = 1'b0;
         assign xbar_slv_port_req[0].ar_valid = 1'b0;
         assign xbar_slv_port_req[0].b_ready  = 1'b1;
-        assign xbar_slv_port_req[0].r_valid  = 1'b1;
+        assign xbar_slv_port_req[0].r_ready  = 1'b1;
     `endif
 
 
@@ -258,9 +289,11 @@ module CORE_COMPLEX(
          ,.rst_soft_ni                            ( rstn_comb_sync         ) 
          ,.bootaddr_i                             ( cc_boot                ) 
          ,.hart_id_i                              ( hart_id_i              ) 
+    `ifdef SOPHON_CLINT
          ,.irq_mei_i                              ( irq_mei_i              ) 
          ,.irq_mti_i                              ( irq_mti                ) 
          ,.irq_msi_i                              ( irq_msi                ) 
+    `endif
     `ifdef SOPHON_RVDEBUG
          ,.dm_req_i                               ( debug_req              ) 
     `endif
@@ -348,24 +381,28 @@ module CORE_COMPLEX(
     // -----------------------------------
     //  Clint
     // -----------------------------------
-    CLINT 
-    #(
-        .APB_ADDR_WIDTH(12)
-    ) U_CLINT
-    (
-        .PCLK    ( clk_i                            ) ,
-        .PRESETn ( rstn_sync                        ) ,
-        .PADDR   ( apb_req[2].paddr[11:0]           ) ,
-        .PWDATA  ( apb_req[2].pwdata                ) ,
-        .PWRITE  ( apb_req[2].pwrite                ) ,
-        .PSEL    ( apb_req[2].psel                  ) ,
-        .PENABLE ( apb_req[2].penable               ) ,
-        .PRDATA  ( apb_resp[2].prdata               ) ,
-        .PREADY  ( apb_resp[2].pready               ) ,
-        .PSLVERR ( apb_resp[2].pslverr              ) ,
-        .msi_o   ( irq_msi                          ) ,
-        .mti_o   ( irq_mti                          ) 
-    );
+    `ifdef SOPHON_CLINT
+        CLINT 
+        #(
+            .APB_ADDR_WIDTH(12)
+        ) U_CLINT
+        (
+            .PCLK    ( clk_i                            ) ,
+            .PRESETn ( rstn_sync                        ) ,
+            .PADDR   ( apb_req[2].paddr[11:0]           ) ,
+            .PWDATA  ( apb_req[2].pwdata                ) ,
+            .PWRITE  ( apb_req[2].pwrite                ) ,
+            .PSEL    ( apb_req[2].psel                  ) ,
+            .PENABLE ( apb_req[2].penable               ) ,
+            .PRDATA  ( apb_resp[2].prdata               ) ,
+            .PREADY  ( apb_resp[2].pready               ) ,
+            .PSLVERR ( apb_resp[2].pslverr              ) ,
+            .msi_o   ( irq_msi                          ) ,
+            .mti_o   ( irq_mti                          ) 
+        );
+    `else
+        assign apb_resp[2].pready = 1'b1;
+    `endif
 
     // -----------------------------------
     //  CLIC interface

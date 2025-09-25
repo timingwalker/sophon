@@ -54,6 +54,7 @@
 
     task fgpio_spi;
     begin
+    `ifdef CORE_COMPLEX_AXI_SLV
         #0.1ms;
         repeat(10)@(posedge clk);
         // SPI 1
@@ -96,6 +97,10 @@
         axi_rand_master.run_write_word(32'h8009_002c, 64'h8009_0600_0000_0000, 8'd0, 3'b010);
         axi_rand_master.run_write_word(32'h8009_0600, 64'h0000_0000_0000_6868, 8'd0, 3'b010);
         axi_rand_master.run_write_word(32'h8009_0028, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
+    `else
+        $display("====== interface CORE_COMPLEX_AXI_SLV is not enabled.\n");
+    `endif
+   
     end
     endtask
 

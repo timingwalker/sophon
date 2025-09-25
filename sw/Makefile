@@ -75,7 +75,7 @@ rv32si:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=../../../sw/common/$(LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
 
-isa:rv32ui rv32si
+isa:rv32ui
 
 clean_isa:
 	[ ! -d build/isa ]          || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa

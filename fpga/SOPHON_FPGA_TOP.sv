@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2024-11-13 10:09:48
+// Last Modified : 2025-09-25 15:59:39
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ module SOPHON_FPGA_TOP(
 `endif
 
 
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
         CC_ITF_PKG::xbar_slv_port_d64_req_t   axi_slv_port_req;
         CC_ITF_PKG::xbar_slv_port_d64_resps_t axi_slv_port_rsp;
         assign axi_slv_port_req.aw_valid = 1'b0;
@@ -67,7 +67,7 @@ module SOPHON_FPGA_TOP(
         assign axi_slv_port_req.b_ready  = 1'b1;
         assign axi_slv_port_req.r_ready  = 1'b1;
     `endif
-    `ifdef SOPHON_EXT_INST_DATA
+    `ifdef CORE_COMPLEX_AXI_MST
         CC_ITF_PKG::xbar_mst_port_d64_req_t   axi_mst_port_req;
         CC_ITF_PKG::xbar_mst_port_d64_resps_t axi_mst_port_rsp;
         // assign axi_mst_port_rsp.aw_ready = 1'b1;
@@ -102,13 +102,17 @@ module SOPHON_FPGA_TOP(
          .clk_i              ( clock            ) 
          ,.rst_ni            ( rstn             ) 
          ,.hart_id_i         ( '0               ) 
+    `ifdef SOPHON_CLINT
          ,.irq_mei_i         ( '0               ) 
+    `endif
+    `ifdef SOPHON_RVDEBUG
          ,.tck_i             ( JTAG_TCK         ) 
          ,.tms_i             ( JTAG_TMS         ) 
          ,.trst_n_i          ( rstn             ) 
          ,.tdi_i             ( JTAG_TDI         ) 
          ,.tdo_o             ( tdo              ) 
          ,.tdo_oe_o          ( tdo_oe           ) 
+    `endif
          ,.uart_rx_i         ( UART_RX          ) 
          ,.uart_tx_o         ( UART_TX          ) 
     `ifdef SOPHON_EEI_GPIO
@@ -116,11 +120,11 @@ module SOPHON_FPGA_TOP(
          ,.gpio_in_val_i     ( gpio_in_val      ) 
          ,.gpio_out_val_o    ( gpio_out_val     ) 
     `endif
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
         ,.axi_slv_port_req_i ( axi_slv_port_req )
         ,.axi_slv_port_rsp_o ( axi_slv_port_rsp )
     `endif
-    `ifdef SOPHON_EXT_INST_DATA
+    `ifdef CORE_COMPLEX_AXI_MST
         ,.axi_mst_port_req_o ( axi_mst_port_req )
         ,.axi_mst_port_rsp_i ( axi_mst_port_rsp )
     `endif
@@ -132,7 +136,7 @@ module SOPHON_FPGA_TOP(
     // ----------------------------------------------------------------------
     //  Prepare External Memory if it is enabled
     // ----------------------------------------------------------------------
-    `ifdef SOPHON_EXT_INST_DATA
+    `ifdef CORE_COMPLEX_AXI_MST
 
         CC_ITF_PKG::axi_mst_side_d32_req_t    axi_mst_32b_req;
         CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_32b_rsp;

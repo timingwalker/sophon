@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-08 15:56:49
-// Last Modified : 2024-07-25 15:51:56
+// Last Modified : 2025-09-02 16:56:40
 // Description   : Arbiter of IRAM interface
 // ----------------------------------------------------------------------
 
@@ -24,11 +24,11 @@ module INST_ITF_ARBITER(
     ,input logic                    clk_neg_i
     ,input logic                    rst_neg_ni
     // channel 1, form core, negedge
-    ,input  SOPHON_PKG::inst_req_t  core_itcm_req
-    ,output SOPHON_PKG::inst_ack_t  core_itcm_ack
+    ,input  SOPHON_PKG::mem_req_t   core_itcm_req
+    ,output SOPHON_PKG::mem_ack_t   core_itcm_ack
     // channel 2, form external interface, posedge
-    ,input  SOPHON_PKG::lsu_req_t   ext_itcm_req
-    ,output SOPHON_PKG::lsu_ack_t   ext_itcm_ack
+    ,input  SOPHON_PKG::mem_req_t   ext_itcm_req
+    ,output SOPHON_PKG::mem_ack_t   ext_itcm_ack
     // output, to sram
     ,output logic                   itcm_req
     ,output logic [31:0]            itcm_addr
@@ -80,7 +80,7 @@ module INST_ITF_ARBITER(
     assign itcm_addr  = ext_itcm_cs ? ext_itcm_req.addr  : core_itcm_req.addr ; 
     assign itcm_wdata = ext_itcm_cs ? ext_itcm_req.wdata : '0                 ; 
     assign itcm_we    = ext_itcm_cs ? ext_itcm_req.we    : '0                 ; 
-    assign itcm_be    = ext_itcm_cs ? ext_itcm_req.strb  : '1                 ;
+    assign itcm_be    = ext_itcm_cs ? ext_itcm_req.wstrb : '1                 ;
     
 
     // ------------------------------------------------

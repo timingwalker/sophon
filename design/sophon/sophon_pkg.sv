@@ -1,10 +1,10 @@
 // ----------------------------------------------------------------------
-// Copyright 2024 TimingWalker
+// Copyright 2025 TimingWalker
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2025-07-03 16:43:57
+// Last Modified : 2025-09-22 11:16:35
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2025-07-03 16:43:57
+// Last Modified : 2025-09-22 11:16:35
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -94,19 +94,21 @@ package SOPHON_PKG;
     localparam CSR_MCYCLEH      = 12'hb80;
     localparam CSR_MINSTRET     = 12'hb02;
     localparam CSR_MINSTRETH    = 12'hb82;
-    // CLIC CSR
 `ifdef SOPHON_CLIC
+    // CLIC CSR
     localparam CSR_MTVT         = 12'h307;
     localparam CSR_XNXTI        = 12'h345;
     localparam CSR_MINTSTATUS   = 12'h346;
     localparam CSR_MINTTHRESH   = 12'h347;
 `endif
+`ifdef SOPHON_RVDEBUG
     // debug mode CSR
     localparam CSR_DCSR         = 12'h7b0;
     localparam CSR_DPC          = 12'h7b1;
     localparam CSR_DSCRATCH0    = 12'h7b2;
     localparam CSR_DSCRATCH1    = 12'h7b3;
     localparam CSR_DSCRATCH2    = 12'h7b4;
+`endif
 
     // custom CSR
     // hardware parameter infomation
@@ -121,33 +123,44 @@ package SOPHON_PKG;
     //  structure define
     // ----------------------------------------------------------------------
 
-    typedef struct packed {
-        logic           req;
-        logic [31:0]    addr;
-    } inst_req_t;
+    // typedef struct packed {
+    //     logic           req;
+    //     logic [31:0]    addr;
+    // } inst_req_t;
+    // typedef struct packed {
+    //     logic           ack;
+    //     logic           error;
+    //     logic [31:0]    rdata;
+    // } inst_ack_t;
 
-    typedef struct packed {
-        logic           ack;
-        logic           error;
-        logic [31:0]    rdata;
-    } inst_ack_t;
+    // typedef struct packed {
+    //     logic           req;
+    //     logic           we;
+    //     logic [31:0]    addr;
+    //     logic [31:0]    wdata;
+    //     logic [3:0]     amo;
+    //     logic [1:0]     size;
+    //     logic [3:0]     strb;
+    // } lsu_req_t;
+    // typedef struct packed {
+    //     logic           ack;
+    //     logic           error;
+    //     logic [31:0]    rdata;
+    // } lsu_ack_t;
 
     typedef struct packed {
         logic           req;
         logic           we;
         logic [31:0]    addr;
         logic [31:0]    wdata;
-        logic [3:0]     amo;
-        logic [1:0]     size;
-        logic [3:0]     strb;
-    } lsu_req_t;
+        logic [3:0]     wstrb;
+    } mem_req_t;
 
     typedef struct packed {
         logic           ack;
         logic           error;
         logic [31:0]    rdata;
-    } lsu_ack_t;
-
+    } mem_ack_t;
 
 endpackage
 

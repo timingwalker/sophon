@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2024-09-11 17:06:57
+// Last Modified : 2025-09-25 15:57:55
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -54,38 +54,42 @@ module tb(
          ,.rst_soft_ni            ( rst_n        ) 
          ,.bootaddr_i             ( 32'h80000000 ) 
          ,.hart_id_i              ( 3'd0         ) 
+    `ifdef SOPHON_CLINT
          ,.irq_mei_i              ( 1'b0         ) 
          ,.irq_mti_i              ( 1'b0         ) 
          ,.irq_msi_i              ( 1'b0         ) 
+         `endif
+    `ifdef SOPHON_RVDEBUG
          ,.dm_req_i               ( 1'b0         ) 
-         `ifdef SOPHON_EXT_INST
+    `endif
+    `ifdef SOPHON_EXT_INST
          ,.inst_ext_req_o         (              ) 
          ,.inst_ext_addr_o        (              ) 
          ,.inst_ext_ack_i         ( 1'b0         ) 
          ,.inst_ext_rdata_i       ( '0           ) 
          ,.inst_ext_error_i       ( 1'b1         ) 
-         `endif
-         `ifdef SOPHON_EXT_DATA
+    `endif
+    `ifdef SOPHON_EXT_DATA
          ,.data_req_o             (              ) 
          ,.data_we_o              (              ) 
          ,.data_addr_o            (              ) 
          ,.data_wdata_o           (              ) 
-         ,.data_amo_o             (              ) 
-         ,.data_strb_o            (              ) 
-         ,.data_valid_i           ( 1'b0         ) 
+         ,.data_wstrb_o           (              ) 
+         ,.data_ack_i             ( 1'b0         ) 
          ,.data_error_i           ( 1'b1         ) 
          ,.data_rdata_i           ( 32'd0        ) 
-         `endif
-         `ifdef SOPHON_EXT_ACCESS
+    `endif
+    `ifdef SOPHON_EXT_ACCESS
          ,.ext_req_i              ( '0           ) 
          ,.ext_we_i               ( '0           ) 
+         ,.ext_strb_i             ( '0           ) 
          ,.ext_addr_i             ( '0           ) 
          ,.ext_wdata_i            ( '0           ) 
          ,.ext_ack_o              (              ) 
          ,.ext_error_o            (              ) 
          ,.ext_rdata_o            (              ) 
-         `endif
-         `ifdef SOPHON_CLIC
+    `endif
+    `ifdef SOPHON_CLIC
          ,.clic_irq_req_i         ( '0           ) 
          ,.clic_irq_shv_i         ( '0           ) 
          ,.clic_irq_id_i          ( '0           ) 
@@ -94,8 +98,8 @@ module tb(
          ,.clic_irq_intthresh_o   (              ) 
          ,.clic_mnxti_clr_o       (              ) 
          ,.clic_mnxti_id_o        (              ) 
-         `endif
-         `ifdef SOPHON_EEI_GPIO
+    `endif
+    `ifdef SOPHON_EEI_GPIO
          ,.gpio_dir_o             (              ) 
          ,.gpio_in_val_i          ( '0           ) 
          ,.gpio_out_val_o         (              ) 

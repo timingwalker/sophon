@@ -11,16 +11,22 @@ import time
 
 # always_on_hw_feature = "SOPHON_CLINT SOPHON_ZICSR SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EXT_ACCESS"
 
-hw_feature_group = ["SOPHON_EXT_INST", \
+hw_feature_group = ["CORE_COMPLEX_AXI_MST", \
+                    "CORE_COMPLEX_AXI_SLV", \
+                    "SOPHON_EXT_INST", \
                     "SOPHON_EXT_DATA", \
-                    "SOPHON_EXT_INST SOPHON_EXT_DATA", \
-                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
-                    "SOPHON_CLIC", \
-                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_CLIC", \
+                    "SOPHON_EXT_ACCESS", \
                     "SOPHON_RVE", \
-                    "SOPHON_EXT_INST SOPHON_EXT_DATA SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO SOPHON_CLIC", \
+                    "SOPHON_EEI", \
+                    "SOPHON_RVDEBUG", \
+                    "SOPHON_CLIC", \
+                    "SOPHON_CLINT", \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO", \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_CLIC", \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO SOPHON_CLINT SOPHON_CLIC SOPHON_RVDEBUG", \
+                    "SOPHON_EEI SOPHON_EEI_SREG SOPHON_EEI_GPIO SOPHON_CLINT SOPHON_CLIC SOPHON_RVDEBUG CORE_COMPLEX_AXI_MST CORE_COMPLEX_AXI_SLV", \
                     ]
-always_on_hw_feature = "SOPHON_EXT_ACCESS SOPHON_CLINT SOPHON_ZICSR"
+always_on_hw_feature = "SOPHON_ZICSR"
 
 # relative to regress directory
 cfg_path = "../../../design/config/"

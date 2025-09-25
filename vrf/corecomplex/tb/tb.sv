@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2025-07-25 15:09:09
+// Last Modified : 2025-09-25 14:52:44
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -85,43 +85,47 @@ module tb();
 
     CORE_COMPLEX u_dut
     (
-          .clk_i                      ( clk                ) 
-          ,.rst_ni                    ( rst_n              ) 
-          ,.hart_id_i                 ( '0                 ) 
-          ,.irq_mei_i                 ( irq_mei            ) 
-          `ifdef SOPHON_CLIC  
-          ,.clic_irq_req_i            ( clic_irq_req       ) 
-          ,.clic_irq_shv_i            ( clic_irq_shv       ) 
-          ,.clic_irq_id_i             ( clic_irq_id        ) 
-          ,.clic_irq_level_i          ( clic_irq_level     ) 
-          ,.clic_irq_ack_o            ( clic_irq_ack       ) 
-          ,.clic_irq_intthresh_o      ( clic_irq_intthresh ) 
-          ,.clic_mnxti_clr_o          ( clic_mnxti_clr     ) 
-          ,.clic_mnxti_id_o           ( clic_mnxti_id      ) 
-          ,.clic_apb_req_o            (                    ) 
-          ,.clic_apb_rsp_i            ( '0                 ) 
-          `endif
-          `ifdef SOPHON_EEI_GPIO
-          ,.gpio_dir_o                ( gpio_dir           ) 
-          ,.gpio_in_val_i             ( gpio_in_val        ) 
-          ,.gpio_out_val_o            ( gpio_out_val       ) 
-          `endif
-          ,.tck_i                     ( tck                ) 
-          ,.tms_i                     ( tms                ) 
-          ,.trst_n_i                  ( trst_n             ) 
-          ,.tdi_i                     ( tdi                ) 
-          ,.tdo_o                     ( tdo                ) 
-          ,.tdo_oe_o                  ( tdo_oe             ) 
-          ,.uart_rx_i                 ( dut_uart_rx        ) 
-          ,.uart_tx_o                 ( dut_uart_tx        ) 
-          `ifdef SOPHON_EXT_ACCESS
-          ,.axi_slv_port_req_i        ( axi_slv_port_req   ) 
-          ,.axi_slv_port_rsp_o        ( axi_slv_port_rsp   ) 
-          `endif
-          `ifdef SOPHON_EXT_INST_DATA
-          ,.axi_mst_port_req_o        ( axi_mst_port_req   ) 
-          ,.axi_mst_port_rsp_i        ( axi_mst_port_rsp   ) 
-          `endif
+        .clk_i                      ( clk                ) 
+        ,.rst_ni                    ( rst_n              ) 
+        ,.hart_id_i                 ( '0                 ) 
+    `ifdef SOPHON_CLINT
+        ,.irq_mei_i                 ( irq_mei            ) 
+    `endif
+    `ifdef SOPHON_CLIC  
+        ,.clic_irq_req_i            ( clic_irq_req       ) 
+        ,.clic_irq_shv_i            ( clic_irq_shv       ) 
+        ,.clic_irq_id_i             ( clic_irq_id        ) 
+        ,.clic_irq_level_i          ( clic_irq_level     ) 
+        ,.clic_irq_ack_o            ( clic_irq_ack       ) 
+        ,.clic_irq_intthresh_o      ( clic_irq_intthresh ) 
+        ,.clic_mnxti_clr_o          ( clic_mnxti_clr     ) 
+        ,.clic_mnxti_id_o           ( clic_mnxti_id      ) 
+        ,.clic_apb_req_o            (                    ) 
+        ,.clic_apb_rsp_i            ( '0                 ) 
+    `endif
+    `ifdef SOPHON_EEI_GPIO
+        ,.gpio_dir_o                ( gpio_dir           ) 
+        ,.gpio_in_val_i             ( gpio_in_val        ) 
+        ,.gpio_out_val_o            ( gpio_out_val       ) 
+    `endif
+    `ifdef SOPHON_RVDEBUG
+        ,.tck_i                     ( tck                ) 
+        ,.tms_i                     ( tms                ) 
+        ,.trst_n_i                  ( trst_n             ) 
+        ,.tdi_i                     ( tdi                ) 
+        ,.tdo_o                     ( tdo                ) 
+        ,.tdo_oe_o                  ( tdo_oe             ) 
+    `endif
+        ,.uart_rx_i                 ( dut_uart_rx        ) 
+        ,.uart_tx_o                 ( dut_uart_tx        ) 
+    `ifdef CORE_COMPLEX_AXI_SLV
+        ,.axi_slv_port_req_i        ( axi_slv_port_req   ) 
+        ,.axi_slv_port_rsp_o        ( axi_slv_port_rsp   ) 
+    `endif
+    `ifdef CORE_COMPLEX_AXI_MST
+        ,.axi_mst_port_req_o        ( axi_mst_port_req   ) 
+        ,.axi_mst_port_rsp_i        ( axi_mst_port_rsp   ) 
+    `endif
     );
 
 
@@ -129,7 +133,7 @@ module tb();
     //  Prepare External Memory if it is enabled
     // ----------------------------------------------------------------------
 
-    `ifdef SOPHON_EXT_INST_DATA
+    `ifdef CORE_COMPLEX_AXI_MST
 
         CC_ITF_PKG::axi_mst_side_d32_req_t    axi_mst_32b_req;
         CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_32b_rsp;
@@ -283,7 +287,7 @@ module tb();
     //  Preload external memory
     // -----------------------------------
 
-        `ifdef SOPHON_EXT_INST_DATA
+        `ifdef CORE_COMPLEX_AXI_MST
 
             `ifndef ASIC
                 `define EXT_MEM(bankaddr) U_EXT_MEM.gen_spilt_ram[``bankaddr``].U_BW_SP_RAM.ram_block
@@ -418,7 +422,7 @@ module tb();
     // ----------------------------------------------------------------------
     //  AXI master
     // ----------------------------------------------------------------------
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
 
         localparam int unsigned AxiIdWidthMasters =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH;
         localparam int unsigned AxiIdUsed         =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH; 
@@ -482,7 +486,7 @@ module tb();
         $value$plusargs("TC=%s",tc);
         $display("TC=%s\n",  tc);
 
-        `ifdef SOPHON_EXT_ACCESS
+        `ifdef CORE_COMPLEX_AXI_SLV
             axi_rand_master = new( master_dv );
             axi_rand_master.add_memory_region(32'h0000_0000, 32'hFFFF_FFFF, axi_pkg::DEVICE_NONBUFFERABLE);
             axi_rand_master.reset();
@@ -498,7 +502,7 @@ module tb();
 
         $display("===================================================");
         if (mem_mode=="EXT") begin
-        `ifdef SOPHON_EXT_ACCESS
+        `ifdef CORE_COMPLEX_AXI_SLV
             $display($realtime, ": Memmory used: External Memory");
             $display($realtime, ": Configure: Set Soft Reset = 0......");
             axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
@@ -509,7 +513,7 @@ module tb();
             flag_release_cpu = 1'b1;
         `else
             $display("External memory is not enabled. ");
-            TODO: Use force to set bootaddr & soft reset
+            //TODO: Use force to set bootaddr & soft reset
         `endif
         end
         else begin
@@ -525,12 +529,12 @@ module tb();
         // Test case
         // -----------------------------------
         case (tc)
-            "tc_clint"            : clint()                                     ;
-            "tc_ext_access"       : `ifdef SOPHON_EXT_ACCESS ext_access()     `endif;
-            "tc_clic"             : `ifdef SOPHON_CLIC       clic()           `endif;
-            "tc_fgpio"            : `ifdef SOPHON_EEI_GPIO   fgpio()          `endif;
-            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO   fgpio_uart()     `endif;
-            "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO   fgpio_spi()      `endif;
+            "tc_clint"            : `ifdef SOPHON_CLINT         clint()          `endif;
+            "tc_ext_access"       : `ifdef CORE_COMPLEX_AXI_SLV ext_access()     `endif;
+            "tc_clic"             : `ifdef SOPHON_CLIC          clic()           `endif;
+            "tc_fgpio"            : `ifdef SOPHON_EEI_GPIO      fgpio()          `endif;
+            "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO      fgpio_uart()     `endif;
+            "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO      fgpio_spi()      `endif;
             default               : ;
         endcase
 
@@ -549,13 +553,15 @@ module tb();
     assign gp       = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_SOPHON.regfile[3];
     initial begin
         if (mem_mode=="EXT") 
-            `ifndef SOPHON_EXT_INST_DATA
-                $fatal("FATAL: External memory is not enabled.");
+            `ifndef CORE_COMPLEX_AXI_MST
+                $fatal("FATAL: External memory is not enabled. Check parameter CORE_COMPLEX_AXI_MST.");
             `else
-                assign tohost = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
+                assign  tohost   = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
+                `define FROMHOST U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[16]
             `endif
         else
-            assign tohost = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
+            assign  tohost  = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
+            `define FROMHOST  u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[16]
     end
     
 
@@ -672,14 +678,16 @@ module tb();
     // ----------------------------------------------------------------------
     //  include hardware tc
     // ----------------------------------------------------------------------
-    `include "./tc/clint.sv"
+    `ifdef SOPHON_CLINT
+        `include "./tc/clint.sv"
+    `endif
     `ifdef SOPHON_CLIC
         `include "./tc/clic.sv"
     `endif
     `ifdef SOPHON_EEI_GPIO
         `include "./tc/fgpio.sv"
     `endif
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
         `include "./tc/ext_access.sv"
     `endif
 

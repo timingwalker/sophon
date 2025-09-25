@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-11-06 11:28:20
-// Last Modified : 2024-09-10 14:35:36
+// Last Modified : 2025-09-02 16:52:01
 // Description   : Demux lsu interface    
 //                 NOTE: the addr decode granularity is 4KB
 // ----------------------------------------------------------------------
@@ -29,12 +29,12 @@ module DATA_ITF_DEMUX #(
     ,input logic                    rst_ni
     ,input logic                    clk_neg_i
     ,input logic                    rst_neg_ni
-    ,input  SOPHON_PKG::lsu_req_t   lsu_req_i
-    ,output SOPHON_PKG::lsu_ack_t   lsu_ack_o
-    ,output SOPHON_PKG::lsu_req_t   lsu_req_1ch_o
-    ,input  SOPHON_PKG::lsu_ack_t   lsu_ack_1ch_i
-    ,output SOPHON_PKG::lsu_req_t   lsu_req_2ch_o
-    ,input  SOPHON_PKG::lsu_ack_t   lsu_ack_2ch_i
+    ,input  SOPHON_PKG::mem_req_t   lsu_req_i
+    ,output SOPHON_PKG::mem_ack_t   lsu_ack_o
+    ,output SOPHON_PKG::mem_req_t   lsu_req_1ch_o
+    ,input  SOPHON_PKG::mem_ack_t   lsu_ack_1ch_i
+    ,output SOPHON_PKG::mem_req_t   lsu_req_2ch_o
+    ,input  SOPHON_PKG::mem_ack_t   lsu_ack_2ch_i
 );
 
 
@@ -52,9 +52,7 @@ module DATA_ITF_DEMUX #(
     assign lsu_req_1ch_o.we    = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.we;
     assign lsu_req_1ch_o.addr  = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.addr;
     assign lsu_req_1ch_o.wdata = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.wdata;
-    assign lsu_req_1ch_o.amo   = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.amo  ;
-    assign lsu_req_1ch_o.strb  = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.strb ;
-    assign lsu_req_1ch_o.size  = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.size ;
+    assign lsu_req_1ch_o.wstrb = lsu_req_2ch_o.req ? 'b0 : lsu_req_i.wstrb;
 
 
     // ----------------------------------------------------------------------
@@ -67,29 +65,23 @@ module DATA_ITF_DEMUX #(
     	if(~rst_ni) begin
             lsu_req_2ch_o.req   <= 1'b0;
             lsu_req_2ch_o.wdata <= 'b0;
-            lsu_req_2ch_o.strb  <= 'b0;
+            lsu_req_2ch_o.wstrb <= 'b0;
             lsu_req_2ch_o.we    <= 'b0;
             lsu_req_2ch_o.addr  <= 'b0;
-            lsu_req_2ch_o.amo   <= 'b0;
-            lsu_req_2ch_o.size  <= 'b1;
         end
         else if (lsu_ack_2ch_i.ack) begin
             lsu_req_2ch_o.req   <= 1'b0;
             lsu_req_2ch_o.wdata <= 'b0;
-            lsu_req_2ch_o.strb  <= 'b0;
+            lsu_req_2ch_o.wstrb <= 'b0;
             lsu_req_2ch_o.we    <= 'b0;
             lsu_req_2ch_o.addr  <= 'b0;
-            lsu_req_2ch_o.amo   <= 'b0;
-            lsu_req_2ch_o.size  <= 'b1;
         end
         else if ( lsu_req_i.req && (lsu_req_i.addr[31:12]>=CH2_BASE[31:12]) && (lsu_req_i.addr[31:12]<=CH2_END[31:12]) ) begin
             lsu_req_2ch_o.req   <= 1'b1;
             lsu_req_2ch_o.wdata <= lsu_req_i.wdata;
-            lsu_req_2ch_o.strb  <= lsu_req_i.strb;
+            lsu_req_2ch_o.wstrb <= lsu_req_i.wstrb;
             lsu_req_2ch_o.we    <= lsu_req_i.we;
             lsu_req_2ch_o.addr  <= lsu_req_i.addr;
-            lsu_req_2ch_o.amo   <= lsu_req_i.amo;
-            lsu_req_2ch_o.size  <= lsu_req_i.size;
         end
     end
 

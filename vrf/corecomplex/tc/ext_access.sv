@@ -56,10 +56,12 @@ begin
     flag_axi_access_dtcm     = 1'b0;
     flag_core_access_ext_mem = 1'b0;
 
-    `ifdef SOPHON_EXT_ACCESS
 
-        $display($realtime, ": Configure: Set Soft Reset = 0......");
-        axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
+    $display($realtime, ": Configure: Set Soft Reset = 0......");
+    axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
+
+
+    `ifdef SOPHON_EXT_ACCESS
 
         // Inst RAM
         flag_axi_access_itcm = 1'b1;
@@ -86,28 +88,39 @@ begin
         // // Out of range
         // axi_rand_master.run_read_single(1,1, 32'h0001_0000);
 
-        // sys reg
-        $display("\n===================================================");
-        $display($realtime, ": TEST: AXI ACCESS SYS_REG......");
-        $display("===================================================");
-        axi_slv_port_replace_write(32'h0600_0000, {32'd0, $urandom}, 3'b011);
+    `endif
 
-        $display($realtime, ": Configure: Set Soft Reset = 1......");
-        axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0001_0000_0000, 8'd0, 3'b010);
-        flag_core_access_ext_mem = 1'b1;
 
+    // sys reg
+    $display("\n===================================================");
+    $display($realtime, ": TEST: AXI ACCESS SYS_REG......");
+    $display("===================================================");
+    axi_slv_port_replace_write(32'h0600_0000, {32'd0, $urandom}, 3'b011);
+
+    $display($realtime, ": Configure: Set Soft Reset = 1......");
+    axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0001_0000_0000, 8'd0, 3'b010);
+
+
+    `ifdef SOPHON_EXT_ACCESS
         // Data RAM & CPU runing
+        flag_core_access_ext_mem = 1'b1;
         $display("\n===================================================");
         $display($realtime, ": TEST: AXI ACCESS DTCM (CPU runing)......");
         $display("===================================================");
         mem_scan_test(SOPHON_PKG::DTCM_BASE, DTCM_BANK_NUM, 32'h0000_1000);
-
-        $display($realtime, ": Configure: Set fromhost = 1......");
-        if (mem_mode=="EXT") 
-            axi_rand_master.run_write_word(32'h0001_1040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
-        else
-            axi_rand_master.run_write_word(32'h8009_0040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
     `endif
+
+
+     $display($realtime, ": Configure: Set fromhost = 1......");
+     `ifdef SOPHON_EXT_ACCESS
+     if (mem_mode=="EXT") 
+         axi_rand_master.run_write_word(32'h0001_1040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
+     else
+         axi_rand_master.run_write_word(32'h8009_0040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
+     `else
+     force `FROMHOST=1;
+     `endif
+            
     
 end
 endtask
