@@ -69,13 +69,13 @@ module uart_interrupt
         if (IER_i[2] & error_i)
             iir_n = 4'b1100;
         // Received data available or trigger level reached in FIFO mode
-        else if (IER_i[0] & (trigger_level_reached | RDA_i))
+        else if (IER_i[0] & (trigger_level_reached | RDA_i) & ~clr_int_i[3])
             iir_n = 4'b1000;
         // Character timeout indication
         else if (IER_i[0] & CTI_i)
             iir_n = 4'b1000;
         // Transmitter holding register empty
-        else if (IER_i[1] & tx_elements_i == 0)
+        else if (IER_i[1] & tx_elements_i == 0 )
             iir_n = 4'b0100;
     end
 
@@ -93,7 +93,8 @@ module uart_interrupt
     end
 
     assign IIR_o = iir_q;
-    assign interrupt_o = ~iir_q[0];
+    //assign interrupt_o = ~iir_q[0];
+    assign interrupt_o = |iir_q[3:2];
 
 endmodule
 

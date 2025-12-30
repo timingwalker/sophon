@@ -1,13 +1,14 @@
 
 #TC := rv32ui-p-addi
 #TC := tc_clint
-TC := median
+#TC := median
+TC := freemodbus
 
-MEM_MODE  ?= TCM
-LDS_FILE  ?= link.ld
-MARCH     ?= rv32ia
-MABI      ?= ilp32
-SW_DEFINE ?= -D__RV32E=0
+MEM_MODE      ?= TCM
+LDS_FILE      ?= link.ld
+MARCH         ?= rv32ia
+MABI          ?= ilp32
+SW_SIMPLE_CRT ?= NO
 
 
 ifneq ($(filter rv32%,$(TC)),)
@@ -68,7 +69,6 @@ print_hw_para:
 	@echo SOPHON_RVE=$(SOPHON_RVE)
 	@echo SOPHON_ZICSR=$(SOPHON_ZICSR)
 	@echo CORE_COMPLEX_AXI_SLV=$(CORE_COMPLEX_AXI_SLV)
-	@echo SW_DEFINE=$(SW_DEFINE)
 .PHONY: print_hw_para
 
 # ----------------------------------------------------------------------
@@ -131,10 +131,6 @@ endif
 ifeq ($(SOPHON_RVE), YES)
     MARCH     := rv32e
     MABI      := ilp32e 
-    SW_DEFINE := -D__RV32E=1
-endif
-ifeq ($(SOPHON_ZICSR), YES)
-    SW_DEFINE += -D__RVZICSR=1
 endif
 
 ifeq ($(TC_TYPE), app)
@@ -144,7 +140,7 @@ else
 endif
 compile_sw:
 	$(MAKE) -C ../../sw clean_$(SW_TARGET)
-	$(MAKE) -C ../../sw $(SW_TARGET) LDS_FILE=$(LDS_FILE) MARCH=$(MARCH) MABI=$(MABI) DEFINE="$(SW_DEFINE)"
+	$(MAKE) -C ../../sw $(SW_TARGET) LDS_FILE=$(LDS_FILE) MARCH=$(MARCH) MABI=$(MABI) SW_RVE=$(SOPHON_RVE) SW_ZICSR=$(SOPHON_ZICSR) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) 
 
 # ----------------------------------------------------------------------
 #  compile rtl

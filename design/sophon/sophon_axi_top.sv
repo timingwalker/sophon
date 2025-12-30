@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2025-09-25 10:36:16
+// Last Modified : 2025-12-18 15:05:18
 // Description   : Top module of SOPHON with AXI interfaces
 // ----------------------------------------------------------------------
 
@@ -40,8 +40,8 @@ module SOPHON_AXI_TOP #(
     ,output CC_ITF_PKG::axi_mst_side_d32_resps_t    axi_slv_d32_rsp_o
 `endif
 `ifdef SOPHON_EXT_INST_DATA
-    ,output CC_ITF_PKG::xbar_slv_port_d64_req_t     axi_mst_d32_req_o
-    ,input  CC_ITF_PKG::xbar_slv_port_d64_resps_t   axi_mst_d32_rsp_i
+    ,output CC_ITF_PKG::axi_slv_side_d32_req_t     axi_mst_d32_req_o
+    ,input  CC_ITF_PKG::axi_slv_side_d32_resps_t   axi_mst_d32_rsp_i
 `endif
 `ifdef SOPHON_CLIC
     ,input  logic                                   clic_irq_req_i

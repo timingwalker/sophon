@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2025-09-25 10:34:17
+// Last Modified : 2025-11-13 11:37:59
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -1007,6 +1007,9 @@ module SOPHON (
     assign retire_store = lsu_valid & post_rvi_store & ~ex_store_access;
 
 
+    logic [1:0]  curr_priv;
+    // only support M mode
+    assign curr_priv = 2'b11;
 `ifdef SOPHON_ZICSR
     // ----------------------------------------------------------------------
     //  ==== CSR REGISTER
@@ -1016,7 +1019,6 @@ module SOPHON (
     logic [31:0] csr_wdata, csr_rdata;
     logic [31:0] csr_rdata_rvi `ifdef SOPHON_RVDEBUG ,csr_rdata_dm   `endif
                                `ifdef SOPHON_CLIC    ,csr_rdata_clic `endif ;
-    logic [1:0]  curr_priv;
     logic        is_clic;
     logic        is_csr_rvi `ifdef SOPHON_RVDEBUG ,is_csr_dm   `endif
                             `ifdef SOPHON_CLIC    ,is_csr_clic `endif ;
@@ -1030,8 +1032,6 @@ module SOPHON (
         logic        clic_npc_load_error;
     `endif
 
-    // only support M mode
-    assign curr_priv = 2'b11;
     assign csr_addr  = inst_data_1d[31:20];
 
     assign wb_csr = rvi_csr & ( is_csr_rvi
@@ -1302,7 +1302,7 @@ module SOPHON (
 `endif
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
-        if(~rst_ni)                           mcause <= 32'd0;
+        if (~rst_ni)                           mcause <= 32'd0;
     // when ZICSR is diabled, there is no need to record exception id because mcause is unreadable,
     // however, interrupt id should be recorded as they will be used to change npc in CLINT vector mode.
     `ifdef SOPHON_ZICSR
@@ -1338,6 +1338,7 @@ module SOPHON (
             mcause <= csr_wdata;
         `endif
     `endif
+        else;
     end
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
@@ -2055,7 +2056,7 @@ module SOPHON (
     // ----------------------------------------------------------------------
     //  ==== ASSERTION
     // ----------------------------------------------------------------------
-    `ifndef VERILATOR
+    `ifdef ASSERTION
     
         inst_itf_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
                                            ((inst_req_o && !inst_ack_i) |=> $stable(inst_addr_o)) ) 

@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2025-09-22 11:16:35
+// Last Modified : 2025-12-08 17:32:02
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2025-09-22 11:16:35
+// Last Modified : 2025-12-08 17:32:02
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -30,10 +30,13 @@ package SOPHON_PKG;
     localparam TCM_BASE       = 32'h8000_0000;
     localparam ITCM_OFFSET    = 32'h0000_0000;
     localparam DTCM_OFFSET    = 32'h0009_0000;
-    // localparam ITCM_SIZE      = 32'h0000_1000;
-    // localparam DTCM_SIZE      = 32'h0000_1000;
+`ifdef ECOS_202512
+    localparam ITCM_SIZE      = 32'h0000_1000;
+    localparam DTCM_SIZE      = 32'h0000_1000;
+`else
     localparam ITCM_SIZE      = 32'h0002_0000;
     localparam DTCM_SIZE      = 32'h0002_0000;
+`endif
 
     // Do Not change
     localparam ITCM_BASE      = TCM_BASE+ITCM_OFFSET;
@@ -161,6 +164,25 @@ package SOPHON_PKG;
         logic           error;
         logic [31:0]    rdata;
     } mem_ack_t;
+
+
+
+    /// 32 bit address, 32 bit data request package
+    typedef struct packed {
+        logic [31:0] addr;
+        logic        write;
+        logic [31:0] wdata;
+        logic [3:0]  wstrb;
+        logic        valid;
+    } reg_intf_req_a32_d32;
+    
+    /// 32 bit Response packages
+    typedef struct packed {
+        logic [31:0] rdata;
+        logic        error;
+        logic        ready;
+    } reg_intf_resp_d32;
+
 
 endpackage
 

@@ -108,7 +108,12 @@
     begin
         #1ms;
         repeat(10)@(posedge clk);
+    `ifdef SOPHON_PLIC
+        $display("====== PLIC is enabled, force irq_mei!\n");
+        force u_dut.U_SOPHON_AXI_TOP.irq_mei_i=1;
+    `else
         irq_mei = 1'b1;
+    `endif
     end
     endtask
 

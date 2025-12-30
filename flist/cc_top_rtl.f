@@ -11,6 +11,18 @@
 ../../design/corecomplex/clint.sv
 ../../design/corecomplex/reqrsp_to_mem.sv
 
+../../design/open-source/rv_plic/rtl/top_pkg.sv
+../../design/open-source/rv_plic/rtl/tlul_pkg.sv
+../../design/open-source/rv_plic/rtl/rv_plic_reg_pkg.sv
+../../design/open-source/rv_plic/rtl/plic_top.sv
+../../design/open-source/rv_plic/rtl/rv_plic_gateway.sv
+../../design/open-source/rv_plic/rtl/rv_plic_reg_top.sv
+../../design/open-source/rv_plic/rtl/prim_subreg.sv
+../../design/open-source/rv_plic/rtl/prim_subreg_ext.sv
+../../design/open-source/rv_plic/rtl/plic_regmap.sv
+../../design/open-source/rv_plic/rtl/rv_plic_target.sv
+../../design/open-source/rv_plic/rtl/rv_plic.sv
+
 ../../design/open-source/axi/src/axi_intf.sv
 ../../design/open-source/axi/src/axi_xbar.sv
 ../../design/open-source/axi/src/axi_to_axi_lite.sv

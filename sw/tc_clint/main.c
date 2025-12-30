@@ -38,9 +38,9 @@ int main()
     counter_old = 0;
 
     // enable mie
-    asm volatile("csrs mie, %0"::"r"(1<<11));
-    asm volatile("csrs mie, %0"::"r"(1<<7 ));
-    asm volatile("csrs mie, %0"::"r"(1<<3 ));
+    asm volatile("csrs mie, %0"::"r"(1<<11)); // MEIE
+    asm volatile("csrs mie, %0"::"r"(1<<7 )); // MTIE
+    asm volatile("csrs mie, %0"::"r"(1<<3 )); // MSIE
     // enable MIE
     asm volatile("csrs mstatus, %0"::"r"(1<<3));
 

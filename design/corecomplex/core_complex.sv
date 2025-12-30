@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2025-09-25 10:39:06
+// Last Modified : 2025-12-29 11:08:28
 // Description   : Core Complex
 //                  - Sophon
 //                  - AXI INTERCONNECT
@@ -102,8 +102,8 @@ module CORE_COMPLEX(
     CC_ITF_PKG::xbar_slv_port_d64_resps_t [2:0] xbar_slv_port_rsp;
     CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req;
     CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp;
-    CC_ITF_PKG::apb_d32_req_t             [3:0] apb_req;
-    CC_ITF_PKG::apb_d32_resps_t           [3:0] apb_resp;
+    CC_ITF_PKG::apb_d32_req_t             [4:0] apb_req;
+    CC_ITF_PKG::apb_d32_resps_t           [4:0] apb_resp;
 
     AXI_INTERCONNECT U_AXI_INTERCONNECT (
         .clk_i               ( clk_i             )
@@ -223,7 +223,7 @@ module CORE_COMPLEX(
             .mst_req_o     ( sophon_axi_slv_d32_req ) ,
             .mst_resp_i    ( sophon_axi_slv_d32_rsp ) 
         );
-    `elsif 
+    `else
         assign xbar_mst_port_rsp[0].aw_ready = 1'b1;
         assign xbar_mst_port_rsp[0].w_ready  = 1'b1;
         assign xbar_mst_port_rsp[0].ar_ready = 1'b1;
@@ -271,7 +271,7 @@ module CORE_COMPLEX(
             .mst_req_o     ( xbar_mst_d64_req       ) ,
             .mst_resp_i    ( xbar_mst_d64_rsp       ) 
         );
-    `elsif 
+    `else
         assign xbar_slv_port_req[0].aw_valid = 1'b0;
         assign xbar_slv_port_req[0].w_valid  = 1'b0;
         assign xbar_slv_port_req[0].ar_valid = 1'b0;
@@ -280,6 +280,7 @@ module CORE_COMPLEX(
     `endif
 
 
+    logic irq_mei;
     SOPHON_AXI_TOP #( 
         .HART_ID(0) 
     ) U_SOPHON_AXI_TOP (
@@ -290,7 +291,7 @@ module CORE_COMPLEX(
          ,.bootaddr_i                             ( cc_boot                ) 
          ,.hart_id_i                              ( hart_id_i              ) 
     `ifdef SOPHON_CLINT
-         ,.irq_mei_i                              ( irq_mei_i              ) 
+         ,.irq_mei_i                              ( irq_mei                ) 
          ,.irq_mti_i                              ( irq_mti                ) 
          ,.irq_msi_i                              ( irq_msi                ) 
     `endif
@@ -358,6 +359,7 @@ module CORE_COMPLEX(
     // -----------------------------------
     //  UART
     // -----------------------------------
+    logic irq_uart;
     apb_uart_sv 
     #(
         .APB_ADDR_WIDTH(12)
@@ -375,7 +377,7 @@ module CORE_COMPLEX(
         .PSLVERR ( apb_resp[1].pslverr              ) ,
         .rx_i    ( uart_rx_i                        ) ,
         .tx_o    ( uart_tx_o                        ) ,
-        .event_o (                                  ) 
+        .event_o ( irq_uart                         ) 
     );
 
     // -----------------------------------
@@ -414,6 +416,71 @@ module CORE_COMPLEX(
         assign apb_resp[3].pready = 1'b1;
     `endif
 
+    // -----------------------------------
+    //  PLIC interface
+    // -----------------------------------
+    `ifdef SOPHON_PLIC
+
+        SOPHON_PKG::reg_intf_resp_d32     plic_resp;
+        SOPHON_PKG::reg_intf_req_a32_d32  plic_req;
+
+        always_comb begin
+            plic_req.valid = apb_req[4].psel & apb_req[4].penable;
+            //plic_req.addr  = {16'hc00, apb_req[4].paddr[15:0]};
+            plic_req.addr  = apb_req[4].paddr - 32'h07040000 + 32'h0c000000;
+            plic_req.write = apb_req[4].pwrite;
+            plic_req.wdata = apb_req[4].pwdata;
+            plic_req.wstrb = '1;
+            apb_resp[4].pready  = plic_resp.ready;
+            apb_resp[4].pslverr = plic_resp.error;
+            apb_resp[4].prdata  = plic_resp.rdata;
+        end
+
+        plic_top #(
+            // TODO: 
+            .N_SOURCE    ( 1  ),
+            .N_TARGET    ( 1  ),
+            .MAX_PRIO    ( 7  )
+        ) i_plic (
+            .clk_i,
+            .rst_ni,
+            .req_i         ( plic_req    ) ,
+            .resp_o        ( plic_resp   ) ,
+            .le_i          ( '0          ) , // 0:level 1:edge
+            .irq_sources_i ( irq_uart    ) ,
+            .eip_targets_o ( irq_mei     ) 
+        );
+
+    `else
+        assign apb_resp[4].pready = 1'b1;
+        `ifdef SOPHON_CLINT
+            assign irq_mei = irq_mei_i;
+        `endif
+    `endif
+
+    //  // -----------------------------------
+    //  //  Timer
+    //  // -----------------------------------
+    //  `ifdef SOPHON_TIMER
+    //      apb_timer #(
+    //      .APB_ADDR_WIDTH ( 32  ),
+    //      .TIMER_CNT      ( 1   )
+    //      ) i_timer (
+    //      .HCLK    ( clk_i                  ) ,
+    //      .HRESETn ( rst_ni                 ) ,
+    //      .PSEL    ( apb_req[5].psel        ) ,
+    //      .PENABLE ( apb_req[5].penable     ) ,
+    //      .PWRITE  ( apb_req[5].pwrite      ) ,
+    //      .PADDR   ( apb_req[5].paddr[11:2] ) ,
+    //      .PWDATA  ( apb_req[5].pwdata      ) ,
+    //      .PRDATA  ( apb_resp[5].prdata     ) ,
+    //      .PREADY  ( apb_resp[5].pready     ) ,
+    //      .PSLVERR ( apb_resp[5].pslverr    ) ,
+    //      .irq_o   ( irq_sources[2:1]       ) 
+    //      );
+    //  `else
+    //      assign apb_resp[5].pready = 1'b1;
+    //  `endif
 
 endmodule
 

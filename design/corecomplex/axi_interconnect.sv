@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2024-08-05 15:12:33
+// Last Modified : 2025-12-24 17:09:25
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -29,8 +29,8 @@ module AXI_INTERCONNECT (
     ,output CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req_o
     ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp_i
     // APB Port
-    ,output CC_ITF_PKG::apb_d32_req_t   [3:0] apb_req_o
-    ,input  CC_ITF_PKG::apb_d32_resps_t [3:0] apb_rsp_i
+    ,output CC_ITF_PKG::apb_d32_req_t   [4:0] apb_req_o
+    ,input  CC_ITF_PKG::apb_d32_resps_t [4:0] apb_rsp_i
 );
 
 
@@ -46,8 +46,8 @@ module AXI_INTERCONNECT (
     localparam axi_pkg::xbar_cfg_t XBAR_CFG = '{
         NoSlvPorts          : CC_ITF_PKG::XBAR_SLV_PORT_NUM, 
         NoMstPorts          : CC_ITF_PKG::XBAR_MST_PORT_NUM,
-        MaxMstTrans         : 4,
-        MaxSlvTrans         : 4,
+        MaxMstTrans         : 1,
+        MaxSlvTrans         : 1,
         FallThrough         : 1'b0,
         LatencyMode         : axi_pkg::CUT_MST_PORTS,
         AxiIdWidthSlvPorts  : CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH,
@@ -149,7 +149,7 @@ module AXI_INTERCONNECT (
     // -----------------------------------
     // APB port
     // -----------------------------------
-    localparam APB_SLV_NUM  = 4;
+    localparam APB_SLV_NUM  = 5;
     CC_ITF_PKG::apb_d32_req_t   [APB_SLV_NUM-1:0] apb_req;
     CC_ITF_PKG::apb_d32_resps_t [APB_SLV_NUM-1:0] apb_resp;
 
@@ -157,11 +157,13 @@ module AXI_INTERCONNECT (
     assign apb_req_o[1] = apb_req[1];
     assign apb_req_o[2] = apb_req[2];
     assign apb_req_o[3] = apb_req[3];
+    assign apb_req_o[4] = apb_req[4];
     
     assign apb_resp[0] = apb_rsp_i[0];
     assign apb_resp[1] = apb_rsp_i[1];
     assign apb_resp[2] = apb_rsp_i[2];
     assign apb_resp[3] = apb_rsp_i[3];
+    assign apb_resp[4] = apb_rsp_i[4];
 
 
 
@@ -178,7 +180,7 @@ module AXI_INTERCONNECT (
     CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_side_d32_rsp;
 
     axi_dw_converter #(
-        .AxiMaxReads         ( 4                                   ) ,
+        .AxiMaxReads         ( 1                                   ) ,
         .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
         .AxiMstPortDataWidth ( 32                                  ) ,
         .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
@@ -216,8 +218,8 @@ module AXI_INTERCONNECT (
         .AxiDataWidth    ( 32                                      ) ,
         .AxiIdWidth      ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH        ) ,
         .AxiUserWidth    ( CC_ITF_PKG::XBAR_USER_WIDTH               ) ,
-        .AxiMaxWriteTxns ( 4                                       ) ,
-        .AxiMaxReadTxns  ( 4                                       ) ,
+        .AxiMaxWriteTxns ( 1                                       ) ,
+        .AxiMaxReadTxns  ( 1                                       ) ,
         .FallThrough     ( 0                                       ) ,  // FIFOs in Fall through mode in ID reflect
         .full_req_t      ( CC_ITF_PKG::axi_mst_side_d32_req_t        ) ,
         .full_resp_t     ( CC_ITF_PKG::axi_mst_side_d32_resps_t      ) ,
@@ -249,7 +251,9 @@ module AXI_INTERCONNECT (
         // Clint
         '{idx: 32'd2, start_addr: 32'h0600_5000, end_addr: 32'h0600_6000},
         // CLIC
-        '{idx: 32'd3, start_addr: 32'h0702_0000, end_addr: 32'h0703_0000}
+        '{idx: 32'd3, start_addr: 32'h0702_0000, end_addr: 32'h0703_0000},
+        // PLIC
+        '{idx: 32'd4, start_addr: 32'h0704_0000, end_addr: 32'h0800_0000}
     };
 
     axi_lite_to_apb #(

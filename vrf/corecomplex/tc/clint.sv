@@ -28,10 +28,19 @@ begin
 
     $display("====== clint test1: irq_mei=0\n");
     repeat(1000)@(posedge clk);
+`ifdef SOPHON_PLIC
+    $display("====== clint test1: PLIC is enabled, force irq_mei!\n");
+    force u_dut.U_SOPHON_AXI_TOP.irq_mei_i=1;
+`else
     irq_mei = 1'b1;
+`endif
     $display(">> check if tohost66\n");
     wait(tohost==66);
+`ifdef SOPHON_PLIC
+    force u_dut.U_SOPHON_AXI_TOP.irq_mei_i=0;
+`else
     irq_mei = 1'b0;
+`endif
 
 
 end

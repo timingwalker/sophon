@@ -368,77 +368,77 @@ module axi_atop_filter #(
 // pragma translate_on
 endmodule
 
-`include "axi/assign.svh"
-`include "axi/typedef.svh"
-
-/// Interface variant of [`axi_atop_filter`](module.axi_atop_filter).
-module axi_atop_filter_intf #(
-  /// AXI ID width
-  parameter int unsigned AXI_ID_WIDTH   = 0,
-  /// AXI address width
-  parameter int unsigned AXI_ADDR_WIDTH = 0,
-  /// AXI data width
-  parameter int unsigned AXI_DATA_WIDTH = 0,
-  /// AXI user signal width
-  parameter int unsigned AXI_USER_WIDTH = 0,
-  /// Maximum number of in-flight AXI write transactions
-  parameter int unsigned AXI_MAX_WRITE_TXNS = 0
-) (
-  /// Rising-edge clock of both ports
-  input  logic    clk_i,
-  /// Asynchronous reset, active low
-  input  logic    rst_ni,
-  /// Slave interface port
-  AXI_BUS.Slave   slv,
-  /// Master interface port
-  AXI_BUS.Master  mst
-);
-
-  typedef logic [AXI_ID_WIDTH-1:0]     id_t;
-  typedef logic [AXI_ADDR_WIDTH-1:0]   addr_t;
-  typedef logic [AXI_DATA_WIDTH-1:0]   data_t;
-  typedef logic [AXI_DATA_WIDTH/8-1:0] strb_t;
-  typedef logic [AXI_USER_WIDTH-1:0]   user_t;
-
-  `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
-  `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
-  `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
-  `AXI_TYPEDEF_RESP_T(axi_resp_t, b_chan_t, r_chan_t)
-
-  axi_req_t  slv_req,  mst_req;
-  axi_resp_t slv_resp, mst_resp;
-
-  `AXI_ASSIGN_TO_REQ(slv_req, slv)
-  `AXI_ASSIGN_FROM_RESP(slv, slv_resp)
-
-  `AXI_ASSIGN_FROM_REQ(mst, mst_req)
-  `AXI_ASSIGN_TO_RESP(mst_resp, mst)
-
-  axi_atop_filter #(
-    .AxiIdWidth      ( AXI_ID_WIDTH       ),
-  // Maximum number of AXI write bursts outstanding at the same time
-    .AxiMaxWriteTxns ( AXI_MAX_WRITE_TXNS ),
-  // AXI request & response type
-    .axi_req_t       ( axi_req_t          ),
-    .axi_resp_t      ( axi_resp_t         )
-  ) i_axi_atop_filter (
-    .clk_i,
-    .rst_ni,
-    .slv_req_i  ( slv_req  ),
-    .slv_resp_o ( slv_resp ),
-    .mst_req_o  ( mst_req  ),
-    .mst_resp_i ( mst_resp )
-  );
-// pragma translate_off
-`ifndef VERILATOR
-  initial begin: p_assertions
-    assert (AXI_ADDR_WIDTH >= 1) else $fatal(1, "AXI ADDR width must be at least 1!");
-    assert (AXI_DATA_WIDTH >= 1) else $fatal(1, "AXI DATA width must be at least 1!");
-    assert (AXI_USER_WIDTH >= 1) else $fatal(1, "AXI USER width must be at least 1!");
-  end
-`endif
-// pragma translate_on
-endmodule
+// `include "axi/assign.svh"
+// `include "axi/typedef.svh"
+// 
+// /// Interface variant of [`axi_atop_filter`](module.axi_atop_filter).
+// module axi_atop_filter_intf #(
+//   /// AXI ID width
+//   parameter int unsigned AXI_ID_WIDTH   = 0,
+//   /// AXI address width
+//   parameter int unsigned AXI_ADDR_WIDTH = 0,
+//   /// AXI data width
+//   parameter int unsigned AXI_DATA_WIDTH = 0,
+//   /// AXI user signal width
+//   parameter int unsigned AXI_USER_WIDTH = 0,
+//   /// Maximum number of in-flight AXI write transactions
+//   parameter int unsigned AXI_MAX_WRITE_TXNS = 0
+// ) (
+//   /// Rising-edge clock of both ports
+//   input  logic    clk_i,
+//   /// Asynchronous reset, active low
+//   input  logic    rst_ni,
+//   /// Slave interface port
+//   AXI_BUS.Slave   slv,
+//   /// Master interface port
+//   AXI_BUS.Master  mst
+// );
+// 
+//   typedef logic [AXI_ID_WIDTH-1:0]     id_t;
+//   typedef logic [AXI_ADDR_WIDTH-1:0]   addr_t;
+//   typedef logic [AXI_DATA_WIDTH-1:0]   data_t;
+//   typedef logic [AXI_DATA_WIDTH/8-1:0] strb_t;
+//   typedef logic [AXI_USER_WIDTH-1:0]   user_t;
+// 
+//   `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
+//   `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
+//   `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
+//   `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
+//   `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
+//   `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
+//   `AXI_TYPEDEF_RESP_T(axi_resp_t, b_chan_t, r_chan_t)
+// 
+//   axi_req_t  slv_req,  mst_req;
+//   axi_resp_t slv_resp, mst_resp;
+// 
+//   `AXI_ASSIGN_TO_REQ(slv_req, slv)
+//   `AXI_ASSIGN_FROM_RESP(slv, slv_resp)
+// 
+//   `AXI_ASSIGN_FROM_REQ(mst, mst_req)
+//   `AXI_ASSIGN_TO_RESP(mst_resp, mst)
+// 
+//   axi_atop_filter #(
+//     .AxiIdWidth      ( AXI_ID_WIDTH       ),
+//   // Maximum number of AXI write bursts outstanding at the same time
+//     .AxiMaxWriteTxns ( AXI_MAX_WRITE_TXNS ),
+//   // AXI request & response type
+//     .axi_req_t       ( axi_req_t          ),
+//     .axi_resp_t      ( axi_resp_t         )
+//   ) i_axi_atop_filter (
+//     .clk_i,
+//     .rst_ni,
+//     .slv_req_i  ( slv_req  ),
+//     .slv_resp_o ( slv_resp ),
+//     .mst_req_o  ( mst_req  ),
+//     .mst_resp_i ( mst_resp )
+//   );
+// // pragma translate_off
+// `ifndef VERILATOR
+//   initial begin: p_assertions
+//     assert (AXI_ADDR_WIDTH >= 1) else $fatal(1, "AXI ADDR width must be at least 1!");
+//     assert (AXI_DATA_WIDTH >= 1) else $fatal(1, "AXI DATA width must be at least 1!");
+//     assert (AXI_USER_WIDTH >= 1) else $fatal(1, "AXI USER width must be at least 1!");
+//   end
+// `endif
+// // pragma translate_on
+// endmodule

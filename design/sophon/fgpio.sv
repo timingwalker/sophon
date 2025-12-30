@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2025-03-13 15:48:43
+// Last Modified : 2025-11-13 18:08:40
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ module FGPIO (
     `define REG_CLK             5'd22
 
     localparam int unsigned RSV_BIT = 32 - `FGPIO_NUM;
-    `define ITF_NUM 8
+    `define ITF_NUM 4
     `define CNT_WIDTH 5
 
     logic [`FGPIO_NUM-1:0]  gpio_dir_1d;

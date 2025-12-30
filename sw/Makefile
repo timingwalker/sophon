@@ -5,9 +5,12 @@ RISCV_GCC      := $(RISCV_PREFIX)-gcc
 RISCV_OBJDUMP  := $(RISCV_PREFIX)-objdump
 RISCV_OBJCOPY  := $(RISCV_PREFIX)-objcopy
 
-MARCH    ?= rv32ia
-MABI     ?= ilp32
-LDS_FILE ?= link.ld
+MARCH         ?= rv32ia
+MABI          ?= ilp32
+LDS_FILE      ?= link.ld
+SW_SIMPLE_CRT ?= NO
+SW_RVE        ?= NO
+SW_ZICSR      ?= YES
 
 
 # ----------------------------------------------------------------------
@@ -18,7 +21,8 @@ MAKE_APP  := $(filter-out common build FreeRTOS,$(subfold))
 CLEAN_APP := $(addprefix clean_,$(filter-out common,$(subfold)))
 
 $(MAKE_APP): %: clean_%
-	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE)
+	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) SW_RVE=$(SW_RVE) SW_ZICSR=$(SW_ZICSR)
+
 
 $(CLEAN_APP): clean_%:
 	rm -rf ./build/$*

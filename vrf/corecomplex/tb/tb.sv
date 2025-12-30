@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2025-09-25 14:52:44
+// Last Modified : 2025-12-11 16:15:45
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -535,8 +535,37 @@ module tb();
             "tc_fgpio"            : `ifdef SOPHON_EEI_GPIO      fgpio()          `endif;
             "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO      fgpio_uart()     `endif;
             "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO      fgpio_spi()      `endif;
+            // "freemodbus"          : #1ms 
+            //                         u_uart_bus.send_char(8'h01);
+            //                         //u_uart_bus.send_char(8'h03);
+            //                         //u_uart_bus.send_char(8'h00);
+            //                         //u_uart_bus.send_char(8'h04);
+            //                         //u_uart_bus.send_char(8'h00);
+            //                         //u_uart_bus.send_char(8'h02);
+            //                         //u_uart_bus.send_char(8'h85);
+            //                         //u_uart_bus.send_char(8'hca);
             default               : ;
         endcase
+
+            #5ms u_uart_bus.send_char(8'h01);
+            u_uart_bus.send_char(8'h03);
+            u_uart_bus.send_char(8'h00);
+            u_uart_bus.send_char(8'h04);
+            u_uart_bus.send_char(8'h00);
+            u_uart_bus.send_char(8'h02);
+            u_uart_bus.send_char(8'h85);
+            u_uart_bus.send_char(8'hca);
+
+            // #2ms u_uart_bus.send_char(8'h01);
+            // u_uart_bus.send_char(8'h06);
+            // u_uart_bus.send_char(8'h00);
+            // u_uart_bus.send_char(8'h04);
+            // u_uart_bus.send_char(8'h00);
+            // u_uart_bus.send_char(8'h01);
+            // u_uart_bus.send_char(8'h12);
+            // u_uart_bus.send_char(8'h34);
+            // u_uart_bus.send_char(8'h4a);
+            // u_uart_bus.send_char(8'hb0);
 
     end
 
@@ -651,7 +680,8 @@ module tb();
             "rsort"        : begin $display("TIMEOUTE=100ms\n" ); #100ms  ; end
             "dhrystone"    : begin $display("TIMEOUTE=500ms\n"  ); #500ms  ; end
             "FreeRTOS"     : begin $display("TIMEOUTE=5000ms\n"  ); #5000ms  ; end
-            default        : begin $display("TIMEOUTE=10ms\n"  ); #10ms  ; end
+            "freemodbus"   : begin $display("TIMEOUTE=30ms\n"  ); #30ms  ; end
+            default        : begin $display("TIMEOUTE=20ms\n"  ); #10ms  ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");
 

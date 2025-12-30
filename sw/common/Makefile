@@ -1,9 +1,13 @@
-PROGRAM    ?= NONE
-SIMPLE_CRT ?= NO
-MARCH      ?= rv32ia
-MABI       ?= ilp32
-DEFINE     ?= -D__RV32E=0
-LDS_FILE   ?= link.ld
+PROGRAM       ?= NONE
+
+MARCH         ?= rv32ia
+MABI          ?= ilp32
+DEFINE        ?= 
+LDS_FILE      ?= link.ld
+
+SW_SIMPLE_CRT ?= NO
+SW_RVE        ?= NO
+SW_ZICSR      ?= YES
 
 # ----------------------------------------------------------------------
 #  Parameters
@@ -12,12 +16,23 @@ COM_DIR     = .
 SW_DIR      = ../$(PROGRAM)
 BUILD_DIR   = ../build/$(PROGRAM)
 
-ifeq ($(SIMPLE_CRT), YES)
-	COM_SRC = syscalls_simple.c
-else 
-	COM_SRC = $(filter-out syscalls_simple.c, $(wildcard $(COM_DIR)/*.c))
+ifeq ($(SW_SIMPLE_CRT), YES)
+	DEFINE += -D__SIMPLE_CRT=1
 endif
-COM_ASM  = $(wildcard $(COM_DIR)/*.S)
+ifeq ($(SW_RVE), YES)
+	DEFINE += -D__RV32E=1
+endif
+ifeq ($(SW_ZICSR), YES)
+	DEFINE += -D__RVZICSR=1
+endif
+
+ifeq ($(SW_SIMPLE_CRT), YES)
+	COM_SRC = syscalls_simple.c
+	COM_ASM = crt_simple.S
+else 
+	COM_SRC = $(filter-out $(COM_DIR)/syscalls_simple.c, $(wildcard $(COM_DIR)/*.c))
+	COM_ASM = $(filter-out $(COM_DIR)/crt_simple.S, $(wildcard $(COM_DIR)/*.S))
+endif
 
 SW_SRC  ?= $(wildcard $(SW_DIR)/*.c)
 SW_ASM  ?= $(wildcard $(SW_DIR)/*.S)
@@ -78,3 +93,5 @@ all: $(PROGRAM).hex $(PROGRAM).dump $(PROGRAM).bin $(PROGRAM).elf
 
 debug:
 	echo $(OBJ)
+	echo $(COM_SRC)
+	echo $(COM_ASM)

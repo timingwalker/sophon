@@ -26,23 +26,23 @@
 /// > to reqrsp to mem).
 module axi_to_reqrsp #(
   /// AXI4+ATOP request type. See `include/axi/typedef.svh`.
-  parameter type         axi_req_t  = logic,
+  parameter type         axi_req_t  = CC_ITF_PKG::axi_mst_side_d32_req_t,
   /// AXI4+ATOP response type. See `include/axi/typedef.svh`.
-  parameter type         axi_rsp_t = logic,
+  parameter type         axi_rsp_t = CC_ITF_PKG::axi_mst_side_d32_resps_t,
   /// Address width, has to be less or equal than the width off the AXI address
   /// field. Determines the width of `mem_addr_o`. Has to be wide enough to emit
   /// the memory region which should be accessible.
-  parameter int unsigned AddrWidth  = 0,
-  parameter int unsigned DataWidth  = 0,
+  parameter int unsigned AddrWidth  = 32,
+  parameter int unsigned DataWidth  = 32,
   /// AXI4+ATOP ID width.
   parameter int unsigned IdWidth    = 0,
   /// Depth of memory response buffer. This should be equal to the downstream
   /// response latency.
   parameter int unsigned BufDepth   = 1,
   /// Reqrsp request channel type.
-  parameter type         reqrsp_req_t = logic,
+  parameter type         reqrsp_req_t = CC_ITF_PKG::reqrsp_d32_req_t,
   /// Reqrsp response channel type.
-  parameter type         reqrsp_rsp_t = logic
+  parameter type         reqrsp_rsp_t = CC_ITF_PKG::reqrsp_d32_resps_t
 ) (
   /// Clock input.
   input  logic                           clk_i,
@@ -416,81 +416,84 @@ module axi_to_reqrsp #(
 // synopsys translate_on
 endmodule
 
-`include "reqrsp_interface/typedef.svh"
-`include "reqrsp_interface/assign.svh"
-`include "axi/typedef.svh"
-`include "axi/assign.svh"
 
-/// Interface Wrapper
-module axi_to_reqrsp_intf #(
-  /// AXI addr width.
-  parameter int unsigned AddrWidth  = 0,
-  /// AXI data width.
-  parameter int unsigned DataWidth  = 0,
-  /// AXI id width.
-  parameter int unsigned IdWidth    = 0,
-  /// AXI user wdith.
-  parameter int unsigned UserWidth  = 0,
-  /// Depth of memory response buffer. This should be equal to the downstream
-  /// response latency.
-  parameter int unsigned BufDepth   = 1
-) (
-  /// Clock input.
-  input  logic   clk_i,
-  /// Asynchronous reset, active low.
-  input  logic   rst_ni,
-  /// The unit is busy handling an AXI4+ATOP request.
-  output logic   busy_o,
-  REQRSP_BUS     reqrsp,
-  AXI_BUS        axi
-);
+// Modify(hz) 23/10/25 18:22:13 it is not used in sophon 
 
-  typedef logic [AddrWidth-1:0] addr_t;
-  typedef logic [DataWidth-1:0] data_t;
-  typedef logic [DataWidth/8-1:0] strb_t;
-  typedef logic [IdWidth-1:0] id_t;
-  typedef logic [UserWidth-1:0] user_t;
-
-  `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
-
-  `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
-  `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
-
-  `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
-  `AXI_TYPEDEF_RESP_T(axi_rsp_t, b_chan_t, r_chan_t)
-
-  reqrsp_req_t reqrsp_req;
-  reqrsp_rsp_t reqrsp_rsp;
-
-  axi_req_t axi_req;
-  axi_rsp_t axi_rsp;
-
-  axi_to_reqrsp #(
-    .axi_req_t (axi_req_t),
-    .axi_rsp_t (axi_rsp_t),
-    .AddrWidth (AddrWidth),
-    .DataWidth (DataWidth),
-    .IdWidth (IdWidth),
-    .BufDepth (BufDepth),
-    .reqrsp_req_t (reqrsp_req_t),
-    .reqrsp_rsp_t (reqrsp_rsp_t )
-  ) i_dut (
-    .clk_i,
-    .rst_ni,
-    .busy_o,
-    .axi_req_i (axi_req),
-    .axi_rsp_o (axi_rsp),
-    .reqrsp_req_o (reqrsp_req),
-    .reqrsp_rsp_i (reqrsp_rsp)
-  );
-
-  `REQRSP_ASSIGN_FROM_REQ(reqrsp, reqrsp_req)
-  `REQRSP_ASSIGN_TO_RESP(reqrsp_rsp, reqrsp)
-
-  `AXI_ASSIGN_TO_REQ(axi_req, axi)
-  `AXI_ASSIGN_FROM_RESP(axi, axi_rsp)
-
-endmodule
+//  `include "reqrsp_interface/typedef.svh"
+//  `include "reqrsp_interface/assign.svh"
+//  `include "axi/typedef.svh"
+//  `include "axi/assign.svh"
+//  
+//  /// Interface Wrapper
+//  module axi_to_reqrsp_intf #(
+//    /// AXI addr width.
+//    parameter int unsigned AddrWidth  = 0,
+//    /// AXI data width.
+//    parameter int unsigned DataWidth  = 8,
+//    /// AXI id width.
+//    parameter int unsigned IdWidth    = 0,
+//    /// AXI user wdith.
+//    parameter int unsigned UserWidth  = 0,
+//    /// Depth of memory response buffer. This should be equal to the downstream
+//    /// response latency.
+//    parameter int unsigned BufDepth   = 1
+//  ) (
+//    /// Clock input.
+//    input  logic   clk_i,
+//    /// Asynchronous reset, active low.
+//    input  logic   rst_ni,
+//    /// The unit is busy handling an AXI4+ATOP request.
+//    output logic   busy_o,
+//    REQRSP_BUS     reqrsp,
+//    AXI_BUS        axi
+//  );
+//  
+//    typedef logic [AddrWidth-1:0] addr_t;
+//    typedef logic [DataWidth-1:0] data_t;
+//    typedef logic [DataWidth/8-1:0] strb_t;
+//    typedef logic [IdWidth-1:0] id_t;
+//    typedef logic [UserWidth-1:0] user_t;
+//  
+//    `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
+//  
+//    `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
+//    `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
+//    `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
+//    `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
+//    `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
+//  
+//    `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
+//    `AXI_TYPEDEF_RESP_T(axi_rsp_t, b_chan_t, r_chan_t)
+//  
+//    reqrsp_req_t reqrsp_req;
+//    reqrsp_rsp_t reqrsp_rsp;
+//  
+//    axi_req_t axi_req;
+//    axi_rsp_t axi_rsp;
+//  
+//    axi_to_reqrsp #(
+//      .axi_req_t (axi_req_t),
+//      .axi_rsp_t (axi_rsp_t),
+//      .AddrWidth (AddrWidth),
+//      .DataWidth (DataWidth),
+//      .IdWidth (IdWidth),
+//      .BufDepth (BufDepth),
+//      .reqrsp_req_t (reqrsp_req_t),
+//      .reqrsp_rsp_t (reqrsp_rsp_t )
+//    ) i_dut (
+//      .clk_i,
+//      .rst_ni,
+//      .busy_o,
+//      .axi_req_i (axi_req),
+//      .axi_rsp_o (axi_rsp),
+//      .reqrsp_req_o (reqrsp_req),
+//      .reqrsp_rsp_i (reqrsp_rsp)
+//    );
+//  
+//    `REQRSP_ASSIGN_FROM_REQ(reqrsp, reqrsp_req)
+//    `REQRSP_ASSIGN_TO_RESP(reqrsp_rsp, reqrsp)
+//  
+//    `AXI_ASSIGN_TO_REQ(axi_req, axi)
+//    `AXI_ASSIGN_FROM_RESP(axi, axi_rsp)
+// 
+// endmodule

@@ -6,15 +6,6 @@
 // Do NOT CHANGE
 // -----------------------------------
 
-// `ifdef CORE_COMPLEX_AXI_MST
-//     `define SOPHON_EXT_INST
-//     `define SOPHON_EXT_DATA
-// `endif
-
-// `ifdef CORE_COMPLEX_AXI_SLV
-//     `define SOPHON_EXT_ACCESS
-// `endif
-
 `ifdef SOPHON_CLINT
     `define SOPHON_EXT_DATA
 `endif
@@ -36,10 +27,10 @@
 
 `ifdef SOPHON_EEI
     `ifndef EEI_RS_MAX
-        `define EEI_RS_MAX 8
+        `define EEI_RS_MAX 10
     `endif
     `ifndef EEI_RD_MAX
-        `define EEI_RD_MAX 8
+        `define EEI_RD_MAX 10
     `endif
 `endif
 

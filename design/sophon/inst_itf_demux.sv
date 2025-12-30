@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2024-08-16 17:13:13
+// Last Modified : 2025-10-23 16:48:41
 // Description   : Demux inst interface    
 //                 NOTE: the addr decode granularity is 4KB
 // ----------------------------------------------------------------------
@@ -168,7 +168,7 @@ module INST_ITF_DEMUX #(
 
 
 
-`ifndef VERILATOR
+`ifdef ASSERTION
 
     inst_pos_req_overlap: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
                                        ((inst_pos_req_o==1'b1) |-> (inst_neg_req_o!=1'b1)) ) 

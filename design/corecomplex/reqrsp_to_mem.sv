@@ -14,13 +14,13 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-31 09:03:49
-// Last Modified : 2023-12-27 14:45:41
+// Last Modified : 2025-10-23 18:02:41
 // Description   : reqresp to memory interface
 // ----------------------------------------------------------------------
 
 module REQRSP_TO_MEM #(
-    parameter type            req_t      = logic,
-    parameter type            resp_t     = logic,
+    parameter type            req_t      = CC_ITF_PKG::reqrsp_d32_req_t,
+    parameter type            resp_t     = CC_ITF_PKG::reqrsp_d32_resps_t,
     parameter int unsigned    DATA_WIDTH = 64,
     parameter int unsigned    ADDR_WIDTH = 32
 ) (

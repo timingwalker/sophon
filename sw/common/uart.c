@@ -64,4 +64,11 @@ char uart_getc(void* uartctrl)
     return val & 0xFF;
 }              
 
+char uart_rd_lsr(void* uartctrl)
+{
+    int32_t val = -1;
+    val = readl(uartctrl + UART_REG_LSR);
+    return val ;
+}              
+
 

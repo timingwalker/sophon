@@ -27,6 +27,7 @@ void uart_putc(void* uartctrl, char c);
 char uart_getc(void* uartctrl);
 void uart_puts(void* uartctrl, const char * s);
 
+char uart_rd_lsr(void* uartctrl);
 
 #endif /* _DRIVERS_UART_H */
 

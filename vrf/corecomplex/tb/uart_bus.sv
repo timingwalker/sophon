@@ -92,7 +92,8 @@ interface uart_bus
       // STOP BIT
       #BIT_PERIOD;
       if (echo == 1'b1) begin
-        $fwrite(file, "%c", character);
+        $fwrite(file, "%x", character);
+        //$fwrite(file, "%c", character);
         stringa[(255-charnum)*8 +: 8] = character;
         if(loopback_en == 1'b1) begin
           $fwrite(file, "%c", 8'h0A);
@@ -107,6 +108,7 @@ interface uart_bus
             stringa[(255-charnum-1)*8 +: 8] = 8'h0; // null terminate string
 
           if(loopback_en == 1'b0) $write("RX string: %s\n",stringa);
+          //if(loopback_en == 1'b0) $write("RX string: %x\n",stringa);
           charnum = 0;
           stringa = "";
         end

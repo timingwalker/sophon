@@ -99,5 +99,16 @@ read_verilog -sv ../design/open-source/apb_uart_sv/uart_tx.sv
 read_verilog -sv ../design/open-source/apb_uart_sv/uart_interrupt.sv
 read_verilog -sv ../design/open-source/apb_uart_sv/io_generic_fifo.sv
 
+read_verilog -sv ../design/open-source/rv_plic/rtl/top_pkg.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/tlul_pkg.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/rv_plic_reg_pkg.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/plic_top.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/rv_plic_gateway.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/rv_plic_reg_top.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/prim_subreg.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/prim_subreg_ext.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/plic_regmap.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/rv_plic_target.sv
+read_verilog -sv ../design/open-source/rv_plic/rtl/rv_plic.sv
 
 read_verilog -sv SOPHON_FPGA_TOP.sv

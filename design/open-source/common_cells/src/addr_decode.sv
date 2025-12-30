@@ -34,7 +34,7 @@ module addr_decode #(
   /// Highest index which can happen in a rule.
   parameter int unsigned NoIndices = 32'd0,
   /// Total number of rules.
-  parameter int unsigned NoRules   = 32'd0,
+  parameter int unsigned NoRules   = 32'd8,
   /// Address type inside the rules and to decode.
   parameter type         addr_t    = logic,
   /// Rule packed struct type.
@@ -53,7 +53,7 @@ module addr_decode #(
   /// If `Napot` is 1, The field names remain the same, but the rule describes a naturally-aligned
   /// power of two (NAPOT) region instead of an address range: `start_addr` becomes the base address
   /// and `end_addr` the mask. See the wrapping module `addr_decode_napot` for details.
-  parameter type         rule_t    = logic,
+  parameter type         rule_t    = axi_pkg::xbar_rule_64_t,
   // Whether this is a NAPOT (base and mask) or regular range decoder
   parameter bit          Napot     = 0,
   /// Dependent parameter, do **not** overwite!

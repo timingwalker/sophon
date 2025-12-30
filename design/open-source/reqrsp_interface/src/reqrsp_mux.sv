@@ -15,9 +15,9 @@ module reqrsp_mux #(
     /// Data width of the interface.
     parameter int unsigned               DataWidth    = 0,
     /// Request type.
-    parameter type                       req_t        = logic,
+    parameter type                       req_t        = CC_ITF_PKG::reqrsp_d32_req_t,
     /// Response type.
-    parameter type                       rsp_t        = logic,
+    parameter type                       rsp_t        = CC_ITF_PKG::reqrsp_d32_resps_t,
     /// Amount of outstanding responses. Determines the FIFO size.
     parameter int unsigned               RespDepth    = 8,
     /// Cut timing paths on the request path. Incurs a cycle additional latency.
@@ -148,66 +148,66 @@ module reqrsp_mux #(
 
 endmodule
 
-`include "reqrsp_interface/typedef.svh"
-`include "reqrsp_interface/assign.svh"
-
-/// Interface wrapper.
-module reqrsp_mux_intf #(
-    /// Number of input ports.
-    parameter int unsigned      NrPorts      = 2,
-    /// Address width of the interface.
-    parameter int unsigned      AddrWidth    = 0,
-    /// Data width of the interface.
-    parameter int unsigned      DataWidth    = 0,
-    /// Amount of outstanding responses. Determines the FIFO size.
-    parameter int unsigned      RespDepth    = 8,
-    /// Cut timing paths on the request path. Incurs a cycle additional latency.
-    /// Registers are inserted at the slave side.
-    parameter bit [NrPorts-1:0] RegisterReq  = '0
-) (
-    input  logic clk_i,
-    input  logic rst_ni,
-    REQRSP_BUS   slv [NrPorts],
-    REQRSP_BUS   mst,
-    output logic [$clog2(NrPorts)-1:0] idx_o
-);
-
-  typedef logic [AddrWidth-1:0] addr_t;
-  typedef logic [DataWidth-1:0] data_t;
-  typedef logic [DataWidth/8-1:0] strb_t;
-
-  `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
-
-  reqrsp_req_t [NrPorts-1:0] reqrsp_slv_req;
-  reqrsp_rsp_t [NrPorts-1:0] reqrsp_slv_rsp;
-
-  reqrsp_req_t reqrsp_mst_req;
-  reqrsp_rsp_t reqrsp_mst_rsp;
-
-  reqrsp_mux #(
-    .NrPorts (NrPorts),
-    .AddrWidth (AddrWidth),
-    .DataWidth (DataWidth),
-    .req_t (reqrsp_req_t),
-    .rsp_t (reqrsp_rsp_t),
-    .RespDepth (RespDepth),
-    .RegisterReq (RegisterReq)
-  ) i_reqrsp_mux (
-    .clk_i,
-    .rst_ni,
-    .slv_req_i (reqrsp_slv_req),
-    .slv_rsp_o (reqrsp_slv_rsp),
-    .mst_req_o (reqrsp_mst_req),
-    .mst_rsp_i (reqrsp_mst_rsp),
-    .idx_o (idx_o)
-  );
-
-  for (genvar i = 0; i < NrPorts; i++) begin : gen_interface_assignment
-    `REQRSP_ASSIGN_TO_REQ(reqrsp_slv_req[i], slv[i])
-    `REQRSP_ASSIGN_FROM_RESP(slv[i], reqrsp_slv_rsp[i])
-  end
-
-  `REQRSP_ASSIGN_FROM_REQ(mst, reqrsp_mst_req)
-  `REQRSP_ASSIGN_TO_RESP(reqrsp_mst_rsp, mst)
-
-endmodule
+// `include "reqrsp_interface/typedef.svh"
+// `include "reqrsp_interface/assign.svh"
+// 
+// /// Interface wrapper.
+// module reqrsp_mux_intf #(
+//     /// Number of input ports.
+//     parameter int unsigned      NrPorts      = 2,
+//     /// Address width of the interface.
+//     parameter int unsigned      AddrWidth    = 0,
+//     /// Data width of the interface.
+//     parameter int unsigned      DataWidth    = 0,
+//     /// Amount of outstanding responses. Determines the FIFO size.
+//     parameter int unsigned      RespDepth    = 8,
+//     /// Cut timing paths on the request path. Incurs a cycle additional latency.
+//     /// Registers are inserted at the slave side.
+//     parameter bit [NrPorts-1:0] RegisterReq  = '0
+// ) (
+//     input  logic clk_i,
+//     input  logic rst_ni,
+//     REQRSP_BUS   slv [NrPorts],
+//     REQRSP_BUS   mst,
+//     output logic [$clog2(NrPorts)-1:0] idx_o
+// );
+// 
+//   typedef logic [AddrWidth-1:0] addr_t;
+//   typedef logic [DataWidth-1:0] data_t;
+//   typedef logic [DataWidth/8-1:0] strb_t;
+// 
+//   `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
+// 
+//   reqrsp_req_t [NrPorts-1:0] reqrsp_slv_req;
+//   reqrsp_rsp_t [NrPorts-1:0] reqrsp_slv_rsp;
+// 
+//   reqrsp_req_t reqrsp_mst_req;
+//   reqrsp_rsp_t reqrsp_mst_rsp;
+// 
+//   reqrsp_mux #(
+//     .NrPorts (NrPorts),
+//     .AddrWidth (AddrWidth),
+//     .DataWidth (DataWidth),
+//     .req_t (reqrsp_req_t),
+//     .rsp_t (reqrsp_rsp_t),
+//     .RespDepth (RespDepth),
+//     .RegisterReq (RegisterReq)
+//   ) i_reqrsp_mux (
+//     .clk_i,
+//     .rst_ni,
+//     .slv_req_i (reqrsp_slv_req),
+//     .slv_rsp_o (reqrsp_slv_rsp),
+//     .mst_req_o (reqrsp_mst_req),
+//     .mst_rsp_i (reqrsp_mst_rsp),
+//     .idx_o (idx_o)
+//   );
+// 
+//   for (genvar i = 0; i < NrPorts; i++) begin : gen_interface_assignment
+//     `REQRSP_ASSIGN_TO_REQ(reqrsp_slv_req[i], slv[i])
+//     `REQRSP_ASSIGN_FROM_RESP(slv[i], reqrsp_slv_rsp[i])
+//   end
+// 
+//   `REQRSP_ASSIGN_FROM_REQ(mst, reqrsp_mst_req)
+//   `REQRSP_ASSIGN_TO_RESP(reqrsp_mst_rsp, mst)
+// 
+// endmodule

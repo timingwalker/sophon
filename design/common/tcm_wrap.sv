@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-09 16:42:12
-// Last Modified : 2024-11-26 15:21:47
+// Last Modified : 2025-11-13 17:31:07
 // Description   : TCM wrapper
 // ----------------------------------------------------------------------
 
@@ -79,11 +79,17 @@ module TCM_WRAP
                     .D       ( wdata_i                            ) 
                 );
             `else
+                // ADDR_WIDTH:  counts in DATA_WIDTH
+                // addr_common: counts in byte
                 BW_SP_RAM
                 #(
-                    // ADDR_WIDTH:  counts in DATA_WIDTH
-                    // addr_common: counts in byte
+                `ifdef ECOS_202512
+                    // This shuttle does not support memory compiler, and TCMs are limited to instance number.
+                    // Simplely reduce the high region of one TCM bank. User must check the size of software.
+                    .ADDR_WIDTH ( $clog2(BANK_DEPTH/8) ), 
+                `else
                     .ADDR_WIDTH ( $clog2(BANK_DEPTH) ), 
+                `endif
                     .DATA_WIDTH ( DATA_WIDTH         )
                 )
                 U_BW_SP_RAM

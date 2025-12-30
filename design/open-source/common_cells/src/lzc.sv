@@ -14,7 +14,7 @@
 /// This speeds up simulation significantly.
 module lzc #(
   /// The width of the input vector.
-  parameter int unsigned WIDTH = 2,
+  parameter int unsigned WIDTH = 16,
   /// Mode selection: 0 -> trailing zero, 1 -> leading zero
   parameter bit          MODE  = 1'b0,
   /// Dependent parameter. Do **not** change!

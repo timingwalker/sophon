@@ -47,12 +47,12 @@ module reqrsp_to_axi import reqrsp_pkg::*; #(
   /// ID with which to send the transactions.
   parameter int unsigned ID = 0,
   /// Data width of bus, must be 32 or 64.
-  parameter int unsigned DataWidth = 32'b0,
+  parameter int unsigned DataWidth = 32'd32,
   parameter int unsigned UserWidth = 32'b0,
-  parameter type reqrsp_req_t = logic,
-  parameter type reqrsp_rsp_t = logic,
-  parameter type axi_req_t = logic,
-  parameter type axi_rsp_t = logic
+  parameter type reqrsp_req_t = CC_ITF_PKG::reqrsp_d32_req_t        ,
+  parameter type reqrsp_rsp_t = CC_ITF_PKG::reqrsp_d32_resps_t      ,
+  parameter type axi_req_t    = CC_ITF_PKG::axi_slv_side_d32_req_t  ,
+  parameter type axi_rsp_t    = CC_ITF_PKG::axi_slv_side_d32_resps_t
 ) (
   input  logic clk_i,
   input  logic rst_ni,
@@ -303,73 +303,73 @@ module reqrsp_to_axi import reqrsp_pkg::*; #(
 
 endmodule
 
-`include "reqrsp_interface/typedef.svh"
-`include "reqrsp_interface/assign.svh"
-`include "axi/typedef.svh"
-`include "axi/assign.svh"
-
-module reqrsp_to_axi_intf #(
-  /// ID width which to send the transactions.
-  parameter int unsigned ID = 0,
-  /// AXI ID width.
-  parameter int unsigned AxiIdWidth = 32'd0,
-  /// AXI and REQRSP address width.
-  parameter int unsigned AddrWidth = 32'd0,
-  /// AXI and REQRSP data width.
-  parameter int unsigned DataWidth = 32'd0,
-  /// AXI user width.
-  parameter int unsigned AxiUserWidth = 32'd0
-) (
-  input logic clk_i,
-  input logic rst_ni,
-  input logic [AxiUserWidth-1:0] user_i,
-  REQRSP_BUS  reqrsp,
-  AXI_BUS     axi
-);
-
-  typedef logic [AddrWidth-1:0] addr_t;
-  typedef logic [DataWidth-1:0] data_t;
-  typedef logic [DataWidth/8-1:0] strb_t;
-  typedef logic [AxiIdWidth-1:0] id_t;
-  typedef logic [AxiUserWidth-1:0] user_t;
-
-  `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
-
-  `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
-  `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
-  `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
-
-  `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
-  `AXI_TYPEDEF_RESP_T(axi_rsp_t, b_chan_t, r_chan_t)
-
-  reqrsp_req_t reqrsp_req;
-  reqrsp_rsp_t reqrsp_rsp;
-
-  axi_req_t axi_req;
-  axi_rsp_t axi_rsp;
-
-  reqrsp_to_axi #(
-    .DataWidth ( DataWidth ),
-    .reqrsp_req_t (reqrsp_req_t),
-    .reqrsp_rsp_t (reqrsp_rsp_t),
-    .axi_req_t (axi_req_t),
-    .axi_rsp_t (axi_rsp_t)
-  ) i_reqrsp_to_axi (
-    .clk_i,
-    .rst_ni,
-    .user_i,
-    .reqrsp_req_i (reqrsp_req),
-    .reqrsp_rsp_o (reqrsp_rsp),
-    .axi_req_o (axi_req),
-    .axi_rsp_i (axi_rsp)
-  );
-
-  `REQRSP_ASSIGN_TO_REQ(reqrsp_req, reqrsp)
-  `REQRSP_ASSIGN_FROM_RESP(reqrsp, reqrsp_rsp)
-
-  `AXI_ASSIGN_FROM_REQ(axi, axi_req)
-  `AXI_ASSIGN_TO_RESP(axi_rsp, axi)
-
-endmodule
+// `include "reqrsp_interface/typedef.svh"
+// `include "reqrsp_interface/assign.svh"
+// `include "axi/typedef.svh"
+// `include "axi/assign.svh"
+// 
+// module reqrsp_to_axi_intf #(
+//   /// ID width which to send the transactions.
+//   parameter int unsigned ID = 0,
+//   /// AXI ID width.
+//   parameter int unsigned AxiIdWidth = 32'd0,
+//   /// AXI and REQRSP address width.
+//   parameter int unsigned AddrWidth = 32'd0,
+//   /// AXI and REQRSP data width.
+//   parameter int unsigned DataWidth = 32'd0,
+//   /// AXI user width.
+//   parameter int unsigned AxiUserWidth = 32'd0
+// ) (
+//   input logic clk_i,
+//   input logic rst_ni,
+//   input logic [AxiUserWidth-1:0] user_i,
+//   REQRSP_BUS  reqrsp,
+//   AXI_BUS     axi
+// );
+// 
+//   typedef logic [AddrWidth-1:0] addr_t;
+//   typedef logic [DataWidth-1:0] data_t;
+//   typedef logic [DataWidth/8-1:0] strb_t;
+//   typedef logic [AxiIdWidth-1:0] id_t;
+//   typedef logic [AxiUserWidth-1:0] user_t;
+// 
+//   `REQRSP_TYPEDEF_ALL(reqrsp, addr_t, data_t, strb_t)
+// 
+//   `AXI_TYPEDEF_AW_CHAN_T(aw_chan_t, addr_t, id_t, user_t)
+//   `AXI_TYPEDEF_W_CHAN_T(w_chan_t, data_t, strb_t, user_t)
+//   `AXI_TYPEDEF_B_CHAN_T(b_chan_t, id_t, user_t)
+//   `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t)
+//   `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
+// 
+//   `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
+//   `AXI_TYPEDEF_RESP_T(axi_rsp_t, b_chan_t, r_chan_t)
+// 
+//   reqrsp_req_t reqrsp_req;
+//   reqrsp_rsp_t reqrsp_rsp;
+// 
+//   axi_req_t axi_req;
+//   axi_rsp_t axi_rsp;
+// 
+//   reqrsp_to_axi #(
+//     .DataWidth ( DataWidth ),
+//     .reqrsp_req_t (reqrsp_req_t),
+//     .reqrsp_rsp_t (reqrsp_rsp_t),
+//     .axi_req_t (axi_req_t),
+//     .axi_rsp_t (axi_rsp_t)
+//   ) i_reqrsp_to_axi (
+//     .clk_i,
+//     .rst_ni,
+//     .user_i,
+//     .reqrsp_req_i (reqrsp_req),
+//     .reqrsp_rsp_o (reqrsp_rsp),
+//     .axi_req_o (axi_req),
+//     .axi_rsp_i (axi_rsp)
+//   );
+// 
+//   `REQRSP_ASSIGN_TO_REQ(reqrsp_req, reqrsp)
+//   `REQRSP_ASSIGN_FROM_RESP(reqrsp, reqrsp_rsp)
+// 
+//   `AXI_ASSIGN_FROM_REQ(axi, axi_req)
+//   `AXI_ASSIGN_TO_RESP(axi_rsp, axi)
+// 
+// endmodule

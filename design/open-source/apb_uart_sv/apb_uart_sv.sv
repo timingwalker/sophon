@@ -173,7 +173,7 @@ module apb_uart_sv
 
 
         .IER_i              ( regs_q[IER][2:0]              ), // interrupt enable register
-        .RDA_i              ( regs_n[LSR][5]                ), // receiver data available
+        .RDA_i              ( regs_n[LSR][0]                ), // receiver data available
         .CTI_i              ( 1'b0                          ), // character timeout indication
 
 
@@ -282,7 +282,9 @@ module apb_uart_sv
                 LSR: // Line Status Register
                 begin
                     PRDATA = {24'b0, regs_q[LSR]};
-                    clr_int = 4'b1100; // clear parrity interrupt error
+                    // Modify tw 24/12/25 18:16:11
+                    //clr_int = 4'b1100; // clear parrity interrupt error
+                    //clr_int = 4'b0100; // clear parrity interrupt error
                 end
 
                 LCR: // Line Control Register
