@@ -1,8 +1,9 @@
 
-#TC := rv32ui-p-addi
+#TC := tc_ext_access
+TC := rv32ui-p-addi
 #TC := tc_clint
 #TC := median
-TC := freemodbus
+#TC := freemodbus
 
 MEM_MODE      ?= TCM
 LDS_FILE      ?= link.ld
@@ -33,6 +34,9 @@ SOPHON_EEI      := NONE
 SOPHON_EEI_GPIO := NONE
 SOPHON_EEI_SREG := NONE
 
+SOPHON_EXT_INST := NONE
+SOPHON_EXT_DATA := NONE
+
 CORE_COMPLEX_AXI_SLV := NONE
 
 ifneq ($(shell grep "^[\ ]*\`define SOPHON_CLINT[\ ]*$$" $(CFG_FILE)),)
@@ -56,6 +60,12 @@ endif
 ifneq ($(shell grep "^[\ ]*\`define SOPHON_EEI_SREG[\ ]*$$" $(CFG_FILE)),)
     SOPHON_EEI_SREG := YES
 endif
+ifneq ($(shell grep "^[\ ]*\`define SOPHON_EXT_INST[\ ]*$$" $(CFG_FILE)),)
+    SOPHON_EXT_INST := YES
+endif
+ifneq ($(shell grep "^[\ ]*\`define SOPHON_EXT_DATA[\ ]*$$" $(CFG_FILE)),)
+    SOPHON_EXT_DATA := YES
+endif
 ifneq ($(shell grep "^[\ ]*\`define CORE_COMPLEX_AXI_SLV[\ ]*$$" $(CFG_FILE)),)
     CORE_COMPLEX_AXI_SLV := YES
 endif
@@ -76,6 +86,18 @@ print_hw_para:
 # ----------------------------------------------------------------------
 TC_SKIP   := 0
 SKIP_INFO := "TC SKIP!"
+
+ifeq ($(MEM_MODE),EXT)
+    ifneq ($(SOPHON_EXT_INST), YES)
+        TC_SKIP   := 1
+        SKIP_INFO := "TC SKIP! Check hardware parameter SOPHON_EXT_INST!"
+    endif
+    ifneq ($(SOPHON_EXT_DATA), YES)
+        TC_SKIP   := 1
+        SKIP_INFO := "TC SKIP! Check hardware parameter SOPHON_EXT_DATA!"
+    endif
+endif
+
 
 ifeq ($(TC),tc_fgpio)
     ifneq ($(SOPHON_EEI), YES)

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2025-12-11 16:15:45
+// Last Modified : 2026-01-14 12:05:27
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -76,11 +76,11 @@ module tb();
     logic [4:0] clic_mnxti_id;
 `endif
 
-    CC_ITF_PKG::xbar_slv_port_d64_req_t   axi_slv_port_req;
-    CC_ITF_PKG::xbar_slv_port_d64_resps_t axi_slv_port_rsp;
+    CC_ITF_PKG::xbar_port_d32_slv_id_req_t   axi_slv_port_req;
+    CC_ITF_PKG::xbar_port_d32_slv_id_resps_t axi_slv_port_rsp;
 
-    CC_ITF_PKG::xbar_mst_port_d64_req_t   axi_mst_port_req;
-    CC_ITF_PKG::xbar_mst_port_d64_resps_t axi_mst_port_rsp;
+    CC_ITF_PKG::xbar_port_d32_mst_id_req_t   axi_mst_port_req;
+    CC_ITF_PKG::xbar_port_d32_mst_id_resps_t axi_mst_port_rsp;
 
 
     CORE_COMPLEX u_dut
@@ -101,7 +101,7 @@ module tb();
         ,.clic_mnxti_clr_o          ( clic_mnxti_clr     ) 
         ,.clic_mnxti_id_o           ( clic_mnxti_id      ) 
         ,.clic_apb_req_o            (                    ) 
-        ,.clic_apb_rsp_i            ( '0                 ) 
+        ,.clic_apb_resp_i           ( '0                 ) 
     `endif
     `ifdef SOPHON_EEI_GPIO
         ,.gpio_dir_o                ( gpio_dir           ) 
@@ -120,11 +120,11 @@ module tb();
         ,.uart_tx_o                 ( dut_uart_tx        ) 
     `ifdef CORE_COMPLEX_AXI_SLV
         ,.axi_slv_port_req_i        ( axi_slv_port_req   ) 
-        ,.axi_slv_port_rsp_o        ( axi_slv_port_rsp   ) 
+        ,.axi_slv_port_resp_o       ( axi_slv_port_rsp   ) 
     `endif
     `ifdef CORE_COMPLEX_AXI_MST
         ,.axi_mst_port_req_o        ( axi_mst_port_req   ) 
-        ,.axi_mst_port_rsp_i        ( axi_mst_port_rsp   ) 
+        ,.axi_mst_port_resp_i       ( axi_mst_port_rsp   ) 
     `endif
     );
 
@@ -135,57 +135,26 @@ module tb();
 
     `ifdef CORE_COMPLEX_AXI_MST
 
-        CC_ITF_PKG::axi_mst_side_d32_req_t    axi_mst_32b_req;
-        CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_32b_rsp;
-
-        axi_dw_converter #(
-            .AxiMaxReads         ( 4                                     ) ,
-            .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
-            .AxiMstPortDataWidth ( 32                                    ) ,
-            .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-            .AxiIdWidth          ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH    ) ,
-            .aw_chan_t           ( CC_ITF_PKG::xbar_mst_port_aw_t        ) ,
-            .slv_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-            .b_chan_t            ( CC_ITF_PKG::xbar_mst_port_b_t         ) ,
-            .ar_chan_t           ( CC_ITF_PKG::xbar_mst_port_ar_t        ) ,
-            .slv_r_chan_t        ( CC_ITF_PKG::xbar_mst_port_r_t         ) ,
-            .mst_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-            .mst_r_chan_t        ( CC_ITF_PKG::axi_r_32b_t               ) ,
-            .axi_mst_req_t       ( CC_ITF_PKG::axi_mst_side_d32_req_t    ) ,
-            .axi_mst_resp_t      ( CC_ITF_PKG::axi_mst_side_d32_resps_t  ) ,
-            .axi_slv_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
-            .axi_slv_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) 
-        ) i_axi_dw_converter (
-            .clk_i         ( clk             ) ,
-            .rst_ni        ( rst_n           ) ,
-            // slave port
-            .slv_req_i     ( axi_mst_port_req ) ,
-            .slv_resp_o    ( axi_mst_port_rsp ) ,
-            // master port
-            .mst_req_o     ( axi_mst_32b_req ) ,
-            .mst_resp_i    ( axi_mst_32b_rsp ) 
-        );
-
         CC_ITF_PKG::reqrsp_d32_req_t      reqresp_d32_req;
         CC_ITF_PKG::reqrsp_d32_resps_t    reqresp_d32_rsp;
 
         axi_to_reqrsp #(
-            .axi_req_t    ( CC_ITF_PKG::axi_mst_side_d32_req_t   ) ,
-            .axi_rsp_t    ( CC_ITF_PKG::axi_mst_side_d32_resps_t ) ,
-            .AddrWidth    ( CC_ITF_PKG::REQRSP_ADDR_WIDTH        ) ,
-            .DataWidth    ( CC_ITF_PKG::REQRSP_DATA_WIDTH        ) ,
-            .IdWidth      ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH   ) ,
-            .BufDepth     ( 1                                    ) ,
-            .reqrsp_req_t ( CC_ITF_PKG::reqrsp_d32_req_t         ) ,
-            .reqrsp_rsp_t ( CC_ITF_PKG::reqrsp_d32_resps_t       ) 
+            .axi_req_t    ( CC_ITF_PKG::xbar_port_d32_mst_id_req_t   ) ,
+            .axi_rsp_t    ( CC_ITF_PKG::xbar_port_d32_mst_id_resps_t ) ,
+            .AddrWidth    ( CC_ITF_PKG::REQRSP_ADDR_WIDTH            ) ,
+            .DataWidth    ( CC_ITF_PKG::REQRSP_DATA_WIDTH            ) ,
+            .IdWidth      ( CC_ITF_PKG::XBAR_MST_ID_WIDTH            ) ,
+            .BufDepth     ( 1                                        ) ,
+            .reqrsp_req_t ( CC_ITF_PKG::reqrsp_d32_req_t             ) ,
+            .reqrsp_rsp_t ( CC_ITF_PKG::reqrsp_d32_resps_t           ) 
         ) u_axi_to_reqrsp  (
-            .clk_i        ( clk             ) ,
-            .rst_ni       ( rst_n           ) ,
-            .busy_o       (                 ) ,
-            .axi_req_i    ( axi_mst_32b_req ) ,
-            .axi_rsp_o    ( axi_mst_32b_rsp ) ,
-            .reqrsp_req_o ( reqresp_d32_req ) ,
-            .reqrsp_rsp_i ( reqresp_d32_rsp ) 
+            .clk_i        ( clk              ) ,
+            .rst_ni       ( rst_n            ) ,
+            .busy_o       (                  ) ,
+            .axi_req_i    ( axi_mst_port_req ) ,
+            .axi_rsp_o    ( axi_mst_port_rsp ) ,
+            .reqrsp_req_o ( reqresp_d32_req  ) ,
+            .reqrsp_rsp_i ( reqresp_d32_rsp  ) 
         );
 
         logic             axi_mem_req   ;
@@ -424,9 +393,8 @@ module tb();
     // ----------------------------------------------------------------------
     `ifdef CORE_COMPLEX_AXI_SLV
 
-        localparam int unsigned AxiIdWidthMasters =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH;
-        localparam int unsigned AxiIdUsed         =  CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH; 
-        localparam int unsigned AxiIdWidthSlaves  =  CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH;
+        localparam int unsigned AxiIdWidthMasters =  CC_ITF_PKG::XBAR_SLV_ID_WIDTH;
+        localparam int unsigned AxiIdUsed         =  CC_ITF_PKG::XBAR_SLV_ID_WIDTH; 
         localparam int unsigned AxiAddrWidth      =  CC_ITF_PKG::XBAR_ADDR_WIDTH;  
         localparam int unsigned AxiDataWidth      =  CC_ITF_PKG::XBAR_DATA_WIDTH;
         localparam int unsigned AxiStrbWidth      =  CC_ITF_PKG::XBAR_STRB_WIDTH;
@@ -445,8 +413,8 @@ module tb();
             .TA ( ApplTime           ),
             .TT ( TestTime           ),
             // Maximum number of read and write transactions in flight
-            .MAX_READ_TXNS  ( 4 ) ,
-            .MAX_WRITE_TXNS ( 4 ) ,
+            .MAX_READ_TXNS  ( 1 ) ,
+            .MAX_WRITE_TXNS ( 1 ) ,
             .AXI_EXCLS      ( 0 ) ,
             .AXI_ATOPS      ( 0 ) ,
             .UNIQUE_IDS     ( 0 ) 
@@ -535,6 +503,7 @@ module tb();
             "tc_fgpio"            : `ifdef SOPHON_EEI_GPIO      fgpio()          `endif;
             "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO      fgpio_uart()     `endif;
             "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO      fgpio_spi()      `endif;
+            // TODO: modbus test frame
             // "freemodbus"          : #1ms 
             //                         u_uart_bus.send_char(8'h01);
             //                         //u_uart_bus.send_char(8'h03);
@@ -547,14 +516,14 @@ module tb();
             default               : ;
         endcase
 
-            #5ms u_uart_bus.send_char(8'h01);
-            u_uart_bus.send_char(8'h03);
-            u_uart_bus.send_char(8'h00);
-            u_uart_bus.send_char(8'h04);
-            u_uart_bus.send_char(8'h00);
-            u_uart_bus.send_char(8'h02);
-            u_uart_bus.send_char(8'h85);
-            u_uart_bus.send_char(8'hca);
+            // #5ms u_uart_bus.send_char(8'h01);
+            // u_uart_bus.send_char(8'h03);
+            // u_uart_bus.send_char(8'h00);
+            // u_uart_bus.send_char(8'h04);
+            // u_uart_bus.send_char(8'h00);
+            // u_uart_bus.send_char(8'h02);
+            // u_uart_bus.send_char(8'h85);
+            // u_uart_bus.send_char(8'hca);
 
             // #2ms u_uart_bus.send_char(8'h01);
             // u_uart_bus.send_char(8'h06);

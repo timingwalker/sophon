@@ -65,7 +65,7 @@ PR_BEGIN_EXTERN_C
  * \endcode
  */
 
-#define DEBUG_DETAIL 1
+#define DEBUG_DETAIL 0
 
 /* ----------------------- Defines ------------------------------------------*/
 

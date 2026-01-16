@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2025-09-25 10:34:32
+// Last Modified : 2026-01-14 11:12:23
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -92,8 +92,8 @@ module SOPHON_TOP (
 );
 
 
-    logic                   rstn_sync;
-    logic                   rstn_neg_sync;
+    logic                  rstn_sync;
+    logic                  rstn_neg_sync;
 
     SOPHON_PKG::mem_req_t  lsu_req;
     SOPHON_PKG::mem_ack_t  lsu_ack;
@@ -106,20 +106,19 @@ module SOPHON_TOP (
     SOPHON_PKG::mem_ack_t  core_itcm_ack;
 
 `ifdef SOPHON_EEI
-    logic                   eei_req;
-    logic                   eei_ext;
-    logic [2:0]             eei_funct3;
-    logic [6:0]             eei_funct7;
-    logic [4:0]             eei_batch_start;
-    logic [4:0]             eei_batch_len;
-    logic [31:0]            eei_rs_val[`EEI_RS_MAX-1:0];
-    logic                   eei_ack;
-    logic [1:0]             eei_rd_op;
-    logic [4:0]             eei_rd_len;
-    logic                   eei_error;
-    logic [31:0]            eei_rd_val[`EEI_RD_MAX-1:0];
+    logic                  eei_req;
+    logic                  eei_ext;
+    logic [2:0]            eei_funct3;
+    logic [6:0]            eei_funct7;
+    logic [4:0]            eei_batch_start;
+    logic [4:0]            eei_batch_len;
+    logic [31:0]           eei_rs_val[`EEI_RS_MAX-1:0];
+    logic                  eei_ack;
+    logic [1:0]            eei_rd_op;
+    logic [4:0]            eei_rd_len;
+    logic                  eei_error;
+    logic [31:0]           eei_rd_val[`EEI_RD_MAX-1:0];
 `endif
-
 
 
     // ----------------------------------------------------------------------

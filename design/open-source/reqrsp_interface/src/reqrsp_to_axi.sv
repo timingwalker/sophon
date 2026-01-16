@@ -49,18 +49,18 @@ module reqrsp_to_axi import reqrsp_pkg::*; #(
   /// Data width of bus, must be 32 or 64.
   parameter int unsigned DataWidth = 32'd32,
   parameter int unsigned UserWidth = 32'b0,
-  parameter type reqrsp_req_t = CC_ITF_PKG::reqrsp_d32_req_t        ,
-  parameter type reqrsp_rsp_t = CC_ITF_PKG::reqrsp_d32_resps_t      ,
-  parameter type axi_req_t    = CC_ITF_PKG::axi_slv_side_d32_req_t  ,
-  parameter type axi_rsp_t    = CC_ITF_PKG::axi_slv_side_d32_resps_t
+  parameter type reqrsp_req_t = CC_ITF_PKG::reqrsp_d32_req_t,
+  parameter type reqrsp_resps_t = CC_ITF_PKG::reqrsp_d32_resps_t,
+  parameter type axi_req_t = CC_ITF_PKG::xbar_port_d32_slv_id_req_t,
+  parameter type axi_resps_t = CC_ITF_PKG::xbar_port_d32_slv_id_resps_t
 ) (
   input  logic clk_i,
   input  logic rst_ni,
   input  logic [UserWidth-1:0] user_i,
   input  reqrsp_req_t reqrsp_req_i,
-  output reqrsp_rsp_t reqrsp_rsp_o,
+  output reqrsp_resps_t reqrsp_rsp_o,
   output axi_req_t axi_req_o,
-  input  axi_rsp_t axi_rsp_i
+  input  axi_resps_t axi_rsp_i
 );
 
   localparam int unsigned CounterWidth = cf_math_pkg::idx_width(MaxTrans);
@@ -342,20 +342,20 @@ endmodule
 //   `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t)
 // 
 //   `AXI_TYPEDEF_REQ_T(axi_req_t, aw_chan_t, w_chan_t, ar_chan_t)
-//   `AXI_TYPEDEF_RESP_T(axi_rsp_t, b_chan_t, r_chan_t)
+//   `AXI_TYPEDEF_RESP_T(axi_resps_t, b_chan_t, r_chan_t)
 // 
 //   reqrsp_req_t reqrsp_req;
-//   reqrsp_rsp_t reqrsp_rsp;
+//   reqrsp_resps_t reqrsp_rsp;
 // 
 //   axi_req_t axi_req;
-//   axi_rsp_t axi_rsp;
+//   axi_resps_t axi_rsp;
 // 
 //   reqrsp_to_axi #(
 //     .DataWidth ( DataWidth ),
 //     .reqrsp_req_t (reqrsp_req_t),
-//     .reqrsp_rsp_t (reqrsp_rsp_t),
+//     .reqrsp_resps_t (reqrsp_resps_t),
 //     .axi_req_t (axi_req_t),
-//     .axi_rsp_t (axi_rsp_t)
+//     .axi_resps_t (axi_resps_t)
 //   ) i_reqrsp_to_axi (
 //     .clk_i,
 //     .rst_ni,

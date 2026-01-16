@@ -14,28 +14,24 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-18 16:07:23
-// Last Modified : 2025-12-24 17:09:25
+// Last Modified : 2026-01-14 11:21:42
 // Description   : 
 // ----------------------------------------------------------------------
 
 module AXI_INTERCONNECT (
-     input logic                        clk_i
-    ,input logic                        rst_ni
-    ,input logic                        testmode_i
+     input logic                  clk_i
+    ,input logic                  rst_ni
+    ,input logic                  testmode_i
     // XBAR: AXI Slave Port
-    ,input  CC_ITF_PKG::xbar_slv_port_d64_req_t   [2:0] xbar_slv_port_req_i
-    ,output CC_ITF_PKG::xbar_slv_port_d64_resps_t [2:0] xbar_slv_port_rsp_o
-    // XBAR: AXI Master Port
-    ,output CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req_o
-    ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp_i
+    ,input  CC_ITF_PKG::xbar_port_d32_slv_id_req_t   [CC_ITF_PKG::XBAR_SLV_PORT_NUM-1:0] xbar_slv_port_req_i
+    ,output CC_ITF_PKG::xbar_port_d32_slv_id_resps_t [CC_ITF_PKG::XBAR_SLV_PORT_NUM-1:0] xbar_slv_port_resps_o
+    // XBAR: AXI Master Port, one is occupied by the APB port
+    ,output CC_ITF_PKG::xbar_port_d32_mst_id_req_t   [CC_ITF_PKG::XBAR_MST_PORT_NUM-2:0] xbar_mst_port_req_o
+    ,input  CC_ITF_PKG::xbar_port_d32_mst_id_resps_t [CC_ITF_PKG::XBAR_MST_PORT_NUM-2:0] xbar_mst_port_resps_i
     // APB Port
-    ,output CC_ITF_PKG::apb_d32_req_t   [4:0] apb_req_o
-    ,input  CC_ITF_PKG::apb_d32_resps_t [4:0] apb_rsp_i
+    ,output CC_ITF_PKG::apb_d32_req_t                [CC_ITF_PKG::APB_SLV_NUM-1:0] apb_req_o
+    ,input  CC_ITF_PKG::apb_d32_resps_t              [CC_ITF_PKG::APB_SLV_NUM-1:0] apb_resps_i
 );
-
-
-    logic rst_n;
-    assign rst_n = rst_ni;
 
 
     // ----------------------------------------------------------------------
@@ -46,12 +42,12 @@ module AXI_INTERCONNECT (
     localparam axi_pkg::xbar_cfg_t XBAR_CFG = '{
         NoSlvPorts          : CC_ITF_PKG::XBAR_SLV_PORT_NUM, 
         NoMstPorts          : CC_ITF_PKG::XBAR_MST_PORT_NUM,
-        MaxMstTrans         : 1,
-        MaxSlvTrans         : 1,
+        MaxMstTrans         : CC_ITF_PKG::XBAR_MAX_MST_TRANS,
+        MaxSlvTrans         : CC_ITF_PKG::XBAR_MAX_SLV_TRANS,
         FallThrough         : 1'b0,
         LatencyMode         : axi_pkg::CUT_MST_PORTS,
-        AxiIdWidthSlvPorts  : CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH,
-        AxiIdUsedSlvPorts   : CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH,
+        AxiIdWidthSlvPorts  : CC_ITF_PKG::XBAR_SLV_ID_WIDTH,
+        AxiIdUsedSlvPorts   : CC_ITF_PKG::XBAR_SLV_ID_WIDTH,
         UniqueIds           : 0,
         AxiAddrWidth        : CC_ITF_PKG::XBAR_ADDR_WIDTH,
         AxiDataWidth        : CC_ITF_PKG::XBAR_DATA_WIDTH,
@@ -59,12 +55,11 @@ module AXI_INTERCONNECT (
     };
 
     // XBAR: AXI Slave Port
-    CC_ITF_PKG::xbar_slv_port_d64_req_t   [XBAR_CFG.NoSlvPorts-1:0] axi_xbar_slv_port_req;
-    CC_ITF_PKG::xbar_slv_port_d64_resps_t [XBAR_CFG.NoSlvPorts-1:0] axi_xbar_slv_port_rsp;
-
+    CC_ITF_PKG::xbar_port_d32_slv_id_req_t   [XBAR_CFG.NoSlvPorts-1:0] xbar_slv_port_req;
+    CC_ITF_PKG::xbar_port_d32_slv_id_resps_t [XBAR_CFG.NoSlvPorts-1:0] xbar_slv_port_resps;
     // XBAR: AXI Master Port
-    CC_ITF_PKG::xbar_mst_port_d64_req_t   [XBAR_CFG.NoMstPorts-1:0] axi_xbar_mst_port_req;
-    CC_ITF_PKG::xbar_mst_port_d64_resps_t [XBAR_CFG.NoMstPorts-1:0] axi_xbar_mst_port_rsp;
+    CC_ITF_PKG::xbar_port_d32_mst_id_req_t   [XBAR_CFG.NoMstPorts-1:0] xbar_mst_port_req;
+    CC_ITF_PKG::xbar_port_d32_mst_id_resps_t [XBAR_CFG.NoMstPorts-1:0] xbar_mst_port_resps;
 
     CC_ITF_PKG::xbar_rule_t [XBAR_CFG.NoAddrRules-1:0] axi_addr_map;
     assign axi_addr_map = '{
@@ -91,157 +86,78 @@ module AXI_INTERCONNECT (
     };
 
     axi_xbar #(
-        .Cfg             ( XBAR_CFG                             ) ,
-        .ATOPs           ( 0                                    ) ,
-        .Connectivity    ( '1                                   ) ,
-        .slv_aw_chan_t   ( CC_ITF_PKG::xbar_slv_port_aw_t       ) ,
-        .mst_aw_chan_t   ( CC_ITF_PKG::xbar_mst_port_aw_t       ) ,
-        .w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t            ) ,
-        .slv_b_chan_t    ( CC_ITF_PKG::xbar_slv_port_b_t        ) ,
-        .mst_b_chan_t    ( CC_ITF_PKG::xbar_mst_port_b_t        ) ,
-        .slv_ar_chan_t   ( CC_ITF_PKG::xbar_slv_port_ar_t       ) ,
-        .mst_ar_chan_t   ( CC_ITF_PKG::xbar_mst_port_ar_t       ) ,
-        .slv_r_chan_t    ( CC_ITF_PKG::xbar_slv_port_r_t        ) ,
-        .mst_r_chan_t    ( CC_ITF_PKG::xbar_mst_port_r_t        ) ,
-        .slv_req_t       ( CC_ITF_PKG::xbar_slv_port_d64_req_t   ) ,
-        .slv_resp_t      ( CC_ITF_PKG::xbar_slv_port_d64_resps_t ) ,
-        .mst_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
-        .mst_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) ,
-        .rule_t          ( CC_ITF_PKG::xbar_rule_t              ) 
+        .Cfg           ( XBAR_CFG                                 ) ,
+        .ATOPs         ( 0                                        ) ,
+        .Connectivity  ( '1                                       ) ,
+        .slv_aw_chan_t ( CC_ITF_PKG::xbar_aw_chan_slv_id_t        ) ,
+        .mst_aw_chan_t ( CC_ITF_PKG::xbar_aw_chan_mst_id_t        ) ,
+        .w_chan_t      ( CC_ITF_PKG::xbar_w_chan_t                ) ,
+        .slv_b_chan_t  ( CC_ITF_PKG::xbar_b_chan_slv_id_t         ) ,
+        .mst_b_chan_t  ( CC_ITF_PKG::xbar_b_chan_mst_id_t         ) ,
+        .slv_ar_chan_t ( CC_ITF_PKG::xbar_ar_chan_slv_id_t        ) ,
+        .mst_ar_chan_t ( CC_ITF_PKG::xbar_ar_chan_mst_id_t        ) ,
+        .slv_r_chan_t  ( CC_ITF_PKG::xbar_r_chan_slv_id_t         ) ,
+        .mst_r_chan_t  ( CC_ITF_PKG::xbar_r_chan_mst_id_t         ) ,
+        .slv_req_t     ( CC_ITF_PKG::xbar_port_d32_slv_id_req_t   ) ,
+        .slv_resp_t    ( CC_ITF_PKG::xbar_port_d32_slv_id_resps_t ) ,
+        .mst_req_t     ( CC_ITF_PKG::xbar_port_d32_mst_id_req_t   ) ,
+        .mst_resp_t    ( CC_ITF_PKG::xbar_port_d32_mst_id_resps_t ) ,
+        .rule_t        ( CC_ITF_PKG::xbar_rule_t                  ) 
     ) u_xbar (
-        .clk_i                 ( clk_i                 ) ,
-        .rst_ni                ( rst_n                 ) ,
-        .test_i                ( testmode_i            ) ,
-        .slv_ports_req_i       ( axi_xbar_slv_port_req ) ,
-        .slv_ports_resp_o      ( axi_xbar_slv_port_rsp ) ,
-        .mst_ports_req_o       ( axi_xbar_mst_port_req ) ,
-        .mst_ports_resp_i      ( axi_xbar_mst_port_rsp ) ,
-        .addr_map_i            ( axi_addr_map          ) ,
-        .en_default_mst_port_i ( '0                    ) ,
-        .default_mst_port_i    ( '0                    ) 
+        .clk_i                 ( clk_i               ) ,
+        .rst_ni                ( rst_ni              ) ,
+        .test_i                ( testmode_i          ) ,
+        .slv_ports_req_i       ( xbar_slv_port_req   ) ,
+        .slv_ports_resp_o      ( xbar_slv_port_resps ) ,
+        .mst_ports_req_o       ( xbar_mst_port_req   ) ,
+        .mst_ports_resp_i      ( xbar_mst_port_resps ) ,
+        .addr_map_i            ( axi_addr_map        ) ,
+        .en_default_mst_port_i ( '0                  ) ,
+        .default_mst_port_i    ( '0                  ) 
     );
 
 
-
-
     // ----------------------------------------------------------------------
-    //  Input/Output ports
+    // XBAR Master Port 3 : AXI 32b ->  AXI lite 32b -> APB 32b
     // ----------------------------------------------------------------------
-
-    // XBAR: AXI Slave Port 0-2
-    assign xbar_slv_port_rsp_o[0] = axi_xbar_slv_port_rsp[0];
-    assign xbar_slv_port_rsp_o[1] = axi_xbar_slv_port_rsp[1];
-    assign xbar_slv_port_rsp_o[2] = axi_xbar_slv_port_rsp[2];
-    
-    assign axi_xbar_slv_port_req[0] = xbar_slv_port_req_i[0];
-    assign axi_xbar_slv_port_req[1] = xbar_slv_port_req_i[1];
-    assign axi_xbar_slv_port_req[2] = xbar_slv_port_req_i[2];
-
-    // XBAR: AXI Master Port 0-2
-    assign xbar_mst_port_req_o[0] = axi_xbar_mst_port_req[0];
-    assign xbar_mst_port_req_o[1] = axi_xbar_mst_port_req[1];
-    assign xbar_mst_port_req_o[2] = axi_xbar_mst_port_req[2];
-    
-    assign axi_xbar_mst_port_rsp[0] = xbar_mst_port_rsp_i[0];
-    assign axi_xbar_mst_port_rsp[1] = xbar_mst_port_rsp_i[1];
-    assign axi_xbar_mst_port_rsp[2] = xbar_mst_port_rsp_i[2];
-
-    // -----------------------------------
-    // APB port
-    // -----------------------------------
-    localparam APB_SLV_NUM  = 5;
-    CC_ITF_PKG::apb_d32_req_t   [APB_SLV_NUM-1:0] apb_req;
-    CC_ITF_PKG::apb_d32_resps_t [APB_SLV_NUM-1:0] apb_resp;
-
-    assign apb_req_o[0] = apb_req[0];
-    assign apb_req_o[1] = apb_req[1];
-    assign apb_req_o[2] = apb_req[2];
-    assign apb_req_o[3] = apb_req[3];
-    assign apb_req_o[4] = apb_req[4];
-    
-    assign apb_resp[0] = apb_rsp_i[0];
-    assign apb_resp[1] = apb_rsp_i[1];
-    assign apb_resp[2] = apb_rsp_i[2];
-    assign apb_resp[3] = apb_rsp_i[3];
-    assign apb_resp[4] = apb_rsp_i[4];
-
-
-
-
-
-    // ----------------------------------------------------------------------
-    // XBAR Master Port 3 (AXI64b) -> AXI 32b ->  AXI lite 32b -> APB 32b
-    // ----------------------------------------------------------------------
-
-    // -----------------------------------
-    // AXI 64b -> AXI 32b
-    // -----------------------------------
-    CC_ITF_PKG::axi_mst_side_d32_req_t   axi_mst_side_d32_req;
-    CC_ITF_PKG::axi_mst_side_d32_resps_t axi_mst_side_d32_rsp;
-
-    axi_dw_converter #(
-        .AxiMaxReads         ( 1                                   ) ,
-        .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
-        .AxiMstPortDataWidth ( 32                                  ) ,
-        .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-        .AxiIdWidth          ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH    ) ,
-        .aw_chan_t           ( CC_ITF_PKG::xbar_mst_port_aw_t        ) ,
-        .slv_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-        .b_chan_t            ( CC_ITF_PKG::xbar_mst_port_b_t         ) ,
-        .ar_chan_t           ( CC_ITF_PKG::xbar_mst_port_ar_t        ) ,
-        .slv_r_chan_t        ( CC_ITF_PKG::xbar_mst_port_r_t         ) ,
-        .mst_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-        .mst_r_chan_t        ( CC_ITF_PKG::axi_r_32b_t               ) ,
-        .axi_mst_req_t       ( CC_ITF_PKG::axi_mst_side_d32_req_t    ) ,
-        .axi_mst_resp_t      ( CC_ITF_PKG::axi_mst_side_d32_resps_t  ) ,
-        .axi_slv_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
-        .axi_slv_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) 
-    ) i_axi_dw_converter (
-        .clk_i         ( clk_i                    ) ,
-        .rst_ni        ( rst_n                    ) ,
-        // slave port
-        .slv_req_i     ( axi_xbar_mst_port_req[3] ) ,
-        .slv_resp_o    ( axi_xbar_mst_port_rsp[3] ) ,
-        // master port
-        .mst_req_o     ( axi_mst_side_d32_req     ) ,
-        .mst_resp_i    ( axi_mst_side_d32_rsp     ) 
-    );
 
     // -----------------------------------
     // AXI 32b to AXI_lite
     // -----------------------------------
-    CC_ITF_PKG::axi_lite_mst_side_d32_req_t      axi_lite_req;
-    CC_ITF_PKG::axi_lite_mst_side_d32_resps_t    axi_lite_resps;
+    CC_ITF_PKG::axi_lite_d32_req_t      axi_lite_req;
+    CC_ITF_PKG::axi_lite_d32_resps_t    axi_lite_resps;
 
     axi_to_axi_lite #(
-        .AxiAddrWidth    ( CC_ITF_PKG::XBAR_ADDR_WIDTH               ) ,
-        .AxiDataWidth    ( 32                                      ) ,
-        .AxiIdWidth      ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH        ) ,
-        .AxiUserWidth    ( CC_ITF_PKG::XBAR_USER_WIDTH               ) ,
-        .AxiMaxWriteTxns ( 1                                       ) ,
-        .AxiMaxReadTxns  ( 1                                       ) ,
-        .FallThrough     ( 0                                       ) ,  // FIFOs in Fall through mode in ID reflect
-        .full_req_t      ( CC_ITF_PKG::axi_mst_side_d32_req_t        ) ,
-        .full_resp_t     ( CC_ITF_PKG::axi_mst_side_d32_resps_t      ) ,
-        .lite_req_t      ( CC_ITF_PKG::axi_lite_mst_side_d32_req_t   ) ,
-        .lite_resp_t     ( CC_ITF_PKG::axi_lite_mst_side_d32_resps_t ) 
+        .AxiAddrWidth    ( CC_ITF_PKG::XBAR_ADDR_WIDTH              ) ,
+        .AxiDataWidth    ( CC_ITF_PKG::XBAR_DATA_WIDTH              ) ,
+        .AxiIdWidth      ( CC_ITF_PKG::XBAR_MST_ID_WIDTH            ) ,
+        .AxiUserWidth    ( CC_ITF_PKG::XBAR_USER_WIDTH              ) ,
+        .AxiMaxWriteTxns ( CC_ITF_PKG::XBAR_MAX_MST_TRANS           ) ,
+        .AxiMaxReadTxns  ( CC_ITF_PKG::XBAR_MAX_SLV_TRANS           ) ,
+        .FallThrough     ( 0                                        ) ,  
+        .full_req_t      ( CC_ITF_PKG::xbar_port_d32_mst_id_req_t   ) ,
+        .full_resp_t     ( CC_ITF_PKG::xbar_port_d32_mst_id_resps_t ) ,
+        .lite_req_t      ( CC_ITF_PKG::axi_lite_d32_req_t           ) ,
+        .lite_resp_t     ( CC_ITF_PKG::axi_lite_d32_resps_t         ) 
     ) u_axi_to_axi_lite (
-        .clk_i                       ( clk_i                ) ,
-        .rst_ni                      ( rst_n                ) ,
-        .test_i                      ( testmode_i           ) ,
+        .clk_i                       ( clk_i                  ) ,
+        .rst_ni                      ( rst_ni                 ) ,
+        .test_i                      ( testmode_i             ) ,
         // slave port full AXI4+ATOP
-        .slv_req_i                   ( axi_mst_side_d32_req ) ,
-        .slv_resp_o                  ( axi_mst_side_d32_rsp ) ,
+        .slv_req_i                   ( xbar_mst_port_req[3]   ) ,
+        .slv_resp_o                  ( xbar_mst_port_resps[3] ) ,
         // master port AXI4-Lite
-        .mst_req_o                   ( axi_lite_req         ) ,
-        .mst_resp_i                  ( axi_lite_resps       ) 
+        .mst_req_o                   ( axi_lite_req           ) ,
+        .mst_resp_i                  ( axi_lite_resps         ) 
     );
-
 
     // -----------------------------------
     // AXI lite to APB
     // -----------------------------------
-    localparam APB_RULE_NUM = APB_SLV_NUM;
+    localparam APB_RULE_NUM = CC_ITF_PKG::APB_SLV_NUM;
+
+    CC_ITF_PKG::apb_d32_req_t   [CC_ITF_PKG::APB_SLV_NUM-1:0] apb_req;
+    CC_ITF_PKG::apb_d32_resps_t [CC_ITF_PKG::APB_SLV_NUM-1:0] apb_resps;
     
     localparam CC_ITF_PKG::xbar_rule_t [APB_RULE_NUM-1:0] apb_addr_map = '{
         // Sys CFG REG
@@ -257,28 +173,62 @@ module AXI_INTERCONNECT (
     };
 
     axi_lite_to_apb #(
-        .NoApbSlaves      ( APB_SLV_NUM                               ) ,
-        .NoRules          ( APB_RULE_NUM                              ) ,
-        .AddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH               ) ,
-        .DataWidth        ( 32                                        ) ,
-        .PipelineRequest  ( 1'b0                                      ) ,
-        .PipelineResponse ( 1'b0                                      ) ,
-        .axi_lite_req_t   ( CC_ITF_PKG::axi_lite_mst_side_d32_req_t   ) ,
-        .axi_lite_resp_t  ( CC_ITF_PKG::axi_lite_mst_side_d32_resps_t ) ,
-        .apb_req_t        ( CC_ITF_PKG::apb_d32_req_t                 ) ,
-        .apb_resp_t       ( CC_ITF_PKG::apb_d32_resps_t               ) ,
-        .rule_t           ( CC_ITF_PKG::xbar_rule_t                   ) 
+        .NoApbSlaves      ( CC_ITF_PKG::APB_SLV_NUM          ) ,
+        .NoRules          ( APB_RULE_NUM                     ) ,
+        .AddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH      ) ,
+        .DataWidth        ( CC_ITF_PKG::XBAR_DATA_WIDTH      ) ,
+        .PipelineRequest  ( 1'b0                             ) ,
+        .PipelineResponse ( 1'b0                             ) ,
+        .axi_lite_req_t   ( CC_ITF_PKG::axi_lite_d32_req_t   ) ,
+        .axi_lite_resp_t  ( CC_ITF_PKG::axi_lite_d32_resps_t ) ,
+        .apb_req_t        ( CC_ITF_PKG::apb_d32_req_t        ) ,
+        .apb_resp_t       ( CC_ITF_PKG::apb_d32_resps_t      ) ,
+        .rule_t           ( CC_ITF_PKG::xbar_rule_t          ) 
     ) u_axi_lite_to_apb(
         .clk_i           ( clk_i          ) ,
-        .rst_ni          ( rst_n          ) ,
+        .rst_ni          ( rst_ni         ) ,
         .axi_lite_req_i  ( axi_lite_req   ) ,
         .axi_lite_resp_o ( axi_lite_resps ) ,
         .apb_req_o       ( apb_req        ) ,
-        .apb_resp_i      ( apb_resp       ) ,
+        .apb_resp_i      ( apb_resps      ) ,
         .addr_map_i      ( apb_addr_map   ) 
     );
 
 
+    // ----------------------------------------------------------------------
+    //  Input/Output ports
+    // ----------------------------------------------------------------------
+
+    // XBAR: AXI Slave Port 0-2
+    assign xbar_slv_port_resps_o[0] = xbar_slv_port_resps[0];
+    assign xbar_slv_port_resps_o[1] = xbar_slv_port_resps[1];
+    assign xbar_slv_port_resps_o[2] = xbar_slv_port_resps[2];
+    
+    assign xbar_slv_port_req[0] = xbar_slv_port_req_i[0];
+    assign xbar_slv_port_req[1] = xbar_slv_port_req_i[1];
+    assign xbar_slv_port_req[2] = xbar_slv_port_req_i[2];
+
+    // XBAR: AXI Master Port 0-2
+    assign xbar_mst_port_req_o[0] = xbar_mst_port_req[0];
+    assign xbar_mst_port_req_o[1] = xbar_mst_port_req[1];
+    assign xbar_mst_port_req_o[2] = xbar_mst_port_req[2];
+    
+    assign xbar_mst_port_resps[0] = xbar_mst_port_resps_i[0];
+    assign xbar_mst_port_resps[1] = xbar_mst_port_resps_i[1];
+    assign xbar_mst_port_resps[2] = xbar_mst_port_resps_i[2];
+
+    // APB port
+    assign apb_req_o[0] = apb_req[0];
+    assign apb_req_o[1] = apb_req[1];
+    assign apb_req_o[2] = apb_req[2];
+    assign apb_req_o[3] = apb_req[3];
+    assign apb_req_o[4] = apb_req[4];
+    
+    assign apb_resps[0] = apb_resps_i[0];
+    assign apb_resps[1] = apb_resps_i[1];
+    assign apb_resps[2] = apb_resps_i[2];
+    assign apb_resps[3] = apb_resps_i[3];
+    assign apb_resps[4] = apb_resps_i[4];
 
 
 endmodule

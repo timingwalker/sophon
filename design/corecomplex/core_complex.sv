@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2025-12-29 11:08:28
+// Last Modified : 2026-01-14 11:34:42
 // Description   : Core Complex
 //                  - Sophon
 //                  - AXI INTERCONNECT
@@ -25,49 +25,49 @@
 // ----------------------------------------------------------------------
 
 module CORE_COMPLEX(
-     input logic                                    clk_i
-    ,input logic                                    rst_ni
-    ,input logic [31:0]                             hart_id_i
+     input logic                                     clk_i
+    ,input logic                                     rst_ni
+    ,input logic [31:0]                              hart_id_i
 `ifdef SOPHON_CLINT
-    ,input logic                                    irq_mei_i 
+    ,input logic                                     irq_mei_i 
 `endif
 `ifdef SOPHON_CLIC
-    ,input  logic                                   clic_irq_req_i      
-    ,input  logic                                   clic_irq_shv_i      
-    ,input  logic [4:0]                             clic_irq_id_i       
-    ,input  logic [7:0]                             clic_irq_level_i    
-    ,output logic                                   clic_irq_ack_o      
-    ,output logic [7:0]                             clic_irq_intthresh_o
-    ,output logic                                   clic_mnxti_clr_o    
-    ,output logic [4:0]                             clic_mnxti_id_o     
-    ,output CC_ITF_PKG::apb_d32_req_t               clic_apb_req_o
-    ,input  CC_ITF_PKG::apb_d32_resps_t             clic_apb_rsp_i
+    ,input  logic                                    clic_irq_req_i      
+    ,input  logic                                    clic_irq_shv_i      
+    ,input  logic [4:0]                              clic_irq_id_i       
+    ,input  logic [7:0]                              clic_irq_level_i    
+    ,output logic                                    clic_irq_ack_o      
+    ,output logic [7:0]                              clic_irq_intthresh_o
+    ,output logic                                    clic_mnxti_clr_o    
+    ,output logic [4:0]                              clic_mnxti_id_o     
+    ,output CC_ITF_PKG::apb_d32_req_t                clic_apb_req_o
+    ,input  CC_ITF_PKG::apb_d32_resps_t              clic_apb_resp_i
 `endif
 `ifdef SOPHON_EEI_GPIO
-    ,output logic [`FGPIO_NUM-1:0]                  gpio_dir_o
-    ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
-    ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
+    ,output logic [`FGPIO_NUM-1:0]                   gpio_dir_o
+    ,input  logic [`FGPIO_NUM-1:0]                   gpio_in_val_i
+    ,output logic [`FGPIO_NUM-1:0]                   gpio_out_val_o
 `endif
 `ifdef SOPHON_RVDEBUG
-    ,input                                          tck_i
-    ,input                                          tms_i
-    ,input                                          trst_n_i
-    ,input                                          tdi_i
-    ,output                                         tdo_o
-    ,output                                         tdo_oe_o
+    ,input                                           tck_i
+    ,input                                           tms_i
+    ,input                                           trst_n_i
+    ,input                                           tdi_i
+    ,output                                          tdo_o
+    ,output                                          tdo_oe_o
 `endif
-    ,input                                          uart_rx_i
-    ,output                                         uart_tx_o
+    ,input                                           uart_rx_i
+    ,output                                          uart_tx_o
 `ifdef CORE_COMPLEX_AXI_SLV
-    ,input  CC_ITF_PKG::xbar_slv_port_d64_req_t     axi_slv_port_req_i
-    ,output CC_ITF_PKG::xbar_slv_port_d64_resps_t   axi_slv_port_rsp_o
+    ,input  CC_ITF_PKG::xbar_port_d32_slv_id_req_t   axi_slv_port_req_i
+    ,output CC_ITF_PKG::xbar_port_d32_slv_id_resps_t axi_slv_port_resp_o
 `endif
 `ifdef CORE_COMPLEX_AXI_MST
-    ,output CC_ITF_PKG::xbar_mst_port_d64_req_t     axi_mst_port_req_o
-    ,input  CC_ITF_PKG::xbar_mst_port_d64_resps_t   axi_mst_port_rsp_i
+    ,output CC_ITF_PKG::xbar_port_d32_mst_id_req_t   axi_mst_port_req_o
+    ,input  CC_ITF_PKG::xbar_port_d32_mst_id_resps_t axi_mst_port_resp_i
 `endif
 `ifdef PROBE
-    ,output logic [209:0]                           probe_o
+    ,output logic [209:0]                            probe_o
 `endif
 
 
@@ -98,32 +98,31 @@ module CORE_COMPLEX(
     // ----------------------------------------------------------------------
     //  AXI INTERCONNECT
     // ----------------------------------------------------------------------
-    CC_ITF_PKG::xbar_slv_port_d64_req_t   [2:0] xbar_slv_port_req;
-    CC_ITF_PKG::xbar_slv_port_d64_resps_t [2:0] xbar_slv_port_rsp;
-    CC_ITF_PKG::xbar_mst_port_d64_req_t   [2:0] xbar_mst_port_req;
-    CC_ITF_PKG::xbar_mst_port_d64_resps_t [2:0] xbar_mst_port_rsp;
-    CC_ITF_PKG::apb_d32_req_t             [4:0] apb_req;
-    CC_ITF_PKG::apb_d32_resps_t           [4:0] apb_resp;
+    CC_ITF_PKG::xbar_port_d32_slv_id_req_t   [2:0] xbar_slv_port_req;
+    CC_ITF_PKG::xbar_port_d32_slv_id_resps_t [2:0] xbar_slv_port_resp;
+    CC_ITF_PKG::xbar_port_d32_mst_id_req_t   [2:0] xbar_mst_port_req;
+    CC_ITF_PKG::xbar_port_d32_mst_id_resps_t [2:0] xbar_mst_port_resp;
+    CC_ITF_PKG::apb_d32_req_t                [4:0] apb_req;
+    CC_ITF_PKG::apb_d32_resps_t              [4:0] apb_resp;
 
     AXI_INTERCONNECT U_AXI_INTERCONNECT (
-        .clk_i               ( clk_i             )
-       ,.rst_ni              ( rstn_sync         )
-       ,.testmode_i          ( 1'b0              )
-       ,.xbar_slv_port_req_i ( xbar_slv_port_req )
-       ,.xbar_slv_port_rsp_o ( xbar_slv_port_rsp )
-       ,.xbar_mst_port_req_o ( xbar_mst_port_req )
-       ,.xbar_mst_port_rsp_i ( xbar_mst_port_rsp )
-       ,.apb_req_o           ( apb_req           )
-       ,.apb_rsp_i           ( apb_resp          )
+        .clk_i                  ( clk_i              ) 
+        ,.rst_ni                ( rstn_sync          ) 
+        ,.testmode_i            ( 1'b0               ) 
+        ,.xbar_slv_port_req_i   ( xbar_slv_port_req  ) 
+        ,.xbar_slv_port_resps_o ( xbar_slv_port_resp ) 
+        ,.xbar_mst_port_req_o   ( xbar_mst_port_req  ) 
+        ,.xbar_mst_port_resps_i ( xbar_mst_port_resp ) 
+        ,.apb_req_o             ( apb_req            ) 
+        ,.apb_resps_i           ( apb_resp           ) 
     );
 
 
     // ----------------------------------------------------------------------
     //  External interface
     // ----------------------------------------------------------------------
-    // TODO: if not enabled, reduce xbar_port
     `ifdef CORE_COMPLEX_AXI_SLV
-        assign axi_slv_port_rsp_o   = xbar_slv_port_rsp[2];
+        assign axi_slv_port_resp_o  = xbar_slv_port_resp[2];
         assign xbar_slv_port_req[2] = axi_slv_port_req_i;
     `else
         assign xbar_slv_port_req[2].aw_valid = 1'b0;
@@ -133,14 +132,14 @@ module CORE_COMPLEX(
         assign xbar_slv_port_req[2].r_ready  = 1'b1;
     `endif
     `ifdef CORE_COMPLEX_AXI_MST
-        assign axi_mst_port_req_o   = xbar_mst_port_req[2];
-        assign xbar_mst_port_rsp[2] = axi_mst_port_rsp_i;
+        assign axi_mst_port_req_o    = xbar_mst_port_req[2];
+        assign xbar_mst_port_resp[2] = axi_mst_port_resp_i;
     `else
-        assign xbar_mst_port_rsp[2].aw_ready = 1'b1;
-        assign xbar_mst_port_rsp[2].w_ready  = 1'b1;
-        assign xbar_mst_port_rsp[2].ar_ready = 1'b1;
-        assign xbar_mst_port_rsp[2].b_valid  = 1'b0;
-        assign xbar_mst_port_rsp[2].r_valid  = 1'b0;
+        assign xbar_mst_port_resp[2].aw_ready = 1'b1;
+        assign xbar_mst_port_resp[2].w_ready  = 1'b1;
+        assign xbar_mst_port_resp[2].ar_ready = 1'b1;
+        assign xbar_mst_port_resp[2].b_valid  = 1'b0;
+        assign xbar_mst_port_resp[2].r_valid  = 1'b0;
     `endif
 
 
@@ -151,19 +150,19 @@ module CORE_COMPLEX(
         debugger #(
             .CC_NUM(1)
         ) U_DEBUGGER(
-             .clk_i            ( clk_i                )
-            ,.rst_ni           ( rstn_sync            )
-            ,.debug_req        ( debug_req            )
-            ,.axi_sba_mst_req  ( xbar_slv_port_req[1] )
-            ,.axi_sba_mst_resp ( xbar_slv_port_rsp[1] )
-            ,.axi_dbg_slv_req  ( xbar_mst_port_req[1] )
-            ,.axi_dbg_slv_resp ( xbar_mst_port_rsp[1] )
-            ,.tck              ( tck_i                )
-            ,.tms              ( tms_i                )
-            ,.trst_n           ( trst_n_i             )
-            ,.tdi              ( tdi_i                )
-            ,.tdo              ( tdo_o                )
-            ,.tdo_oe           ( tdo_oe_o             )
+             .clk_i             ( clk_i                 ) 
+             ,.rst_ni           ( rstn_sync             ) 
+             ,.debug_req        ( debug_req             ) 
+             ,.axi_sba_mst_req  ( xbar_slv_port_req[1]  ) 
+             ,.axi_sba_mst_resp ( xbar_slv_port_resp[1] ) 
+             ,.axi_dbg_slv_req  ( xbar_mst_port_req[1]  ) 
+             ,.axi_dbg_slv_resp ( xbar_mst_port_resp[1] ) 
+             ,.tck              ( tck_i                 ) 
+             ,.tms              ( tms_i                 ) 
+             ,.trst_n           ( trst_n_i              ) 
+             ,.tdi              ( tdi_i                 ) 
+             ,.tdo              ( tdo_o                 ) 
+             ,.tdo_oe           ( tdo_oe_o              ) 
         );
     `else
         assign xbar_slv_port_req[1].aw_valid = 1'b0;
@@ -172,11 +171,11 @@ module CORE_COMPLEX(
         assign xbar_slv_port_req[1].b_ready  = 1'b1;
         assign xbar_slv_port_req[1].r_ready  = 1'b1;
 
-        assign xbar_mst_port_rsp[1].aw_ready = 1'b1;
-        assign xbar_mst_port_rsp[1].w_ready  = 1'b1;
-        assign xbar_mst_port_rsp[1].ar_ready = 1'b1;
-        assign xbar_mst_port_rsp[1].b_valid  = 1'b0;
-        assign xbar_mst_port_rsp[1].r_valid  = 1'b0;
+        assign xbar_mst_port_resp[1].aw_ready = 1'b1;
+        assign xbar_mst_port_resp[1].w_ready  = 1'b1;
+        assign xbar_mst_port_resp[1].ar_ready = 1'b1;
+        assign xbar_mst_port_resp[1].b_valid  = 1'b0;
+        assign xbar_mst_port_resp[1].r_valid  = 1'b0;
     `endif
 
 
@@ -184,94 +183,28 @@ module CORE_COMPLEX(
     //   Sophon Core
     // ----------------------------------------------------------------------
     `ifdef SOPHON_EXT_ACCESS
-        CC_ITF_PKG::xbar_mst_port_d64_req_t   xbar_slv_d64_req;
-        CC_ITF_PKG::xbar_mst_port_d64_resps_t xbar_slv_d64_rsp;
-        CC_ITF_PKG::axi_mst_side_d32_req_t    sophon_axi_slv_d32_req;
-        CC_ITF_PKG::axi_mst_side_d32_resps_t  sophon_axi_slv_d32_rsp;
-
-        // -----------------------------------
-        //  From XBAR: AXI 64
-        // -----------------------------------
-        assign xbar_slv_d64_req     = xbar_mst_port_req[0];
-        assign xbar_mst_port_rsp[0] = xbar_slv_d64_rsp;
-
-        // -----------------------------------
-        //  AXI 64 -> AXI 32
-        // -----------------------------------
-        axi_dw_converter #(
-            .AxiMaxReads         ( 4                                     ) ,
-            .AxiSlvPortDataWidth ( CC_ITF_PKG::XBAR_DATA_WIDTH           ) ,
-            .AxiMstPortDataWidth ( 32                                    ) ,
-            .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-            .AxiIdWidth          ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH    ) ,
-            .aw_chan_t           ( CC_ITF_PKG::xbar_mst_port_aw_t        ) ,
-            .slv_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-            .b_chan_t            ( CC_ITF_PKG::xbar_mst_port_b_t         ) ,
-            .ar_chan_t           ( CC_ITF_PKG::xbar_mst_port_ar_t        ) ,
-            .slv_r_chan_t        ( CC_ITF_PKG::xbar_mst_port_r_t         ) ,
-            .mst_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-            .mst_r_chan_t        ( CC_ITF_PKG::axi_r_32b_t               ) ,
-            .axi_mst_req_t       ( CC_ITF_PKG::axi_mst_side_d32_req_t    ) ,
-            .axi_mst_resp_t      ( CC_ITF_PKG::axi_mst_side_d32_resps_t  ) ,
-            .axi_slv_req_t       ( CC_ITF_PKG::xbar_mst_port_d64_req_t   ) ,
-            .axi_slv_resp_t      ( CC_ITF_PKG::xbar_mst_port_d64_resps_t ) 
-        ) i_axi_dw_64b_32b_converter (
-            .clk_i         ( clk_i                  ) ,
-            .rst_ni        ( rst_ni                 ) ,
-            .slv_req_i     ( xbar_slv_d64_req       ) ,
-            .slv_resp_o    ( xbar_slv_d64_rsp       ) ,
-            .mst_req_o     ( sophon_axi_slv_d32_req ) ,
-            .mst_resp_i    ( sophon_axi_slv_d32_rsp ) 
-        );
+        // connect xbar <-> sophon
+        CC_ITF_PKG::xbar_port_d32_mst_id_req_t   sophon_axi_slv_d32_req;
+        CC_ITF_PKG::xbar_port_d32_mst_id_resps_t sophon_axi_slv_d32_resp;
+        assign sophon_axi_slv_d32_req = xbar_mst_port_req[0];
+        assign xbar_mst_port_resp[0] = sophon_axi_slv_d32_resp;
     `else
-        assign xbar_mst_port_rsp[0].aw_ready = 1'b1;
-        assign xbar_mst_port_rsp[0].w_ready  = 1'b1;
-        assign xbar_mst_port_rsp[0].ar_ready = 1'b1;
-        assign xbar_mst_port_rsp[0].b_valid  = 1'b0;
-        assign xbar_mst_port_rsp[0].r_valid  = 1'b0;
+        // tie xbar input
+        assign xbar_mst_port_resp[0].aw_ready = 1'b1;
+        assign xbar_mst_port_resp[0].w_ready  = 1'b1;
+        assign xbar_mst_port_resp[0].ar_ready = 1'b1;
+        assign xbar_mst_port_resp[0].b_valid  = 1'b0;
+        assign xbar_mst_port_resp[0].r_valid  = 1'b0;
     `endif
     
     `ifdef SOPHON_EXT_INST_DATA
-        CC_ITF_PKG::xbar_slv_port_d64_req_t   xbar_mst_d64_req;
-        CC_ITF_PKG::xbar_slv_port_d64_resps_t xbar_mst_d64_rsp;
-        CC_ITF_PKG::axi_slv_side_d32_req_t    sophon_axi_mst_d32_req;
-        CC_ITF_PKG::axi_slv_side_d32_resps_t  sophon_axi_mst_d32_rsp;
-
-        // -----------------------------------
-        //  To XBAR: AXI 64
-        // -----------------------------------
-        assign xbar_slv_port_req[0] = xbar_mst_d64_req;
-        assign xbar_mst_d64_rsp     = xbar_slv_port_rsp[0];
-
-        // -----------------------------------
-        //  AXI 32 -> AXI 64
-        // -----------------------------------
-        axi_dw_converter #(
-            .AxiMaxReads         ( 4                                     ) ,
-            .AxiSlvPortDataWidth ( 32                                    ) ,
-            .AxiMstPortDataWidth ( 64                                    ) ,
-            .AxiAddrWidth        ( CC_ITF_PKG::XBAR_ADDR_WIDTH           ) ,
-            .AxiIdWidth          ( CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH    ) ,
-            .aw_chan_t           ( CC_ITF_PKG::xbar_slv_port_aw_t        ) ,
-            .b_chan_t            ( CC_ITF_PKG::xbar_slv_port_b_t         ) ,
-            .ar_chan_t           ( CC_ITF_PKG::xbar_slv_port_ar_t        ) ,
-            .mst_w_chan_t        ( CC_ITF_PKG::xbar_w_chan_t             ) ,
-            .mst_r_chan_t        ( CC_ITF_PKG::xbar_slv_port_r_t         ) ,
-            .slv_w_chan_t        ( CC_ITF_PKG::axi_w_32b_t               ) ,
-            .slv_r_chan_t        ( CC_ITF_PKG::axi_slv_side_r_32b_t      ) ,
-            .axi_mst_req_t       ( CC_ITF_PKG::xbar_slv_port_d64_req_t   ) ,
-            .axi_mst_resp_t      ( CC_ITF_PKG::xbar_slv_port_d64_resps_t ) ,
-            .axi_slv_req_t       ( CC_ITF_PKG::axi_slv_side_d32_req_t    ) ,
-            .axi_slv_resp_t      ( CC_ITF_PKG::axi_slv_side_d32_resps_t  ) 
-        ) i_axi_dw_32b_64b_converter (
-            .clk_i         ( clk_i                  ) ,
-            .rst_ni        ( rst_ni                 ) ,
-            .slv_req_i     ( sophon_axi_mst_d32_req ) ,
-            .slv_resp_o    ( sophon_axi_mst_d32_rsp ) ,
-            .mst_req_o     ( xbar_mst_d64_req       ) ,
-            .mst_resp_i    ( xbar_mst_d64_rsp       ) 
-        );
+        // connect xbar <-> sophon
+        CC_ITF_PKG::xbar_port_d32_slv_id_req_t    sophon_axi_mst_d32_req;
+        CC_ITF_PKG::xbar_port_d32_slv_id_resps_t  sophon_axi_mst_d32_resp;
+        assign xbar_slv_port_req[0] = sophon_axi_mst_d32_req;
+        assign sophon_axi_mst_d32_resp = xbar_slv_port_resp[0];
     `else
+        // tie xbar input
         assign xbar_slv_port_req[0].aw_valid = 1'b0;
         assign xbar_slv_port_req[0].w_valid  = 1'b0;
         assign xbar_slv_port_req[0].ar_valid = 1'b0;
@@ -300,11 +233,11 @@ module CORE_COMPLEX(
     `endif
     `ifdef SOPHON_EXT_ACCESS
          ,.axi_slv_d32_req_i                      ( sophon_axi_slv_d32_req ) 
-         ,.axi_slv_d32_rsp_o                      ( sophon_axi_slv_d32_rsp ) 
+         ,.axi_slv_d32_resps_o                    ( sophon_axi_slv_d32_resp) 
     `endif
     `ifdef SOPHON_EXT_INST_DATA
          ,.axi_mst_d32_req_o                      ( sophon_axi_mst_d32_req ) 
-         ,.axi_mst_d32_rsp_i                      ( sophon_axi_mst_d32_rsp ) 
+         ,.axi_mst_d32_resps_i                    ( sophon_axi_mst_d32_resp) 
     `endif
     `ifdef SOPHON_CLIC
          ,.clic_irq_req_i                         ( clic_irq_req_i         ) 
@@ -322,7 +255,7 @@ module CORE_COMPLEX(
          ,.gpio_out_val_o                         ( gpio_out_val_o         )
     `endif
      `ifdef PROBE
-        ,.probe_o                                 (probe_o                 )
+        ,.probe_o                                 ( probe_o                )
      `endif
     );
 
@@ -411,7 +344,7 @@ module CORE_COMPLEX(
     // -----------------------------------
     `ifdef SOPHON_CLIC
         assign clic_apb_req_o = apb_req[3];
-        assign apb_resp[3]  = clic_apb_rsp_i;
+        assign apb_resp[3]  = clic_apb_resp_i;
     `else
         assign apb_resp[3].pready = 1'b1;
     `endif

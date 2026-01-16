@@ -1,6 +1,6 @@
-task axi_slv_port_replace_write(input logic [31:0] addr, input logic [63:0] wdata, input logic [2:0] size );
-    logic [63:0] old_rdata;
-    logic [63:0] rdata;
+task axi_slv_port_replace_write(input logic [31:0] addr, input logic [31:0] wdata, input logic [2:0] size );
+    logic [31:0] old_rdata;
+    logic [31:0] rdata;
 
     axi_rand_master.run_read_single(old_rdata, 1,1, addr);
     axi_rand_master.run_write_word(addr, wdata, 8'd0, size);
@@ -27,7 +27,7 @@ endtask
 
 task mem_scan_test(input logic [31:0] base_addr, input logic [31:0] bank_num, input logic [31:0] step);
     logic [31:0] addr_offset;
-    logic [63:0] test_data;
+    logic [31:0] test_data;
     for (i=0;i<bank_num;i=i+1) begin
         // base
         test_data   = {$urandom, $urandom};
@@ -58,20 +58,24 @@ begin
 
 
     $display($realtime, ": Configure: Set Soft Reset = 0......");
-    axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0000_0000_0000, 8'd0, 3'b010);
+    axi_rand_master.run_write_word(32'h0600_0004, 32'h0000_0000, 8'd0, 3'b010);
 
 
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
 
         // Inst RAM
         flag_axi_access_itcm = 1'b1;
         $display("\n===================================================");
         $display($realtime, ": TEST: AXI ACCESS ITCM......");
         $display("===================================================");
+    `ifdef SOPHON_EXT_ACCESS
         // axi_slv_port_replace_write(SOPHON_PKG::ITCM_BASE+32'h0000_0000, 64'h1234_5678_9abc_def0, 3'b011);
         mem_scan_test(SOPHON_PKG::ITCM_BASE, ITCM_BANK_NUM, 32'h0000_1000);
         $display("\n---------------------------------------------------");
         $display($realtime, ": TEST: AXI ACCESS ITCM PASS!");
+    `else
+        $display($realtime, ": TEST SKIP! SOPHON_EXT_ACCESS is not enabled!");
+    `endif
         flag_axi_access_itcm = 1'b0;
 
         // Data RAM
@@ -79,10 +83,14 @@ begin
         $display("\n===================================================");
         $display($realtime, ": TEST: AXI ACCESS DTCM......");
         $display("===================================================");
+    `ifdef SOPHON_EXT_ACCESS
         // axi_slv_port_replace_write(SOPHON_PKG::DTCM_BASE+32'h0000_0000, 64'h2435_a845_2345_9864, 3'b011);
         mem_scan_test(SOPHON_PKG::DTCM_BASE, DTCM_BANK_NUM, 32'h0000_1000);
         $display("\n---------------------------------------------------");
         $display($realtime, ": TEST: AXI ACCESS DTCM PASS!");
+    `else
+        $display($realtime, ": TEST SKIP! SOPHON_EXT_ACCESS is not enabled!");
+    `endif
         flag_axi_access_dtcm = 1'b0;
 
         // // Out of range
@@ -98,28 +106,37 @@ begin
     axi_slv_port_replace_write(32'h0600_0000, {32'd0, $urandom}, 3'b011);
 
     $display($realtime, ": Configure: Set Soft Reset = 1......");
-    axi_rand_master.run_write_word(32'h0600_0004, 64'h0000_0001_0000_0000, 8'd0, 3'b010);
+    axi_rand_master.run_write_word(32'h0600_0004, 32'h0000_0001, 8'd0, 3'b010);
 
 
-    `ifdef SOPHON_EXT_ACCESS
+    `ifdef CORE_COMPLEX_AXI_SLV
         // Data RAM & CPU runing
         flag_core_access_ext_mem = 1'b1;
         $display("\n===================================================");
         $display($realtime, ": TEST: AXI ACCESS DTCM (CPU runing)......");
         $display("===================================================");
+    `ifdef SOPHON_EXT_ACCESS
         mem_scan_test(SOPHON_PKG::DTCM_BASE, DTCM_BANK_NUM, 32'h0000_1000);
+    `else
+        $display($realtime, ": TEST SKIP! SOPHON_EXT_ACCESS is not enabled!");
+    `endif
+        flag_core_access_ext_mem = 1'b0;
     `endif
 
 
      $display($realtime, ": Configure: Set fromhost = 1......");
-     `ifdef SOPHON_EXT_ACCESS
-     if (mem_mode=="EXT") 
-         axi_rand_master.run_write_word(32'h0001_1040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
-     else
-         axi_rand_master.run_write_word(32'h8009_0040, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
-     `else
+`ifdef CORE_COMPLEX_AXI_SLV
+    `ifdef SOPHON_EXT_ACCESS
+        if (mem_mode=="EXT") 
+            axi_rand_master.run_write_word(32'h0001_1040, 32'h0000_0001, 8'd0, 3'b010);
+        else
+            axi_rand_master.run_write_word(32'h8009_0040, 32'h0000_0001, 8'd0, 3'b010);
+    `else
+        force `FROMHOST=1;
+    `endif
+`else
      force `FROMHOST=1;
-     `endif
+`endif
             
     
 end

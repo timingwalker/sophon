@@ -26,9 +26,9 @@
 /// > to reqrsp to mem).
 module axi_to_reqrsp #(
   /// AXI4+ATOP request type. See `include/axi/typedef.svh`.
-  parameter type         axi_req_t  = CC_ITF_PKG::axi_mst_side_d32_req_t,
+  parameter type         axi_req_t  = CC_ITF_PKG::xbar_port_d32_mst_id_req_t,
   /// AXI4+ATOP response type. See `include/axi/typedef.svh`.
-  parameter type         axi_rsp_t = CC_ITF_PKG::axi_mst_side_d32_resps_t,
+  parameter type         axi_rsp_t = CC_ITF_PKG::xbar_port_d32_mst_id_resps_t,
   /// Address width, has to be less or equal than the width off the AXI address
   /// field. Determines the width of `mem_addr_o`. Has to be wide enough to emit
   /// the memory region which should be accessible.

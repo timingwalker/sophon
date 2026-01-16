@@ -1,55 +1,60 @@
 
-module debugger#(
-	parameter CC_NUM = 2
+
+module debugger
+#(
+	parameter int unsigned CC_NUM   = 1,
+    parameter int unsigned DW       = 32
 )
 (
-	input           tck,
-	input           tms,
-	input           trst_n,
-	input           tdi,
-	output          tdo,
-	output          tdo_oe,
+	input               clk_i,
+	input               rst_ni,
 
+	input               tck,
+	input               tms,
+	input               trst_n,
+	input               tdi,
+	output              tdo,
+	output              tdo_oe,
 	output [CC_NUM-1:0] debug_req,
 
-    output CC_ITF_PKG::xbar_slv_port_d64_req_t    axi_sba_mst_req,
-    input  CC_ITF_PKG::xbar_slv_port_d64_resps_t  axi_sba_mst_resp,
+    output CC_ITF_PKG::xbar_port_d32_slv_id_req_t    axi_sba_mst_req,
+    input  CC_ITF_PKG::xbar_port_d32_slv_id_resps_t  axi_sba_mst_resp,
 
-    input  CC_ITF_PKG::xbar_mst_port_d64_req_t    axi_dbg_slv_req,
-    output CC_ITF_PKG::xbar_mst_port_d64_resps_t  axi_dbg_slv_resp,
-
-	input clk_i,
-	input rst_ni
+    input  CC_ITF_PKG::xbar_port_d32_mst_id_req_t    axi_dbg_slv_req,
+    output CC_ITF_PKG::xbar_port_d32_mst_id_resps_t  axi_dbg_slv_resp
 );
 
 
-    wire          dmi_rst_n;
-    dm::dmi_req_t dmi_req;
-    wire          dmi_req_valid;
-    wire          dmi_req_ready;
-    dm::dmi_resp_t dmi_resp;
-    wire           dmi_resp_ready;
-    wire           dmi_resp_valid;
+    wire            dmi_rst_n;
+    dm::dmi_req_t   dmi_req;
+    wire            dmi_req_valid;
+    wire            dmi_req_ready;
+    dm::dmi_resp_t  dmi_resp;
+    wire            dmi_resp_ready;
+    wire            dmi_resp_valid;
     
     wire            slave_req_i;
     wire            slave_we_i;
-    wire [64-1:0]   slave_addr_i;
-    wire [64/8-1:0] slave_be_i;
-    wire [64-1:0]   slave_wdata_i;
-    wire [64-1:0]   slave_rdata_o;
+    wire [DW-1:0]   slave_addr_i;
+    wire [DW/8-1:0] slave_be_i;
+    wire [DW-1:0]   slave_wdata_i;
+    wire [DW-1:0]   slave_rdata_o;
     
     wire            master_req_o;
-    wire [64-1:0]   master_add_o;
+    wire [DW-1:0]   master_add_o;
     wire            master_we_o;
-    wire [64-1:0]   master_wdata_o;
-    wire [64/8-1:0] master_be_o;
+    wire [DW-1:0]   master_wdata_o;
+    wire [DW/8-1:0] master_be_o;
     wire            master_gnt_i;
     wire            master_r_valid_i;
     wire            master_r_err_i;
     wire            master_r_other_err_i;
-    wire [64-1:0]   master_r_rdata_i;
+    wire [DW-1:0]   master_r_rdata_i;
 
 
+    // ----------------------------------------------------------------------
+    //  JTAG -> DTM
+    // ----------------------------------------------------------------------
     dmi_jtag i_dtm (
         .clk_i            ( clk_i          ) ,
         .rst_ni           ( rst_ni         ) ,
@@ -69,16 +74,19 @@ module debugger#(
         .tdo_oe_o         ( tdo_oe         ) 
     );
     
-    
+
+    // ----------------------------------------------------------------------
+    //  Debug Module
+    // ----------------------------------------------------------------------
     dm_top #(
-        .NrHarts(CC_NUM),
-        .BusWidth(64),
-        .DmBaseAddress('h0)
+        .NrHarts       ( CC_NUM ) ,
+        .BusWidth      ( DW     ) ,
+        .DmBaseAddress ( 'h0    ) 
     ) i_dm(
         .clk_i                ( clk_i                ) ,
         .rst_ni               ( rst_ni               ) ,
         .testmode_i           ( 1'b0                 ) ,
-        .ndmreset_o           (                      ) ,  // non-debug module reset
+        .ndmreset_o           (                      ) ,  
         .dmactive_o           (                      ) ,
         .debug_req_o          ( debug_req            ) ,
         .unavailable_i        ( '0                   ) ,
@@ -109,14 +117,46 @@ module debugger#(
     );
 
 
+    // ----------------------------------------------------------------------
+    //  DM master -> AXI master -> external 
+    // ----------------------------------------------------------------------
+    axi_adapter #(
+        .DATA_WIDTH            ( DW                            ) ,
+        .AXI_ID_WIDTH          ( CC_ITF_PKG::XBAR_SLV_ID_WIDTH ) 
+    ) i_dm_axi_master (
+        .clk_i                 ( clk_i                  ) ,
+        .rst_ni                ( rst_ni                 ) ,
+        .req_i                 ( master_req_o           ) ,
+        .type_i                ( CC_ITF_PKG::SINGLE_REQ ) ,
+        .amo_i                 ( CC_ITF_PKG::AMO_NONE   ) ,
+        .gnt_o                 ( master_gnt_i           ) ,
+        .addr_i                ( master_add_o           ) ,
+        .we_i                  ( master_we_o            ) ,
+        .wdata_i               ( master_wdata_o         ) ,
+        .be_i                  ( master_be_o            ) ,
+        .size_i                ( 2'b10                  ) , 
+        // // always do 64bit here and use byte enables to gate
+        // .size_i                ( 2'b11                  ) , 
+        .id_i                  ( '0                     ) ,
+        .valid_o               ( master_r_valid_i       ) ,
+        .rdata_o               ( master_r_rdata_i       ) ,
+        .id_o                  (                        ) ,
+        .critical_word_o       (                        ) ,
+        .critical_word_valid_o (                        ) ,
+        .axi_req_o             ( axi_sba_mst_req        ) ,
+        .axi_resp_i            ( axi_sba_mst_resp       ) 
+    );
+
+
+    // ----------------------------------------------------------------------
+    //  external AXI slave -> memory -> DM slave
+    // ----------------------------------------------------------------------
 	AXI_BUS #(
-    .AXI_ADDR_WIDTH ( CC_ITF_PKG::XBAR_ADDR_WIDTH        ) ,
-    .AXI_DATA_WIDTH ( CC_ITF_PKG::XBAR_DATA_WIDTH        ) ,
-    .AXI_ID_WIDTH   ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH ) ,
-    .AXI_USER_WIDTH ( CC_ITF_PKG::XBAR_USER_WIDTH        ) 
+        .AXI_ADDR_WIDTH ( CC_ITF_PKG::XBAR_ADDR_WIDTH   ) ,
+        .AXI_DATA_WIDTH ( CC_ITF_PKG::XBAR_DATA_WIDTH   ) ,
+        .AXI_ID_WIDTH   ( CC_ITF_PKG::XBAR_MST_ID_WIDTH ) ,
+        .AXI_USER_WIDTH ( CC_ITF_PKG::XBAR_USER_WIDTH   ) 
     ) master();
-
-
 
 	assign master.aw_id              = axi_dbg_slv_req.aw.id;
 	assign master.aw_addr            = axi_dbg_slv_req.aw.addr;
@@ -150,7 +190,6 @@ module debugger#(
 	assign master.ar_user            = axi_dbg_slv_req.ar.user;
 	assign master.ar_valid           = axi_dbg_slv_req.ar_valid;
 	assign master.r_ready            = axi_dbg_slv_req.r_ready;
-
     
 	assign axi_dbg_slv_resp.aw_ready = master.aw_ready;
 	assign axi_dbg_slv_resp.ar_ready = master.ar_ready;
@@ -166,19 +205,18 @@ module debugger#(
 	assign axi_dbg_slv_resp.r.last   = master.r_last;
 	assign axi_dbg_slv_resp.r.user   = master.r_user;
 
-
     axi2mem #(
-        .AXI_ID_WIDTH   ( CC_ITF_PKG::XBAR_MST_PORT_ID_WIDTH ) ,
-        .AXI_ADDR_WIDTH ( CC_ITF_PKG::XBAR_ADDR_WIDTH        ) ,
-        .AXI_DATA_WIDTH ( CC_ITF_PKG::XBAR_DATA_WIDTH        ) ,
-        .AXI_USER_WIDTH ( CC_ITF_PKG::XBAR_USER_WIDTH        ) 
+        .AXI_ID_WIDTH   ( CC_ITF_PKG::XBAR_MST_ID_WIDTH ) ,
+        .AXI_ADDR_WIDTH ( CC_ITF_PKG::XBAR_ADDR_WIDTH   ) ,
+        .AXI_DATA_WIDTH ( CC_ITF_PKG::XBAR_DATA_WIDTH   ) ,
+        .AXI_USER_WIDTH ( CC_ITF_PKG::XBAR_USER_WIDTH   ) 
     ) i_dm_axi2mem (
         .clk_i      ( clk_i              ) ,
         .rst_ni     ( rst_ni             ) ,
         .slave      ( master             ) ,
         .req_o      ( slave_req_i        ) ,
         .we_o       ( slave_we_i         ) ,
-        .addr_o     ( slave_addr_i[31:0] ) ,
+        .addr_o     ( slave_addr_i       ) ,
         .be_o       ( slave_be_i         ) ,
         .user_o     (                    ) ,
         .data_o     ( slave_wdata_i      ) ,
@@ -186,31 +224,8 @@ module debugger#(
         .data_i     ( slave_rdata_o      ) 
     );
 
-    axi_adapter #(
-        .DATA_WIDTH            ( CC_ITF_PKG::XBAR_DATA_WIDTH        ) ,
-        .AXI_ID_WIDTH          ( CC_ITF_PKG::XBAR_SLV_PORT_ID_WIDTH ) 
-    ) i_dm_axi_master (
-        .clk_i                 ( clk_i                  ) ,
-        .rst_ni                ( rst_ni                 ) ,
-        .req_i                 ( master_req_o           ) ,
-        .type_i                ( CC_ITF_PKG::SINGLE_REQ ) ,
-        .amo_i                 ( CC_ITF_PKG::AMO_NONE   ) ,
-        .gnt_o                 ( master_gnt_i           ) ,
-        .addr_i                ( master_add_o           ) ,
-        .we_i                  ( master_we_o            ) ,
-        .wdata_i               ( master_wdata_o         ) ,
-        .be_i                  ( master_be_o            ) ,
-        .size_i                ( 2'b11                  ) , // always do 64bit here and use byte enables to gate
-        .id_i                  ( '0                     ) ,
-        .valid_o               ( master_r_valid_i       ) ,
-        .rdata_o               ( master_r_rdata_i       ) ,
-        .id_o                  (                        ) ,
-        .critical_word_o       (                        ) ,
-        .critical_word_valid_o (                        ) ,
-        .axi_req_o             ( axi_sba_mst_req        ) ,
-        .axi_resp_i            ( axi_sba_mst_resp       ) 
-    );
 
 
 endmodule
+
 

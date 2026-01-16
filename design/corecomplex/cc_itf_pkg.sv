@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-08-10 11:37:09
-// Last Modified : 2025-10-24 10:45:52
+// Last Modified : 2026-01-13 13:37:46
 // Description   : CoreComplex interface define
 // ----------------------------------------------------------------------
 
@@ -31,83 +31,66 @@ package CC_ITF_PKG;
   // xbar master port number = AXI slave number
   localparam int unsigned XBAR_MST_PORT_NUM = 4; 
   // APB port number
-  localparam APB_SLV_NUM  = 3;
+  localparam APB_SLV_NUM  = 5;
 
   // -----------------------------------
   //  DON'T CHANGE these values
   // -----------------------------------
   // define xbar interface width 
-  localparam int unsigned XBAR_ADDR_WIDTH   = 32;
-  localparam int unsigned XBAR_DATA_WIDTH   = 64;
-  localparam int unsigned XBAR_STRB_WIDTH   = XBAR_DATA_WIDTH / 8;
-  localparam int unsigned XBAR_USER_WIDTH   = 2; // TODO: set to 0 ?
-  localparam int unsigned XBAR_SLV_PORT_ID_WIDTH = 4;
+  localparam int unsigned XBAR_ADDR_WIDTH    = 32;
+  localparam int unsigned XBAR_DATA_WIDTH    = 32;
+  localparam int unsigned XBAR_STRB_WIDTH    = XBAR_DATA_WIDTH / 8;
+  localparam int unsigned XBAR_USER_WIDTH    = 2; // TODO: set to 0 ?
+  localparam int unsigned XBAR_SLV_ID_WIDTH  = 4;
   // transaction from xbar slave port will increase id width
-  localparam int unsigned XBAR_MST_PORT_ID_WIDTH = $clog2(XBAR_SLV_PORT_NUM) + XBAR_SLV_PORT_ID_WIDTH;
+  localparam int unsigned XBAR_MST_ID_WIDTH  = $clog2(XBAR_SLV_PORT_NUM) + XBAR_SLV_ID_WIDTH;
 
+  localparam int unsigned XBAR_MAX_MST_TRANS = 1;
+  localparam int unsigned XBAR_MAX_SLV_TRANS = 1;
 
   // ----------------------------------------------------------------------
-  //  64b data width xbar AXI interface structure
+  //  32b data width xbar AXI interface structure
   // ----------------------------------------------------------------------
-  typedef logic [XBAR_SLV_PORT_ID_WIDTH-1:0] xbat_slv_port_id_t;
-  typedef logic [XBAR_MST_PORT_ID_WIDTH-1:0] xbat_mst_port_id_t;
   typedef logic [XBAR_ADDR_WIDTH-1:0]   xbar_addr_t;
-  typedef axi_pkg::xbar_rule_32_t       xbar_rule_t; 
   typedef logic [XBAR_DATA_WIDTH-1:0]   xbar_data_t;
   typedef logic [XBAR_STRB_WIDTH-1:0]   xbar_strb_t;
+  typedef logic [XBAR_SLV_ID_WIDTH-1:0] xbar_slv_id_t;
+  typedef logic [XBAR_MST_ID_WIDTH-1:0] xbar_mst_id_t;
   typedef logic [XBAR_USER_WIDTH-1:0]   xbar_user_t;
+  typedef axi_pkg::xbar_rule_32_t       xbar_rule_t; 
 
   `AXI_TYPEDEF_W_CHAN_T(xbar_w_chan_t, xbar_data_t, xbar_strb_t, xbar_user_t)
-  // XBAR slave port interface, using slave port id
-  `AXI_TYPEDEF_AW_CHAN_T(xbar_slv_port_aw_t, xbar_addr_t, xbat_slv_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(xbar_slv_port_ar_t, xbar_addr_t, xbat_slv_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_B_CHAN_T(xbar_slv_port_b_t, xbat_slv_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_R_CHAN_T(xbar_slv_port_r_t, xbar_data_t, xbat_slv_port_id_t, xbar_user_t)
-  // XBAR master port interface, using extend master port id
-  `AXI_TYPEDEF_AW_CHAN_T(xbar_mst_port_aw_t, xbar_addr_t, xbat_mst_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_AR_CHAN_T(xbar_mst_port_ar_t, xbar_addr_t, xbat_mst_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_B_CHAN_T(xbar_mst_port_b_t, xbat_mst_port_id_t, xbar_user_t)
-  `AXI_TYPEDEF_R_CHAN_T(xbar_mst_port_r_t, xbar_data_t, xbat_mst_port_id_t, xbar_user_t)
 
-  // Xbar Slave Port interface
-  `AXI_TYPEDEF_REQ_T (xbar_slv_port_d64_req_t, xbar_slv_port_aw_t, xbar_w_chan_t, xbar_slv_port_ar_t)
-  `AXI_TYPEDEF_RESP_T(xbar_slv_port_d64_resps_t, xbar_slv_port_b_t, xbar_slv_port_r_t)
-  // Xbar Master Port interface, id width is extended
-  `AXI_TYPEDEF_REQ_T (xbar_mst_port_d64_req_t, xbar_mst_port_aw_t, xbar_w_chan_t, xbar_mst_port_ar_t)
-  `AXI_TYPEDEF_RESP_T(xbar_mst_port_d64_resps_t, xbar_mst_port_b_t, xbar_mst_port_r_t)
+  // XBAR port with slave port id width
+  `AXI_TYPEDEF_AW_CHAN_T(xbar_aw_chan_slv_id_t, xbar_addr_t, xbar_slv_id_t, xbar_user_t)
+  `AXI_TYPEDEF_AR_CHAN_T(xbar_ar_chan_slv_id_t, xbar_addr_t, xbar_slv_id_t, xbar_user_t)
+  `AXI_TYPEDEF_B_CHAN_T(xbar_b_chan_slv_id_t, xbar_slv_id_t, xbar_user_t)
+  `AXI_TYPEDEF_R_CHAN_T(xbar_r_chan_slv_id_t, xbar_data_t, xbar_slv_id_t, xbar_user_t)
 
+  `AXI_TYPEDEF_REQ_T (xbar_port_d32_slv_id_req_t, xbar_aw_chan_slv_id_t, xbar_w_chan_t, xbar_ar_chan_slv_id_t)
+  `AXI_TYPEDEF_RESP_T(xbar_port_d32_slv_id_resps_t, xbar_b_chan_slv_id_t, xbar_r_chan_slv_id_t)
 
-  // ----------------------------------------------------------------------
-  //  XBAR Master side interface: 32b data width + master port id
-  // ----------------------------------------------------------------------
-  typedef logic [32-1:0]    axi_data_32b_t;
-  typedef logic [32/8-1:0]  axi_strb_4b_t;
+  // XBAR port with extended master port id width
+  `AXI_TYPEDEF_AW_CHAN_T(xbar_aw_chan_mst_id_t, xbar_addr_t, xbar_mst_id_t, xbar_user_t)
+  `AXI_TYPEDEF_AR_CHAN_T(xbar_ar_chan_mst_id_t, xbar_addr_t, xbar_mst_id_t, xbar_user_t)
+  `AXI_TYPEDEF_B_CHAN_T(xbar_b_chan_mst_id_t, xbar_mst_id_t, xbar_user_t)
+  `AXI_TYPEDEF_R_CHAN_T(xbar_r_chan_mst_id_t, xbar_data_t, xbar_mst_id_t, xbar_user_t)
 
-  `AXI_TYPEDEF_W_CHAN_T(axi_w_32b_t, axi_data_32b_t, axi_strb_4b_t, xbar_user_t)
-  `AXI_TYPEDEF_R_CHAN_T(axi_r_32b_t, axi_data_32b_t, xbat_mst_port_id_t, xbar_user_t)
+  `AXI_TYPEDEF_REQ_T (xbar_port_d32_mst_id_req_t, xbar_aw_chan_mst_id_t, xbar_w_chan_t, xbar_ar_chan_mst_id_t)
+  `AXI_TYPEDEF_RESP_T(xbar_port_d32_mst_id_resps_t, xbar_b_chan_mst_id_t, xbar_r_chan_mst_id_t)
 
-  `AXI_TYPEDEF_REQ_T(axi_mst_side_d32_req_t, xbar_mst_port_aw_t, axi_w_32b_t, xbar_mst_port_ar_t)
-  `AXI_TYPEDEF_RESP_T(axi_mst_side_d32_resps_t, xbar_mst_port_b_t, axi_r_32b_t)
 
   // ----------------------------------------------------------------------
-  //  XBAR Slave side interface: 32b data width + slave port id
+  //  32b data width xbar AXI lite interface structure
   // ----------------------------------------------------------------------
-  `AXI_TYPEDEF_R_CHAN_T(axi_slv_side_r_32b_t, axi_data_32b_t, xbat_slv_port_id_t, xbar_user_t)
+  `AXI_LITE_TYPEDEF_AW_CHAN_T(lite_aw_chan_t, xbar_addr_t) 
+  `AXI_LITE_TYPEDEF_W_CHAN_T(lite_w_chan_t, xbar_data_t, xbar_strb_t) 
+  `AXI_LITE_TYPEDEF_B_CHAN_T(lite_b_chan_t) 
+  `AXI_LITE_TYPEDEF_AR_CHAN_T(lite_ar_chan_t, xbar_addr_t) 
+  `AXI_LITE_TYPEDEF_R_CHAN_T(lite_r_chan_t, xbar_data_t) 
 
-  `AXI_TYPEDEF_REQ_T (axi_slv_side_d32_req_t, xbar_slv_port_aw_t, axi_w_32b_t, xbar_slv_port_ar_t)
-  `AXI_TYPEDEF_RESP_T(axi_slv_side_d32_resps_t, xbar_slv_port_b_t, axi_slv_side_r_32b_t)
-
-  // ----------------------------------------------------------------------
-  //  XBAR Master side AXI LITE interface: 32b data width + master port id
-  // ----------------------------------------------------------------------
-  `AXI_LITE_TYPEDEF_AW_CHAN_T(lite_aw_chan_t, xbar_addr_t)
-  `AXI_LITE_TYPEDEF_W_CHAN_T(lite_w_chan_t, axi_data_32b_t, axi_strb_4b_t)
-  `AXI_LITE_TYPEDEF_B_CHAN_T(lite_b_chan_t)
-  `AXI_LITE_TYPEDEF_AR_CHAN_T(lite_ar_chan_t, xbar_addr_t)
-  `AXI_LITE_TYPEDEF_R_CHAN_T (lite_r_chan_t, axi_data_32b_t)
-
-  `AXI_LITE_TYPEDEF_REQ_T(axi_lite_mst_side_d32_req_t, lite_aw_chan_t, lite_w_chan_t, lite_ar_chan_t)
-  `AXI_LITE_TYPEDEF_RESP_T(axi_lite_mst_side_d32_resps_t, lite_b_chan_t, lite_r_chan_t)
+  `AXI_LITE_TYPEDEF_REQ_T(axi_lite_d32_req_t, lite_aw_chan_t, lite_w_chan_t, lite_ar_chan_t)
+  `AXI_LITE_TYPEDEF_RESP_T(axi_lite_d32_resps_t, lite_b_chan_t, lite_r_chan_t)
 
 
   // ----------------------------------------------------------------------
@@ -119,17 +102,15 @@ package CC_ITF_PKG;
     logic            psel;    
     logic            penable;
     logic            pwrite;
-    axi_data_32b_t   pwdata;
-    axi_strb_4b_t    pstrb;
+    xbar_data_t      pwdata;
+    xbar_strb_t      pstrb;
   } apb_d32_req_t;
 
   typedef struct packed {
-    logic  pready;
-    axi_data_32b_t prdata;
-    logic  pslverr;
+    logic       pready;
+    xbar_data_t prdata;
+    logic       pslverr;
   } apb_d32_resps_t;
-
-
 
 
   // ----------------------------------------------------------------------
@@ -137,7 +118,7 @@ package CC_ITF_PKG;
   // ----------------------------------------------------------------------
 
   localparam int unsigned REQRSP_ADDR_WIDTH = 32;
-  localparam int unsigned REQRSP_DATA_WIDTH = 64;
+  localparam int unsigned REQRSP_DATA_WIDTH = 64; // TODO: 32b
 
   typedef logic [REQRSP_ADDR_WIDTH-1:0] addr_t;
   typedef logic [REQRSP_DATA_WIDTH-1:0] data_t;

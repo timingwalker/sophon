@@ -29,25 +29,25 @@ module axi_adapter #(
   input  CC_ITF_PKG::ad_req_t              type_i,
   input  CC_ITF_PKG::amo_t                 amo_i,
   output logic                             gnt_o,
-  input  logic [63:0]           addr_i,
+  input  logic [31:0]                      addr_i,
   input  logic                             we_i,
-  input  logic [(DATA_WIDTH/64)-1:0][63:0] wdata_i,
-  input  logic [(DATA_WIDTH/64)-1:0][(64/8)-1:0]  be_i,
+  input  logic [(DATA_WIDTH/32)-1:0][31:0] wdata_i,
+  input  logic [(DATA_WIDTH/32)-1:0][(32/8)-1:0]  be_i,
   input  logic [1:0]                       size_i,
   input  logic [AXI_ID_WIDTH-1:0]          id_i,
   // read port
   output logic                             valid_o,
-  output logic [(DATA_WIDTH/64)-1:0][63:0] rdata_o,
+  output logic [(DATA_WIDTH/32)-1:0][31:0] rdata_o,
   output logic [AXI_ID_WIDTH-1:0]          id_o,
   // critical word - read port
-  output logic [63:0]                      critical_word_o,
+  output logic [31:0]                      critical_word_o,
   output logic                             critical_word_valid_o,
   // AXI port
-  output CC_ITF_PKG::xbar_slv_port_d64_req_t    axi_req_o,
-  input  CC_ITF_PKG::xbar_slv_port_d64_resps_t  axi_resp_i
+  output CC_ITF_PKG::xbar_port_d32_slv_id_req_t    axi_req_o,
+  input  CC_ITF_PKG::xbar_port_d32_slv_id_resps_t  axi_resp_i
 );
-  localparam BURST_SIZE = DATA_WIDTH/64-1;
-  localparam ADDR_INDEX = ($clog2(DATA_WIDTH/64) > 0) ? $clog2(DATA_WIDTH/64) : 1;
+  localparam BURST_SIZE = DATA_WIDTH/32-1;
+  localparam ADDR_INDEX = ($clog2(DATA_WIDTH/32) > 0) ? $clog2(DATA_WIDTH/32) : 1;
 
   enum logic [3:0] {
     IDLE, WAIT_B_VALID, WAIT_AW_READY, WAIT_LAST_W_READY, WAIT_LAST_W_READY_AW_READY, WAIT_AW_READY_BURST,
@@ -56,9 +56,9 @@ module axi_adapter #(
 
   // counter for AXI transfers
   logic [ADDR_INDEX-1:0] cnt_d, cnt_q;
-  logic [(DATA_WIDTH/64)-1:0][64-1:0] cache_line_d, cache_line_q;
+  logic [(DATA_WIDTH/32)-1:0][32-1:0] cache_line_d, cache_line_q;
   // save the address for a read, as we allow for non-cacheline aligned accesses
-  logic [(DATA_WIDTH/64)-1:0] addr_offset_d, addr_offset_q;
+  logic [(DATA_WIDTH/32)-1:0] addr_offset_d, addr_offset_q;
   logic [AXI_ID_WIDTH-1:0]    id_d, id_q;
   logic [ADDR_INDEX-1:0]      index;
   // save the atomic operation and size
@@ -84,7 +84,7 @@ module axi_adapter #(
     axi_req_o.ar_valid  = 1'b0;
     // in case of a single request or wrapping transfer we can simply begin at the address, if we want to request a cache-line
     // with an incremental transfer we need to output the corresponding base address of the cache line
-    axi_req_o.ar.addr   = (CRITICAL_WORD_FIRST || type_i == CC_ITF_PKG::SINGLE_REQ) ? addr_i : { addr_i[(63):CACHELINE_BYTE_OFFSET], {{CACHELINE_BYTE_OFFSET}{1'b0}}};
+    axi_req_o.ar.addr   = (CRITICAL_WORD_FIRST || type_i == CC_ITF_PKG::SINGLE_REQ) ? addr_i : { addr_i[(31):CACHELINE_BYTE_OFFSET], {{CACHELINE_BYTE_OFFSET}{1'b0}}};
     axi_req_o.ar.prot   = 3'b0;
     axi_req_o.ar.region = 4'b0;
     axi_req_o.ar.len    = 8'b0;

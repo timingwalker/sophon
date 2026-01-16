@@ -5,16 +5,17 @@
 `define CORE_COMPLEX_AXI_MST
 `define CORE_COMPLEX_AXI_SLV
 
-//`define SOPHON_RVE
+`define SOPHON_EXT_ACCESS
+//`define SOPHON_EXT_INST
+//`define SOPHON_EXT_DATA
+
 `define SOPHON_RVDEBUG
 `define SOPHON_EEI
-//`define SOPHON_EEI_NOALIGN
-//`define SOPHON_EEI_RS_LOCK
+//`define SOPHON_RVE
 
 `define SOPHON_ZICSR
 `define SOPHON_CLINT
 //`define SOPHON_CLIC
-`define SOPHON_PLIC
                                 
 // SubFeature
 `ifdef SOPHON_EEI
@@ -29,4 +30,3 @@
     `define FGPIO_NUM 32
 `endif
                                                             
-

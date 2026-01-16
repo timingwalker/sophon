@@ -1447,7 +1447,7 @@ package axi_test;
       join
     endtask
 
-    task run_write_word(input logic [AW-1:0] addr,input logic[63:0] w_data, input logic[7:0] awlen, input logic[2:0] awsize );
+    task run_write_word(input logic [AW-1:0] addr,input logic[DW-1:0] w_data, input logic[7:0] awlen, input logic[2:0] awsize );
       automatic logic aw_done = 1'b0;
       fork
         begin
