@@ -27,6 +27,6 @@
 
 // SubSubFeature
 `ifdef SOPHON_EEI_GPIO
-    `define FGPIO_NUM 32
+    `define FGPIO_NUM 24
 `endif
                                                             

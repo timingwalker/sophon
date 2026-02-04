@@ -14,18 +14,22 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2025-09-25 15:59:39
+// Last Modified : 2026-02-04 17:48:22
 // Description   : 
 // ----------------------------------------------------------------------
 
 `ifndef FGPIO_NUM
-    `define FGPIO_NUM 32
+    `define FGPIO_NUM 24
 `endif
 
 module SOPHON_FPGA_TOP(
 
+`ifdef ARTY_A7_35T
+	input SYSCLK,
+`elsif GENESYS2
 	input SYSCLK_P,
 	input SYSCLK_N,
+`endif
 	input RESETN,
 
     input  UART_RX,
@@ -251,17 +255,27 @@ module SOPHON_FPGA_TOP(
     assign LED3 = clock;
     assign LED4 = 1'b0;
     assign LED5 = 1'b0;
-    assign LED6 = 1'b1;
+    assign LED6 = 1'b0;
 
 
-    clk_wiz_0 i_clk_wiz(
-    	.clk_in1_p ( SYSCLK_P     ) ,
-    	.clk_in1_n ( SYSCLK_N     ) ,
-    	.reset     ( ~RESETN      ) ,
-    	.locked    ( pll_locked   ) ,
-    	.clk_out1  ( clock        ) ,
-    	.clk_out2  ( sample_clock ) 
-    );
+    `ifdef ARTY_A7_35T
+        clk_wiz_0 i_clk_wiz(
+        	.clk_in1   ( SYSCLK       ) ,
+        	.reset     ( ~RESETN      ) ,
+        	.locked    ( pll_locked   ) ,
+        	.clk_out1  ( clock        ) ,
+        	.clk_out2  ( sample_clock ) 
+        );
+    `elsif GENESYS2
+        clk_wiz_0 i_clk_wiz(
+        	.clk_in1_p ( SYSCLK_P     ) ,
+        	.clk_in1_n ( SYSCLK_N     ) ,
+        	.reset     ( ~RESETN      ) ,
+        	.locked    ( pll_locked   ) ,
+        	.clk_out1  ( clock        ) ,
+        	.clk_out2  ( sample_clock ) 
+        );
+    `endif
 
     RST_SYNC i_rstgen_main (
         .clk_i       ( clock      ) ,
@@ -310,22 +324,6 @@ module SOPHON_FPGA_TOP(
         	//.probe10 ( gpio_out_val[1]  ) ,
         	.probe11 ( csr_wr           ) 
         );
-
-        // ila_0 u_ila_top (
-        // 	.clk     ( sample_clock     ) ,
-        // 	.probe0  ( iram_addr_offset ) ,
-        // 	.probe1  ( iram_wdata       ) ,
-        // 	.probe2  ( 32'd0            ) ,
-        // 	.probe3  ( 32'd0            ) ,
-        // 	.probe4  ( iram_req         ) ,
-        // 	.probe5  ( iram_we          ) ,
-        // 	.probe6  ( iram_be          ) ,
-        // 	.probe7  ( 1'b0             ) ,
-        // 	.probe8  ( 1'b0             ) ,
-        // 	.probe9  ( 1'b0             ) ,
-        // 	.probe10 ( 1'b0             ) ,
-        // 	.probe11 ( 1'b0             ) 
-        // );
 
     `endif
 

@@ -2,11 +2,10 @@
 # Genesys 2 has a quad SPI flash
 set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 4 [current_design]
 
-## 
 set_property -dict {PACKAGE_PIN AD27 IOSTANDARD LVCMOS33} [get_ports JTAG_TCK]
-set_property -dict {PACKAGE_PIN W29 IOSTANDARD LVCMOS33} [get_ports JTAG_TMS]
-set_property -dict {PACKAGE_PIN W27 IOSTANDARD LVCMOS33} [get_ports JTAG_TDI]
-set_property -dict {PACKAGE_PIN W28 IOSTANDARD LVCMOS33} [get_ports JTAG_TDO]
+set_property -dict {PACKAGE_PIN W29  IOSTANDARD LVCMOS33} [get_ports JTAG_TMS]
+set_property -dict {PACKAGE_PIN W27  IOSTANDARD LVCMOS33} [get_ports JTAG_TDI]
+set_property -dict {PACKAGE_PIN W28  IOSTANDARD LVCMOS33} [get_ports JTAG_TDO]
 
 set_property -dict {PACKAGE_PIN Y23 IOSTANDARD LVCMOS33} [get_ports UART_TX]
 set_property -dict {PACKAGE_PIN Y20 IOSTANDARD LVCMOS33} [get_ports UART_RX]

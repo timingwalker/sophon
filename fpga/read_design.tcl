@@ -25,7 +25,6 @@ read_verilog -sv ../design/common/rst_sync.sv
 read_verilog -sv ../design/common/tcm_wrap.sv
 read_verilog -sv ../design/common/bw_sp_ram.sv
 
-
 read_verilog -sv ../design/open-source/axi/src/axi_pkg.sv
 read_verilog -sv ../design/open-source/reqrsp_interface/src/reqrsp_pkg.sv
 read_verilog -sv ../design/open-source/riscv_dbg/src/dm_pkg.sv
