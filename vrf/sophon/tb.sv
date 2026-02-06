@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2025-09-25 15:57:55
+// Last Modified : 2026-02-06 18:28:47
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -45,64 +45,63 @@ module tb(
         );
     `endif
 
-
     SOPHON_TOP u_dut
     (
-          .clk_i                  ( clk          ) 
-         ,.clk_neg_i              ( clk_neg      ) 
-         ,.rst_ni                 ( rst_n        ) 
-         ,.rst_soft_ni            ( rst_n        ) 
-         ,.bootaddr_i             ( 32'h80000000 ) 
-         ,.hart_id_i              ( 3'd0         ) 
+          .clk_i                  ( clk                   ) 
+         ,.clk_neg_i              ( clk_neg               ) 
+         ,.rst_ni                 ( rst_n                 ) 
+         ,.rst_soft_ni            ( rst_n                 ) 
+         ,.bootaddr_i             ( SOPHON_PKG::ITCM_BASE ) 
+         ,.hart_id_i              ( 3'd0                  ) 
     `ifdef SOPHON_CLINT
-         ,.irq_mei_i              ( 1'b0         ) 
-         ,.irq_mti_i              ( 1'b0         ) 
-         ,.irq_msi_i              ( 1'b0         ) 
+         ,.irq_mei_i              ( 1'b0                  ) 
+         ,.irq_mti_i              ( 1'b0                  ) 
+         ,.irq_msi_i              ( 1'b0                  ) 
          `endif
     `ifdef SOPHON_RVDEBUG
-         ,.dm_req_i               ( 1'b0         ) 
+         ,.dm_req_i               ( 1'b0                  ) 
     `endif
     `ifdef SOPHON_EXT_INST
-         ,.inst_ext_req_o         (              ) 
-         ,.inst_ext_addr_o        (              ) 
-         ,.inst_ext_ack_i         ( 1'b0         ) 
-         ,.inst_ext_rdata_i       ( '0           ) 
-         ,.inst_ext_error_i       ( 1'b1         ) 
+         ,.inst_ext_req_o         (                       ) 
+         ,.inst_ext_addr_o        (                       ) 
+         ,.inst_ext_ack_i         ( 1'b0                  ) 
+         ,.inst_ext_rdata_i       ( '0                    ) 
+         ,.inst_ext_error_i       ( 1'b1                  ) 
     `endif
     `ifdef SOPHON_EXT_DATA
-         ,.data_req_o             (              ) 
-         ,.data_we_o              (              ) 
-         ,.data_addr_o            (              ) 
-         ,.data_wdata_o           (              ) 
-         ,.data_wstrb_o           (              ) 
-         ,.data_ack_i             ( 1'b0         ) 
-         ,.data_error_i           ( 1'b1         ) 
-         ,.data_rdata_i           ( 32'd0        ) 
+         ,.data_req_o             (                       ) 
+         ,.data_we_o              (                       ) 
+         ,.data_addr_o            (                       ) 
+         ,.data_wdata_o           (                       ) 
+         ,.data_wstrb_o           (                       ) 
+         ,.data_ack_i             ( 1'b0                  ) 
+         ,.data_error_i           ( 1'b1                  ) 
+         ,.data_rdata_i           ( 32'd0                 ) 
     `endif
     `ifdef SOPHON_EXT_ACCESS
-         ,.ext_req_i              ( '0           ) 
-         ,.ext_we_i               ( '0           ) 
-         ,.ext_strb_i             ( '0           ) 
-         ,.ext_addr_i             ( '0           ) 
-         ,.ext_wdata_i            ( '0           ) 
-         ,.ext_ack_o              (              ) 
-         ,.ext_error_o            (              ) 
-         ,.ext_rdata_o            (              ) 
+         ,.ext_req_i              ( '0                    ) 
+         ,.ext_we_i               ( '0                    ) 
+         ,.ext_strb_i             ( '0                    ) 
+         ,.ext_addr_i             ( '0                    ) 
+         ,.ext_wdata_i            ( '0                    ) 
+         ,.ext_ack_o              (                       ) 
+         ,.ext_error_o            (                       ) 
+         ,.ext_rdata_o            (                       ) 
     `endif
     `ifdef SOPHON_CLIC
-         ,.clic_irq_req_i         ( '0           ) 
-         ,.clic_irq_shv_i         ( '0           ) 
-         ,.clic_irq_id_i          ( '0           ) 
-         ,.clic_irq_level_i       ( '0           ) 
-         ,.clic_irq_ack_o         (              ) 
-         ,.clic_irq_intthresh_o   (              ) 
-         ,.clic_mnxti_clr_o       (              ) 
-         ,.clic_mnxti_id_o        (              ) 
+         ,.clic_irq_req_i         ( '0                    ) 
+         ,.clic_irq_shv_i         ( '0                    ) 
+         ,.clic_irq_id_i          ( '0                    ) 
+         ,.clic_irq_level_i       ( '0                    ) 
+         ,.clic_irq_ack_o         (                       ) 
+         ,.clic_irq_intthresh_o   (                       ) 
+         ,.clic_mnxti_clr_o       (                       ) 
+         ,.clic_mnxti_id_o        (                       ) 
     `endif
     `ifdef SOPHON_EEI_GPIO
-         ,.gpio_dir_o             (              ) 
-         ,.gpio_in_val_i          ( '0           ) 
-         ,.gpio_out_val_o         (              ) 
+         ,.gpio_dir_o             (                       ) 
+         ,.gpio_in_val_i          ( '0                    ) 
+         ,.gpio_out_val_o         (                       ) 
     `endif
     );
 
@@ -121,11 +120,12 @@ module tb(
         //`define DTCM(addr) u_dut.u_dtcm.gen_spilt_ram[0].u_tcm_ram.mem_array[``addr``]
     `endif
 
+    localparam int unsigned TCM_OFFSET  = SOPHON_PKG::TCM_OFFSET;
     localparam int unsigned ITCM_OFFSET = SOPHON_PKG::ITCM_OFFSET;
     localparam int unsigned DTCM_OFFSET = SOPHON_PKG::DTCM_OFFSET;
     localparam int unsigned BANK_NUM    = 16;
 
-    localparam int unsigned TMP_RAM_SIZE = DTCM_OFFSET + 2048*BANK_NUM -1;
+    localparam int unsigned TMP_RAM_SIZE = TCM_OFFSET + DTCM_OFFSET + 2048*BANK_NUM -1;
     reg [7:0] cc0_ram [0:TMP_RAM_SIZE];
     reg [8*40:0] testName;
 
@@ -146,7 +146,7 @@ module tb(
                 // 1024*32bit=2KB
                 for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
+                        `ITCM(k)[i][by*8+:8] = cc0_ram[ TCM_OFFSET + ITCM_OFFSET + k*4096 + i*4+by];
                     end
                 end
             end
@@ -157,7 +157,7 @@ module tb(
                 // 1024*32bit=2KB
                 for ( i = 0; i < 1024; i = i + 1 ) begin
                     for ( by = 0; by < 4; by = by + 1 ) begin
-                        `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
+                        `DTCM(k)[i][by*8+:8] = cc0_ram[ TCM_OFFSET + DTCM_OFFSET + k*4096 + i*4+by];
                     end
                 end
             end

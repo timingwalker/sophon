@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-12-20 16:58:18
-// Last Modified : 2026-01-14 11:34:42
+// Last Modified : 2026-02-05 11:05:55
 // Description   : Core Complex
 //                  - Sophon
 //                  - AXI INTERCONNECT
@@ -390,30 +390,6 @@ module CORE_COMPLEX(
             assign irq_mei = irq_mei_i;
         `endif
     `endif
-
-    //  // -----------------------------------
-    //  //  Timer
-    //  // -----------------------------------
-    //  `ifdef SOPHON_TIMER
-    //      apb_timer #(
-    //      .APB_ADDR_WIDTH ( 32  ),
-    //      .TIMER_CNT      ( 1   )
-    //      ) i_timer (
-    //      .HCLK    ( clk_i                  ) ,
-    //      .HRESETn ( rst_ni                 ) ,
-    //      .PSEL    ( apb_req[5].psel        ) ,
-    //      .PENABLE ( apb_req[5].penable     ) ,
-    //      .PWRITE  ( apb_req[5].pwrite      ) ,
-    //      .PADDR   ( apb_req[5].paddr[11:2] ) ,
-    //      .PWDATA  ( apb_req[5].pwdata      ) ,
-    //      .PRDATA  ( apb_resp[5].prdata     ) ,
-    //      .PREADY  ( apb_resp[5].pready     ) ,
-    //      .PSLVERR ( apb_resp[5].pslverr    ) ,
-    //      .irq_o   ( irq_sources[2:1]       ) 
-    //      );
-    //  `else
-    //      assign apb_resp[5].pready = 1'b1;
-    //  `endif
 
 endmodule
 

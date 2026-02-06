@@ -1,9 +1,12 @@
 
 #TC := tc_ext_access
-TC := rv32ui-p-addi
+TC := tc_exception
+TC := rv32ui-p-add
+#TC := rv32ui-p-lb
 #TC := tc_clint
 #TC := median
 #TC := freemodbus
+#TC := FreeRTOS
 
 MEM_MODE      ?= TCM
 LDS_FILE      ?= link.ld

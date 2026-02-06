@@ -2,7 +2,7 @@ OUTPUT_ARCH( "riscv" )
 
 SECTIONS
 {
-  . = 0x80000000;
+  . = 0x80010000;
   . = ALIGN(0x1000);
   .text : 
   {

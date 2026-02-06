@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2026-02-03 17:41:43
+// Last Modified : 2026-02-06 17:26:28
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2026-02-03 17:41:43
+// Last Modified : 2026-02-06 17:26:28
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -27,18 +27,23 @@ package SOPHON_PKG;
     // -----------------------------------
     //  Locol inst/data memory region
     // -----------------------------------
-    localparam TCM_BASE       = 32'h8000_0000;
+    localparam BROM_BASE      = 32'h8000_0000;
+    localparam TCM_OFFSET     = 32'h0001_0000;
     localparam ITCM_OFFSET    = 32'h0000_0000;
-    localparam DTCM_OFFSET    = 32'h0009_0000;
+    localparam DTCM_OFFSET    = 32'h0008_0000;
 `ifdef ECOS_202512
+    localparam BROM_SIZE      = 32'h0000_1000;
     localparam ITCM_SIZE      = 32'h0000_1000;
     localparam DTCM_SIZE      = 32'h0000_1000;
 `else
+    localparam BROM_SIZE      = 32'h0001_0000;
     localparam ITCM_SIZE      = 32'h0001_0000;
     localparam DTCM_SIZE      = 32'h0001_0000;
 `endif
 
     // Do Not change
+    localparam BROM_END       = BROM_BASE+BROM_SIZE -1;
+    localparam TCM_BASE       = BROM_BASE+TCM_OFFSET;
     localparam ITCM_BASE      = TCM_BASE+ITCM_OFFSET;
     localparam ITCM_END       = TCM_BASE+ITCM_OFFSET+ITCM_SIZE -1;
     localparam DTCM_BASE      = TCM_BASE+DTCM_OFFSET;
@@ -71,7 +76,9 @@ package SOPHON_PKG;
     //  region3 : external I/O region
     // -----------------------------------
     localparam EXT_DATA_BASE     = 32'h0000_0000;
-    localparam EXT_DATA_END      = 32'h7fff_ffff;
+    //localparam EXT_DATA_END      = 32'h7fff_ffff;
+    // TODO: 
+    localparam EXT_DATA_END      = ITCM_END;
 
 
     // ----------------------------------------------------------------------

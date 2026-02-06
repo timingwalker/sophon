@@ -4,7 +4,7 @@ import os
 
 class sophon_hart(targets.Hart):
     xlen = 32
-    ram = 0x80000000
+    ram = 0x80010000
     ram_size = 0x00008000
 
     misa = 0x40000100

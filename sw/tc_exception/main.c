@@ -27,7 +27,7 @@ int main()
 {
     counter     = 0;
 
-    asm volatile("lui t0, 0x80000 \n");
+    asm volatile("lui t0, 0x80010 \n");
     asm volatile("addi t0, t0,2 \n");
     asm volatile("jalr t0 \n");
     while( counter!=CAUSE_MISALIGNED_FETCH ) {};
@@ -44,9 +44,9 @@ int main()
     while( counter!=CAUSE_BREAKPOINT ) {};
 
     // in DTCM
-    asm volatile("lui t0, 0x80000 \n");
-    // outside DTCM
     asm volatile("lui t1, 0x80094 \n");
+    // outside DTCM
+    asm volatile("lui t0, 0x80080 \n");
 
     asm volatile("lw a5, 2(t1) \n");
     while( counter!=CAUSE_MISALIGNED_LOAD ) {};

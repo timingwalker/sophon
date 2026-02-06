@@ -17,7 +17,8 @@ SW_ZICSR      ?= YES
 #  universial application, uses common/Makefile
 # ----------------------------------------------------------------------
 subfold    = $(shell find * -maxdepth 0 -type d)
-MAKE_APP  := $(filter-out common build FreeRTOS,$(subfold))
+#MAKE_APP  := $(filter-out common build FreeRTOS,$(subfold))
+MAKE_APP  := $(filter-out common build,$(subfold))
 CLEAN_APP := $(addprefix clean_,$(filter-out common,$(subfold)))
 
 $(MAKE_APP): %: clean_%
@@ -58,13 +59,13 @@ $(CLEAN_BMARK): clean_%:
 benchmarks       : $(MAKE_BMARK)
 clean_benchmarks : $(CLEAN_BMARK)
 
-# ------------------------------------------------
-#  FreeRTOS
-# ------------------------------------------------
-FreeRTOS: clean_FreeRTOS
-	cd FreeRTOS &&\
-	make init &&\
-	make LDS_FILE=$(LDS_FILE)
+#   # ------------------------------------------------
+#   #  FreeRTOS
+#   # ------------------------------------------------
+#   FreeRTOS: clean_FreeRTOS
+#   	cd FreeRTOS &&\
+#   	make init &&\
+#   	make LDS_FILE=$(LDS_FILE)
 
 # ------------------------------------------------
 #  isa, uses makefile in vrf/riscv-tests/isa
@@ -103,6 +104,6 @@ clean_coremark:
 # ----------------------------------------------------------------------
 #  clean
 # ----------------------------------------------------------------------
-clean: clean_app clean_benchmarks clean_isa clean_coremark  clean_FreeRTOS
+clean: clean_app clean_benchmarks clean_isa clean_coremark  
 
 

@@ -39,7 +39,7 @@
         `define SOPHON_EEI_RS_LOCK
     `endif
     `ifndef FGPIO_NUM
-        `define FGPIO_NUM 32
+        `define FGPIO_NUM 24
     `endif
 `endif
 

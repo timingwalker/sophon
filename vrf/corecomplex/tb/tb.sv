@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2026-02-04 17:08:19
+// Last Modified : 2026-02-06 17:30:17
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -243,12 +243,12 @@ module tb();
     end
     `ifdef TB_INFO
         initial begin
-            $display("0xITCM_OFFSET\n");
+            $display("0xTCM_OFFSET 0xITCM_OFFSET\n");
             for ( i = 0; i < 50; i = i + 1 ) 
-            $display("cc0_ram=%x\n",  cc0_ram[ITCM_OFFSET+i]);
-            $display("0xDTCM_OFFSET\n");
+            $display("cc0_ram=%x\n",  cc0_ram[TCM_OFFSET+ITCM_OFFSET+i]);
+            $display("0xTCM_OFFSET 0xDTCM_OFFSET\n");
             for ( i = 0; i < 50; i = i + 1 ) 
-            $display("cc0_ram=%x\n",  cc0_ram[DTCM_OFFSET+i]);
+            $display("cc0_ram=%x\n",  cc0_ram[TCM_OFFSET+DTCM_OFFSET+i]);
         end
     `endif
 
@@ -301,6 +301,7 @@ module tb();
     `else
     `endif
 
+    localparam int unsigned TCM_OFFSET     = SOPHON_PKG::TCM_OFFSET;
     localparam int unsigned ITCM_OFFSET    = SOPHON_PKG::ITCM_OFFSET;
     localparam int unsigned DTCM_OFFSET    = SOPHON_PKG::DTCM_OFFSET;
     // BANK_NUM = TCM_DEPTH / BANK_DEPTH
@@ -318,7 +319,7 @@ module tb();
                 if (mem_mode=="TCM") begin
                     for ( i = 0; i < 1024; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `ITCM(k)[i][by*8+:8] = cc0_ram[ ITCM_OFFSET + k*4096 + i*4+by];
+                            `ITCM(k)[i][by*8+:8] = cc0_ram[ TCM_OFFSET + ITCM_OFFSET + k*4096 + i*4+by];
                         end
                     end
                 end
@@ -331,7 +332,7 @@ module tb();
                 if (mem_mode=="TCM") begin
                     for ( i = 0; i < 1024; i = i + 1 ) begin
                         for ( by = 0; by < 4; by = by + 1 ) begin
-                            `DTCM(k)[i][by*8+:8] = cc0_ram[ DTCM_OFFSET + k*4096 + i*4+by];
+                            `DTCM(k)[i][by*8+:8] = cc0_ram[ TCM_OFFSET + DTCM_OFFSET + k*4096 + i*4+by];
                         end
                     end
                 end

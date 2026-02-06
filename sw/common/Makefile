@@ -44,7 +44,7 @@ SW_OBJS  = $(SW_ASM:.S=.sw.s.o)
 OBJ      = $(notdir $(COM_OBJC) $(COM_OBJS) $(SW_OBJC) $(SW_OBJS))
 
 CC       = riscv64-unknown-elf-gcc
-CFLAGS   = -march=$(MARCH) -mabi=$(MABI) -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR) $(DEFINE)
+CFLAGS   = -march=$(MARCH) -mabi=$(MABI) -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR) -I $(SW_DIR) $(DEFINE)
 LDFLAGS  = -static -nostdlib -nostartfiles -lm -lgcc 
 LINKER   = ../../common/$(LDS_FILE)
 
