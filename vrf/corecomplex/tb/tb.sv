@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-04 10:19:28
-// Last Modified : 2026-02-06 17:30:17
+// Last Modified : 2026-04-02 12:00:58
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -24,6 +24,8 @@
 `ifndef VERILATOR
     `timescale 1ns/10ps
 `endif
+
+`define TB_INFO
 
 module tb();
 
@@ -505,18 +507,10 @@ module tb();
             "fgpio_uart"          : `ifdef SOPHON_EEI_GPIO      fgpio_uart()     `endif;
             "fgpio_spi"           : `ifdef SOPHON_EEI_GPIO      fgpio_spi()      `endif;
             // TODO: modbus test frame
-            // "freemodbus"          : #1ms 
-            //                         u_uart_bus.send_char(8'h01);
-            //                         //u_uart_bus.send_char(8'h03);
-            //                         //u_uart_bus.send_char(8'h00);
-            //                         //u_uart_bus.send_char(8'h04);
-            //                         //u_uart_bus.send_char(8'h00);
-            //                         //u_uart_bus.send_char(8'h02);
-            //                         //u_uart_bus.send_char(8'h85);
-            //                         //u_uart_bus.send_char(8'hca);
             default               : ;
         endcase
 
+            // modbus test frame
             // #5ms u_uart_bus.send_char(8'h01);
             // u_uart_bus.send_char(8'h03);
             // u_uart_bus.send_char(8'h00);
@@ -525,7 +519,6 @@ module tb();
             // u_uart_bus.send_char(8'h02);
             // u_uart_bus.send_char(8'h85);
             // u_uart_bus.send_char(8'hca);
-
             // #2ms u_uart_bus.send_char(8'h01);
             // u_uart_bus.send_char(8'h06);
             // u_uart_bus.send_char(8'h00);
@@ -555,12 +548,14 @@ module tb();
             `ifndef CORE_COMPLEX_AXI_MST
                 $fatal("FATAL: External memory is not enabled. Check parameter CORE_COMPLEX_AXI_MST.");
             `else
-                assign  tohost   = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0];
-                `define FROMHOST U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[16]
+                `define FROMHOST U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[2]
+                assign  tohost   = U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[1];
+                `define TOBROM U_EXT_MEM.gen_spilt_ram[16].U_BW_SP_RAM.ram_block[0]
             `endif
         else
-            assign  tohost  = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0];
-            `define FROMHOST  u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[16]
+            `define TOBROM    u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[0]
+            assign  tohost  = u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[1];
+            `define FROMHOST  u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_DTCM.gen_spilt_ram[0].U_BW_SP_RAM.ram_block[2]
     end
     
 
@@ -637,20 +632,35 @@ module tb();
     // -----------------------------------
     initial begin
 
-        //reg [8*20:0]  tc_type;
-        //if ( $value$plusargs("TC_TYPE=%s",tc_type ) ) begin
-        //    $display("TC_TYPE=%s\n",  tc_type);
-        //end
+        // set tobrom to skip bootrom
+        if (tc!="tc_ext_access") begin
+            // tc_ext_access reset the core and control this flag by itself
+            @(posedge rst_n);
+            repeat(10)@(posedge clk);
+            $display($realtime, ": Configure: Set TOBROM = 66688888......");
+            `ifdef CORE_COMPLEX_AXI_SLV
+                `ifdef SOPHON_EXT_ACCESS
+                    if (mem_mode=="EXT") 
+                        axi_rand_master.run_write_word(32'h0001_1000, 32'h6668_8888, 8'd0, 3'b010);
+                    else
+                        axi_rand_master.run_write_word(32'h8009_0000, 32'h6668_8888, 8'd0, 3'b010);
+                `else
+                    force `TOBROM=32'h66688888;
+                `endif
+            `else
+                 force `TOBROM=32'h66688888;
+            `endif
+        end
 
         case (tc)
             //"benchmarks" : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
             //"app"        : begin $display("TIMEOUTE=500ms\n");  #500ms ; end
-            //default      : begin $display("TIMEOUTE=10ms\n"  ); #10ms  ; end
             "multiply"     : begin $display("TIMEOUTE=20ms\n"  ); #20ms  ; end
             "rsort"        : begin $display("TIMEOUTE=100ms\n" ); #100ms  ; end
             "dhrystone"    : begin $display("TIMEOUTE=500ms\n"  ); #500ms  ; end
             "FreeRTOS"     : begin $display("TIMEOUTE=5000ms\n"  ); #5000ms  ; end
             "freemodbus"   : begin $display("TIMEOUTE=30ms\n"  ); #30ms  ; end
+            "hello"        : begin $display("TIMEOUTE=50ms\n"  ); #30ms  ; end
             default        : begin $display("TIMEOUTE=20ms\n"  ); #10ms  ; end
         endcase
         $display("\nTimeout: Testcase FAIL!!\n\n");

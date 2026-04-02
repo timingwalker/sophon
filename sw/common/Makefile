@@ -31,7 +31,11 @@ ifeq ($(SW_SIMPLE_CRT), YES)
 	COM_ASM = crt_simple.S
 else 
 	COM_SRC = $(filter-out $(COM_DIR)/syscalls_simple.c, $(wildcard $(COM_DIR)/*.c))
-	COM_ASM = $(filter-out $(COM_DIR)/crt_simple.S, $(wildcard $(COM_DIR)/*.S))
+	COM_ASM = $(filter-out $(COM_DIR)/crt_bootrom.S $(COM_DIR)/crt_simple.S, $(wildcard $(COM_DIR)/*.S))
+endif
+ifeq ($(PROGRAM), bootrom)
+	COM_ASM = crt_bootrom.S
+	DEFINE += -D__BOOTROM=1
 endif
 
 SW_SRC  ?= $(wildcard $(SW_DIR)/*.c)
@@ -79,6 +83,14 @@ clean:
 	cd $(BUILD_DIR) && \
 	riscv64-unknown-elf-objcopy -O binary $^ $@
 
+%.itcm.bin: %.elf
+	cd $(BUILD_DIR) && \
+	riscv64-unknown-elf-objcopy -O binary -j .text* $^ $@
+
+%.dtcm.bin: %.elf
+	cd $(BUILD_DIR) && \
+	riscv64-unknown-elf-objcopy -O binary -R .text* -R .tohost $^ $@
+
 %.dump: %.elf
 	cd $(BUILD_DIR) && \
 	riscv64-unknown-elf-objdump --source --all-headers --demangle --line-numbers --wide $^ >$@
@@ -89,7 +101,7 @@ clean:
 	riscv64-unknown-elf-objcopy -O verilog $^ $@ &&\
 	sed -i 's/@800/@000/g' $@
  
-all: $(PROGRAM).hex $(PROGRAM).dump $(PROGRAM).bin $(PROGRAM).elf 
+all: $(PROGRAM).hex $(PROGRAM).dump $(PROGRAM).bin $(PROGRAM).itcm.bin $(PROGRAM).dtcm.bin $(PROGRAM).elf 
 
 debug:
 	echo $(OBJ)

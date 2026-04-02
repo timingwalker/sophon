@@ -69,8 +69,10 @@ if __name__ == "__main__":
                 file.write('\n')
 
         # call software regress test
+        # sanity test
+        #os.system("./run_regress_sw.py sw_tmp_log hw_sanity.tc")
+        # full test
         os.system("./run_regress_sw.py sw_tmp_log sanity-tests.tc rv32ui.tc benchmarks.tc")
-        # os.system("./run_regress_sw.py sw_tmp_log rv32ui_simple.tc")
 
         # check result
         hw_feature_result = "PASS"

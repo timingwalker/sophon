@@ -14,16 +14,23 @@ SW_ZICSR      ?= YES
 
 
 # ----------------------------------------------------------------------
+#  bootrom
+# ----------------------------------------------------------------------
+bootrom:
+	$(MAKE) -C bootrom
+clean_bootrom:
+	[ ! -d build/bootrom ]     || rm -rf ./build/bootrom
+
+
+# ----------------------------------------------------------------------
 #  universial application, uses common/Makefile
 # ----------------------------------------------------------------------
 subfold    = $(shell find * -maxdepth 0 -type d)
-#MAKE_APP  := $(filter-out common build FreeRTOS,$(subfold))
-MAKE_APP  := $(filter-out common build,$(subfold))
-CLEAN_APP := $(addprefix clean_,$(filter-out common,$(subfold)))
+MAKE_APP  := $(filter-out common build bootrom,$(subfold))
+CLEAN_APP := $(addprefix clean_,$(filter-out common,bootrom,$(subfold)))
 
 $(MAKE_APP): %: clean_%
 	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) SW_RVE=$(SW_RVE) SW_ZICSR=$(SW_ZICSR)
-
 
 $(CLEAN_APP): clean_%:
 	rm -rf ./build/$*
@@ -39,12 +46,9 @@ clean_app : $(CLEAN_APP)
 ISA_SRC_DIR    := ../vrf/riscv-tests/isa
 BMARKS_SRC_DIR := ../vrf/riscv-tests/benchmarks
 
-# ----------------------------------------------------------------------
-#  Uses common/Makefile
-# ----------------------------------------------------------------------
 
 # ------------------------------------------------
-#  benchmarks
+#  benchmarks, uses common/Makefile
 # ------------------------------------------------
 bmark_subfold = $(notdir $(shell find $(BMARKS_SRC_DIR)/* -maxdepth 0 -type d))
 MAKE_BMARK   := $(filter-out common mm mt-% vec-%,$(bmark_subfold))
@@ -59,13 +63,6 @@ $(CLEAN_BMARK): clean_%:
 benchmarks       : $(MAKE_BMARK)
 clean_benchmarks : $(CLEAN_BMARK)
 
-#   # ------------------------------------------------
-#   #  FreeRTOS
-#   # ------------------------------------------------
-#   FreeRTOS: clean_FreeRTOS
-#   	cd FreeRTOS &&\
-#   	make init &&\
-#   	make LDS_FILE=$(LDS_FILE)
 
 # ------------------------------------------------
 #  isa, uses makefile in vrf/riscv-tests/isa
@@ -75,35 +72,30 @@ rv32ui:
 	$(MAKE) -C $(ISA_SRC_DIR) rv32ui lds_dir=../../../sw/common/$(LDS_FILE)
 	mv $(ISA_SRC_DIR)/rv32ui-* build/isa/
 
-rv32si:
-	mkdir -p build/isa/
-	$(MAKE) -C $(ISA_SRC_DIR) rv32si lds_dir=../../../sw/common/$(LDS_FILE)
-	mv $(ISA_SRC_DIR)/rv32si-* build/isa/
-
 isa:rv32ui
 
 clean_isa:
 	[ ! -d build/isa ]          || $(MAKE) -C $(ISA_SRC_DIR)     clean ; rm -rf ./build/isa
 
 # ----------------------------------------------------------------------
-# TBD: Others software
+#  TBD coremark
 # ----------------------------------------------------------------------
-CM_SRC_DIR     := ./coremark
-
-coremark:
-	mkdir -p build/coremark/
-	cd $(CM_SRC_DIR) && $(MAKE) PORT_DIR=./sophon compile ITERATIONS=10
-	mv $(CM_SRC_DIR)/coremark.elf build/coremark/coremark.riscv
-	riscv64-unknown-elf-objdump -D build/coremark/coremark.riscv >> build/coremark/coremark.dump
-	riscv64-unknown-elf-objcopy -O verilog build/coremark/coremark.riscv build/coremark/coremark.hex
-	sed -i 's/@800/@000/g' build/coremark/coremark.hex
-
-clean_coremark:
-	[ ! -d build/coremark ]     || rm -rf ./build/coremark
+# CM_SRC_DIR     := ./coremark
+# 
+# coremark:
+# 	mkdir -p build/coremark/
+# 	cd $(CM_SRC_DIR) && $(MAKE) PORT_DIR=./sophon compile ITERATIONS=10
+# 	mv $(CM_SRC_DIR)/coremark.elf build/coremark/coremark.riscv
+# 	riscv64-unknown-elf-objdump -D build/coremark/coremark.riscv >> build/coremark/coremark.dump
+# 	riscv64-unknown-elf-objcopy -O verilog build/coremark/coremark.riscv build/coremark/coremark.hex
+# 	sed -i 's/@800/@000/g' build/coremark/coremark.hex
+# 
+# clean_coremark:
+# 	[ ! -d build/coremark ]     || rm -rf ./build/coremark
 
 # ----------------------------------------------------------------------
 #  clean
 # ----------------------------------------------------------------------
-clean: clean_app clean_benchmarks clean_isa clean_coremark  
+clean: clean_app clean_benchmarks clean_isa clean_coremark clean_bootrom
 
 

@@ -5,9 +5,7 @@
 `define CORE_COMPLEX_AXI_MST
 `define CORE_COMPLEX_AXI_SLV
 
-`define SOPHON_EXT_ACCESS
-//`define SOPHON_EXT_INST
-//`define SOPHON_EXT_DATA
+`define BOOT_ADDR BROM_BASE
 
 `define SOPHON_RVDEBUG
 `define SOPHON_EEI
@@ -29,4 +27,4 @@
 `ifdef SOPHON_EEI_GPIO
     `define FGPIO_NUM 24
 `endif
-                                                            
+

@@ -1,0 +1,9 @@
+tc_ext_access
+tc_clint
+tc_exception
+tc_fgpio
+tc_clic
+multiply
+rv32ui-p-add
+rv32ui-p-lb
+rv32ui-p-sh

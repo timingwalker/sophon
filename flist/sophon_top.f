@@ -3,6 +3,7 @@
 
 ../../design/sophon/sophon_pkg.sv
 ../../design/sophon/sophon.sv
+../../design/sophon/boot_code.sv
 ../../design/sophon/sophon_top.sv
 ../../design/sophon/cust.sv
 ../../design/sophon/fgpio.sv

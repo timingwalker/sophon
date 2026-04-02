@@ -11,6 +11,7 @@ read_verilog -sv ./fpga_config.sv
 
 read_verilog -sv ../design/sophon/sophon_pkg.sv
 read_verilog -sv ../design/sophon/sophon.sv
+read_verilog -sv ../design/sophon/boot_code.sv
 read_verilog -sv ../design/sophon/sophon_top.sv
 read_verilog -sv ../design/sophon/cust.sv
 read_verilog -sv ../design/sophon/fgpio.sv

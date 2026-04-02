@@ -13,9 +13,9 @@
 
 #undef strcmp
 
-extern volatile uint64_t tohost;
-extern volatile uint64_t fromhost;
-extern volatile uint64_t hwinfo;
+extern volatile uint32_t tohost;
+extern volatile uint32_t fromhost;
+extern volatile uint32_t hwinfo;
 
 static uintptr_t syscall(uintptr_t which, uint64_t arg0, uint64_t arg1, uint64_t arg2)
 {
@@ -64,7 +64,9 @@ void __attribute__((noreturn)) tohost_exit(uintptr_t code)
 
 uintptr_t __attribute__((weak)) handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
 {
-  tohost_exit(1337);
+  return (epc);
+  // an exception loop occures here and cause sp overflow!
+  //tohost_exit(1337);
 }
 
 void exit(int code)

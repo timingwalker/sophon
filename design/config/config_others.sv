@@ -11,9 +11,24 @@
 `endif
 
 `ifdef SOPHON_RVDEBUG
-    `define SOPHON_EXT_ACCESS
-    `define SOPHON_EXT_INST
-    `define SOPHON_EXT_DATA
+    `ifndef SOPHON_EXT_ACCESS
+        `define SOPHON_EXT_ACCESS
+    `endif
+    `ifndef SOPHON_EXT_INST
+        `define SOPHON_EXT_INST
+    `endif
+    `ifndef SOPHON_EXT_DATA
+        `define SOPHON_EXT_DATA
+    `endif
+`endif
+
+`ifdef BOOT_ADDR
+    `ifndef SOPHON_EXT_ACCESS
+        `define SOPHON_EXT_ACCESS
+    `endif
+    `ifndef SOPHON_EXT_DATA
+        `define SOPHON_EXT_DATA
+    `endif
 `endif
 
 `ifdef SOPHON_EXT_INST

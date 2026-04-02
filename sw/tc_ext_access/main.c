@@ -1,7 +1,7 @@
 
 #include <stdint.h>
 
-extern volatile uint64_t fromhost;
+extern volatile uint32_t fromhost;
 
 int main()
 {

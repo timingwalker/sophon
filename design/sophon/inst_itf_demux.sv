@@ -14,12 +14,14 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-03-21 11:31:29
-// Last Modified : 2025-10-23 16:48:41
+// Last Modified : 2026-03-17 15:00:34
 // Description   : Demux inst interface    
 //                 NOTE: the addr decode granularity is 4KB
 // ----------------------------------------------------------------------
 
 module INST_ITF_DEMUX #(
+    parameter int unsigned      CH0_NEG_BASE = 32'h00000,
+    parameter int unsigned      CH0_NEG_END  = 32'h0ffff,
     parameter int unsigned      CH1_NEG_BASE = 32'h10000,
     parameter int unsigned      CH1_NEG_END  = 32'h1ffff,
     parameter int unsigned      CH2_POS_BASE = 32'h0,
@@ -35,6 +37,12 @@ module INST_ITF_DEMUX #(
     ,output logic                        inst_core_error_o     
     ,output logic                        inst_core_ack_o      
     ,output logic [31:0]                 inst_core_data_o    
+    // Demux 0, to bootrom, negedge, access in 1 cycle
+    ,output logic                        inst_neg_brom_req_o       
+    ,output logic [31:0]                 inst_neg_brom_addr_o      
+    ,input  logic                        inst_neg_brom_error_i     
+    ,input  logic                        inst_neg_brom_ack_i      
+    ,input  logic [31:0]                 inst_neg_brom_data_i    
     // Demux 1, to L1 IRAM, negedge, access in 1 cycle
     ,output logic                        inst_neg_req_o       
     ,output logic [31:0]                 inst_neg_addr_o      
@@ -56,6 +64,20 @@ module INST_ITF_DEMUX #(
     logic [31:0] inst_pos_error_1d;
     logic [31:0] inst_core_addr_topos;
     logic        inst_neg_ack_topos;
+    logic        inst_neg_brom_ack_topos;
+
+
+    // ----------------------------------------------------------------------
+    //  Channel 0: to BROM, combinatorial path, negedge
+    // ----------------------------------------------------------------------
+    always_comb begin
+        if ( (inst_core_addr_i[31:12]>=CH0_NEG_BASE[31:12]) && (inst_core_addr_i[31:12]<=CH0_NEG_END[31:12]) )
+            inst_neg_brom_req_o = inst_core_req_i;
+        else
+            inst_neg_brom_req_o = 1'b0;
+    end
+
+    assign inst_neg_brom_addr_o = inst_core_addr_i;
 
 
     // ----------------------------------------------------------------------
@@ -119,6 +141,10 @@ module INST_ITF_DEMUX #(
             inst_core_ack_o   = inst_neg_ack_i;
             inst_core_error_o = inst_neg_error_i;
         end
+        else if ( inst_core_req_i & ((inst_core_addr_i[31:12]>=CH0_NEG_BASE[31:12])&&(inst_core_addr_i[31:12]<=CH0_NEG_END[31:12])) ) begin
+            inst_core_ack_o   = inst_neg_brom_ack_i;
+            inst_core_error_o = inst_neg_brom_error_i;
+        end
         else if ( inst_core_req_i ) begin
             inst_core_ack_o   = 1'b1;
             inst_core_error_o = 1'b1;
@@ -147,9 +173,11 @@ module INST_ITF_DEMUX #(
     always @(posedge clk_i or negedge rst_neg_ni) begin
     	if(~rst_neg_ni) begin
             inst_neg_ack_topos <= 1'b0;
+            inst_neg_brom_ack_topos <= 1'b0;
         end
         else begin
             inst_neg_ack_topos <= inst_neg_ack_i;
+            inst_neg_brom_ack_topos <= inst_neg_brom_ack_i;
         end
     end
 
@@ -164,7 +192,9 @@ module INST_ITF_DEMUX #(
         end
     end
 
-    assign inst_core_data_o  = inst_neg_ack_topos ? inst_neg_data_i  : inst_pos_data_1d;
+    assign inst_core_data_o  = inst_neg_ack_topos ? inst_neg_data_i  
+                             : inst_neg_brom_ack_topos ? inst_neg_brom_data_i 
+                             : inst_pos_data_1d;
 
 
 

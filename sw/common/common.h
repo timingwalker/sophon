@@ -13,17 +13,17 @@ typedef __u32 u32;
 #define readl	__raw_readl
 
 
-#define UART0_BASE     0x06004000
+#define UART0_BASE          0x06004000
 
-#define CLINT_BASE     0x06005000
-#define CLINT_MTIME    0x00
-#define CLINT_MTIMECMP 0x04
-#define CLINT_MSIP     0x08
+#define CLINT_BASE          0x06005000
+#define CLINT_MTIME         0x00
+#define CLINT_MTIMECMP      0x04
+#define CLINT_MSIP          0x08
 
-#define PLIC_BASE      0x07040000
-#define PLIC_IE_0      0x2000
-#define PLIC_PRIO_0    0x4
-#define PLIC_CLAIM_COMPLET     0x200004
+#define PLIC_BASE           0x07040000
+#define PLIC_IE_0           0x2000
+#define PLIC_PRIO_0         0x4
+#define PLIC_CLAIM_COMPLET  0x200004
 
 
 // regular EEI instructions
@@ -44,6 +44,12 @@ int printf(const char* fmt, ...);
 #define HWINFO_EXT_INST   0
 #define HWINFO_EXT_DATA   1
 #define HWINFO_EXT_ACCESS 2
+#define HWINFO_RVE        3 
+#define HWINFO_CLINT      4 
+#define HWINFO_CLIC       5 
+#define HWINFO_RVDEBUG    6 
+#define HWINFO_EEI_SREG   7 
+#define HWINFO_EEI_GPIO   8 
 
 
 #endif 

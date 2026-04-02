@@ -1,18 +1,26 @@
 
 #TC := tc_ext_access
-TC := tc_exception
-TC := rv32ui-p-add
+#TC := rv32ui-p-add
+#TC := hello
+#TC := bootrom
+TC := multiply
+#TC := tc_exception
 #TC := rv32ui-p-lb
 #TC := tc_clint
 #TC := median
 #TC := freemodbus
 #TC := FreeRTOS
+#TC := towers
 
 MEM_MODE      ?= TCM
 LDS_FILE      ?= link.ld
 MARCH         ?= rv32ia
 MABI          ?= ilp32
+
 SW_SIMPLE_CRT ?= NO
+ifeq ($(TC), bootrom)
+    SW_SIMPLE_CRT := YES
+endif
 
 
 ifneq ($(filter rv32%,$(TC)),)
@@ -152,6 +160,9 @@ endif
 ifeq ($(MEM_MODE), EXT)
     LDS_FILE := link_ext_mem.ld
 endif
+ifeq ($(TC), bootrom)
+    LDS_FILE := link_bootrom.ld
+endif
 
 ifeq ($(SOPHON_RVE), YES)
     MARCH     := rv32e
@@ -163,7 +174,12 @@ ifeq ($(TC_TYPE), app)
 else 
     SW_TARGET := $(TC_TYPE)
 endif
-compile_sw:
+
+compile_brom:
+	$(MAKE) -C ../../sw clean_bootrom
+	$(MAKE) -C ../../sw bootrom LDS_FILE=link_bootrom.ld MARCH=$(MARCH) MABI=$(MABI) SW_RVE=$(SOPHON_RVE) SW_ZICSR=$(SOPHON_ZICSR) SW_SIMPLE_CRT=YES
+
+compile_sw:compile_brom
 	$(MAKE) -C ../../sw clean_$(SW_TARGET)
 	$(MAKE) -C ../../sw $(SW_TARGET) LDS_FILE=$(LDS_FILE) MARCH=$(MARCH) MABI=$(MABI) SW_RVE=$(SOPHON_RVE) SW_ZICSR=$(SOPHON_ZICSR) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) 
 
@@ -230,7 +246,7 @@ debug:clean compile_sw
 	./simv $(SIM_OPTIONS)
 
 verdi:
-	verdi -dbdir simv.daidir -ssf test.fsdb -sswr sophon.rc
+	verdi -dbdir simv.daidir -ssf test.fsdb -sswr sophon.rc &
 
 # ----------------------------------------------------------------------
 #  regress test

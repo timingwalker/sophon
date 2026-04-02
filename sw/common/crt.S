@@ -255,12 +255,15 @@ vector_table:
 
 
 .section ".tohost","aw",@progbits
-.align 6
+.align 2
+.globl tobrom
+tobrom: .word 0
+.align 2
 .globl tohost
-tohost: .dword 0
-.align 6
+tohost: .word 0
+.align 2
 .globl fromhost
-fromhost: .dword 0
-.align 6
+fromhost: .word 0
+.align 2
 .globl hwinfo
-hwinfo: .dword 0
+hwinfo: .word 0

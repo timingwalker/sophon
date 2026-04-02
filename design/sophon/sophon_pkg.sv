@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2026-02-06 17:26:28
+// Last Modified : 2026-04-02 15:30:33
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2026-02-06 17:26:28
+// Last Modified : 2026-04-02 15:30:33
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ package SOPHON_PKG;
     localparam DTCM_SIZE      = 32'h0000_1000;
 `else
     localparam BROM_SIZE      = 32'h0001_0000;
-    localparam ITCM_SIZE      = 32'h0001_0000;
+    localparam ITCM_SIZE      = 32'h0002_0000;
     localparam DTCM_SIZE      = 32'h0001_0000;
 `endif
 
@@ -48,6 +48,12 @@ package SOPHON_PKG;
     localparam ITCM_END       = TCM_BASE+ITCM_OFFSET+ITCM_SIZE -1;
     localparam DTCM_BASE      = TCM_BASE+DTCM_OFFSET;
     localparam DTCM_END       = TCM_BASE+DTCM_OFFSET+DTCM_SIZE -1;
+
+`ifdef BOOT_ADDR
+    localparam BOOT_ADDR      = `BOOT_ADDR;
+`else
+    localparam BOOT_ADDR      = BROM_BASE;
+`endif
 
     // -----------------------------------
     //  External inst access region

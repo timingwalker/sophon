@@ -265,7 +265,8 @@ reset_vector:                                                           \
 #define RVTEST_DATA_BEGIN                                               \
         EXTRA_DATA                                                      \
         .pushsection .tohost,"aw",@progbits;                            \
-        .align 6; .global tohost; tohost: .dword 0;                     \
+        .align 2; .global tobrom; tobrom: .word 0;                     \
+        .align 2; .global tohost; tohost: .word 0;                     \
         .align 6; .global fromhost; fromhost: .dword 0;                 \
         .popsection;                                                    \
         .align 4; .global begin_signature; begin_signature:

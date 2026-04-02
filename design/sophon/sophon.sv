@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2025-11-13 11:37:59
+// Last Modified : 2026-04-02 11:52:06
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -1286,6 +1286,12 @@ module SOPHON (
                                                             `ifdef SOPHON_EXT_INST   | 1<<0  `endif
                                                             `ifdef SOPHON_EXT_DATA   | 1<<1  `endif
                                                             `ifdef SOPHON_EXT_ACCESS | 1<<2  `endif
+                                                            `ifdef SOPHON_RVE        | 1<<3 `endif
+                                                            `ifdef SOPHON_CLINT      | 1<<4 `endif
+                                                            `ifdef SOPHON_CLIC       | 1<<5 `endif
+                                                            `ifdef SOPHON_RVDEBUG    | 1<<6 `endif
+                                                            `ifdef SOPHON_EEI_SREG   | 1<<7 `endif
+                                                            `ifdef SOPHON_EEI_GPIO   | 1<<8 `endif
                                                             ;
                 default                      : csr_rdata_rvi   = 32'd0;
             endcase

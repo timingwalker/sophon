@@ -61,7 +61,7 @@ void init_task2(void *pvParameters)
     {
         printf("TASK2....%d\r\n", counter);
         counter++;
-		vTaskDelay(500);
+		vTaskDelay(1000);
         if (counter%2==0){
             tohost = 22;
             //taskYIELD();

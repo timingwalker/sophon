@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2026-01-14 11:12:23
+// Last Modified : 2026-03-25 17:23:02
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -104,6 +104,9 @@ module SOPHON_TOP (
     SOPHON_PKG::mem_ack_t  core_dtcm_ack;
     SOPHON_PKG::mem_req_t  core_itcm_req;
     SOPHON_PKG::mem_ack_t  core_itcm_ack;
+
+    SOPHON_PKG::mem_req_t  core_brom_req;
+    SOPHON_PKG::mem_ack_t  core_brom_ack;
 
 `ifdef SOPHON_EEI
     logic                  eei_req;
@@ -255,69 +258,65 @@ module SOPHON_TOP (
     // -----------------------------------
     //  External instruction interface
     // -----------------------------------
-    `ifdef SOPHON_EXT_INST
+    SOPHON_PKG::mem_req_t   inst_ext_req;
+    SOPHON_PKG::mem_ack_t   inst_ext_ack;
 
-        SOPHON_PKG::mem_req_t   inst_ext_req;
-        SOPHON_PKG::mem_ack_t   inst_ext_ack;
+    INST_ITF_DEMUX #(
+        .CH0_NEG_BASE ( SOPHON_PKG::BROM_BASE     ) ,
+        .CH0_NEG_END  ( SOPHON_PKG::ITCM_END      ) ,
+        .CH1_NEG_BASE ( SOPHON_PKG::ITCM_BASE     ) ,
+        .CH1_NEG_END  ( SOPHON_PKG::ITCM_END      ) ,
+        .CH2_POS_BASE ( SOPHON_PKG::EXT_INST_BASE ) ,
+        .CH2_POS_END  ( SOPHON_PKG::EXT_INST_END  ) 
+    ) U_INST_ITF_DEMUX (
+        .clk_i                  ( clk_i               ) ,
+        .rst_ni                 ( rstn_sync           ) ,
+        .clk_neg_i              ( clk_neg_i           ) ,
+        .rst_neg_ni             ( rstn_neg_sync       ) ,
 
-        INST_ITF_DEMUX #(
-            .CH1_NEG_BASE ( SOPHON_PKG::ITCM_BASE     ) ,
-            .CH1_NEG_END  ( SOPHON_PKG::ITCM_END      ) ,
-            .CH2_POS_BASE ( SOPHON_PKG::EXT_INST_BASE ) ,
-            .CH2_POS_END  ( SOPHON_PKG::EXT_INST_END  ) 
-        ) U_INST_ITF_DEMUX (
-            .clk_i              ( clk_i               ) ,
-            .rst_ni             ( rstn_sync           ) ,
-            .clk_neg_i          ( clk_neg_i           ) ,
-            .rst_neg_ni         ( rstn_neg_sync       ) ,
+        .inst_core_req_i        ( inst_req.req        ) ,
+        .inst_core_addr_i       ( inst_req.addr       ) ,
+        .inst_core_error_o      ( inst_ack.error      ) ,
+        .inst_core_ack_o        ( inst_ack.ack        ) ,
+        .inst_core_data_o       ( inst_ack.rdata      ) ,
 
-            .inst_core_req_i    ( inst_req.req        ) ,
-            .inst_core_addr_i   ( inst_req.addr       ) ,
-            .inst_core_error_o  ( inst_ack.error      ) ,
-            .inst_core_ack_o    ( inst_ack.ack        ) ,
-            .inst_core_data_o   ( inst_ack.rdata      ) ,
+        .inst_neg_brom_req_o    ( core_brom_req.req   ) ,
+        .inst_neg_brom_addr_o   ( core_brom_req.addr  ) ,
+        .inst_neg_brom_error_i  ( core_brom_ack.error ) ,
+        .inst_neg_brom_ack_i    ( core_brom_ack.ack   ) ,
+        .inst_neg_brom_data_i   ( core_brom_ack.rdata ) ,
 
-            .inst_neg_req_o     ( core_itcm_req.req   ) ,
-            .inst_neg_addr_o    ( core_itcm_req.addr  ) ,
-            .inst_neg_error_i   ( core_itcm_ack.error ) ,
-            .inst_neg_ack_i     ( core_itcm_ack.ack   ) ,
-            .inst_neg_data_i    ( core_itcm_ack.rdata ) ,
+        .inst_neg_req_o         ( core_itcm_req.req   ) ,
+        .inst_neg_addr_o        ( core_itcm_req.addr  ) ,
+        .inst_neg_error_i       ( core_itcm_ack.error ) ,
+        .inst_neg_ack_i         ( core_itcm_ack.ack   ) ,
+        .inst_neg_data_i        ( core_itcm_ack.rdata ) ,
 
-            .inst_pos_req_o     ( inst_ext_req.req    ) ,
-            .inst_pos_addr_o    ( inst_ext_req.addr   ) ,
-            .inst_pos_error_i   ( inst_ext_ack.error  ) ,
-            .inst_pos_ack_i     ( inst_ext_ack.ack    ) ,
-            .inst_pos_data_i    ( inst_ext_ack.rdata  ) 
-        );
+        .inst_pos_req_o         ( inst_ext_req.req    ) ,
+        .inst_pos_addr_o        ( inst_ext_req.addr   ) ,
+        .inst_pos_error_i       ( inst_ext_ack.error  ) ,
+        .inst_pos_ack_i         ( inst_ext_ack.ack    ) ,
+        .inst_pos_data_i        ( inst_ext_ack.rdata  ) 
+    );
 
-        assign inst_ext_req_o     = inst_ext_req.req;
-        assign inst_ext_addr_o    = inst_ext_req.addr;
-        assign inst_ext_ack.ack   = inst_ext_ack_i;
-        assign inst_ext_ack.rdata = inst_ext_rdata_i;
-        assign inst_ext_ack.error = inst_ext_error_i;
+    assign inst_ext_req_o     = `ifdef SOPHON_EXT_INST inst_ext_req.req  `else '0 `endif; 
+    assign inst_ext_addr_o    = `ifdef SOPHON_EXT_INST inst_ext_req.addr `else '0 `endif; 
+    assign inst_ext_ack.ack   = `ifdef SOPHON_EXT_INST inst_ext_ack_i    `else '1 `endif; 
+    assign inst_ext_ack.rdata = `ifdef SOPHON_EXT_INST inst_ext_rdata_i  `else '0 `endif; 
+    assign inst_ext_ack.error = `ifdef SOPHON_EXT_INST inst_ext_error_i  `else '1 `endif; 
 
-        assign core_itcm_req.we    ='0;
-        assign core_itcm_req.wdata ='0;
-        assign core_itcm_req.wstrb ='0;
+    assign core_brom_req.we    ='0;
+    assign core_brom_req.wdata ='0;
+    assign core_brom_req.wstrb ='0;
 
-        assign inst_ext_req.we    ='0;
-        assign inst_ext_req.wdata ='0;
-        assign inst_ext_req.wstrb ='0;
-    `else
-        logic addr_inside_itcm;
+    assign core_itcm_req.we    ='0;
+    assign core_itcm_req.wdata ='0;
+    assign core_itcm_req.wstrb ='0;
 
-        assign addr_inside_itcm = ( (inst_req.addr[31:12]>=SOPHON_PKG::ITCM_BASE[31:12]) && (inst_req.addr[31:12]<=SOPHON_PKG::ITCM_END[31:12]) ) ? 1'b1 : 1'b0;
+    assign inst_ext_req.we    ='0;
+    assign inst_ext_req.wdata ='0;
+    assign inst_ext_req.wstrb ='0;
 
-        assign core_itcm_req.req   = inst_req.req & addr_inside_itcm;
-        assign core_itcm_req.addr  = inst_req.addr;
-        assign core_itcm_req.we    ='0;
-        assign core_itcm_req.wdata ='0;
-        assign core_itcm_req.wstrb ='0;
-
-        assign inst_ack.ack    = addr_inside_itcm ? core_itcm_ack.ack : inst_req.req;
-        assign inst_ack.error  = inst_ack.ack & ~addr_inside_itcm;
-        assign inst_ack.rdata  = core_itcm_ack.rdata;
-    `endif
 
     // -----------------------------------
     //  External data interface
@@ -426,6 +425,29 @@ module SOPHON_TOP (
     logic [3:0]         itcm_be;
     logic               itcm_we;
 
+
+    // -----------------------------------
+    //  Boot rom
+    // -----------------------------------
+    logic [31:0] rdata;
+    logic [31:0] brom_addr_offset;
+
+    assign brom_addr_offset = core_brom_req.addr - SOPHON_PKG::BROM_BASE;
+
+    assign core_brom_ack.ack   = core_brom_req.req;
+    assign core_brom_ack.error = 1'b0;
+    assign core_brom_ack.rdata = rdata;
+
+    boot_code U_BROM
+    (
+         .CLK   ( clk_i               ) 
+         ,.RSTN ( rstn_sync           ) 
+         ,.CSN  ( ~core_brom_req.req  ) 
+         ,.A    ( brom_addr_offset>>2 ) 
+         ,.Q    ( rdata               ) 
+    );
+
+
     // -----------------------------------
     //  INST arbiter
     // -----------------------------------
@@ -454,7 +476,7 @@ module SOPHON_TOP (
         assign itcm_wdata          = 'b0;
         assign itcm_we             = 'b0;
         assign itcm_be             = 'b0;
-        assign core_itcm_ack.ack   = 1'b1;
+        assign core_itcm_ack.ack   = itcm_req;
         assign core_itcm_ack.error = 1'b0;
         assign core_itcm_ack.rdata = itcm_rdata;
     `endif

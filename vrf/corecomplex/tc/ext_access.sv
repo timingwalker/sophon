@@ -108,6 +108,20 @@ begin
     $display($realtime, ": Configure: Set Soft Reset = 1......");
     axi_rand_master.run_write_word(32'h0600_0004, 32'h0000_0001, 8'd0, 3'b010);
 
+    // set this flag to skip bootrom
+    $display($realtime, ": Configure: Set TOBROM = 66688888......");
+    `ifdef CORE_COMPLEX_AXI_SLV
+        `ifdef SOPHON_EXT_ACCESS
+            if (mem_mode=="EXT") 
+                axi_rand_master.run_write_word(32'h0001_1000, 32'h6668_8888, 8'd0, 3'b010);
+            else
+                axi_rand_master.run_write_word(32'h8009_0000, 32'h6668_8888, 8'd0, 3'b010);
+        `else
+            force `TOBROM=32'h66688888;
+        `endif
+    `else
+         force `TOBROM=32'h66688888;
+    `endif
 
     `ifdef CORE_COMPLEX_AXI_SLV
         // Data RAM & CPU runing
@@ -119,18 +133,23 @@ begin
         mem_scan_test(SOPHON_PKG::DTCM_BASE, DTCM_BANK_NUM, 32'h0000_1000);
     `else
         $display($realtime, ": TEST SKIP! SOPHON_EXT_ACCESS is not enabled!");
+        force u_dut.U_SOPHON_AXI_TOP.U_SOPHON_TOP.U_SOPHON.bootaddr_i=32'h80010000;
+        $display($realtime, ": Configure: Set Soft Reset = 0......");
+        axi_rand_master.run_write_word(32'h0600_0004, 32'h0000_0000, 8'd0, 3'b010);
+        $display($realtime, ": Configure: Set Soft Reset = 1......");
+        axi_rand_master.run_write_word(32'h0600_0004, 32'h0000_0001, 8'd0, 3'b010);
     `endif
         flag_core_access_ext_mem = 1'b0;
     `endif
 
-
-     $display($realtime, ": Configure: Set fromhost = 1......");
+     // after bootrom is skipped, set finish flag
+     $display($realtime, ": Configure: Set FROMHOST = 1......");
 `ifdef CORE_COMPLEX_AXI_SLV
     `ifdef SOPHON_EXT_ACCESS
         if (mem_mode=="EXT") 
-            axi_rand_master.run_write_word(32'h0001_1040, 32'h0000_0001, 8'd0, 3'b010);
+            axi_rand_master.run_write_word(32'h0001_1008, 32'h0000_0001, 8'd0, 3'b010);
         else
-            axi_rand_master.run_write_word(32'h8009_0040, 32'h0000_0001, 8'd0, 3'b010);
+            axi_rand_master.run_write_word(32'h8009_0008, 32'h0000_0001, 8'd0, 3'b010);
     `else
         force `FROMHOST=1;
     `endif

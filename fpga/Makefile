@@ -3,7 +3,7 @@ gen_ip:
 	cd ./ip/clk_gen && rm -rf clk_wiz_* vivado*  && vivado -mode batch -source run.tcl
 	cd ./ip/ila     && rm -rf ila_*     vivado*  && vivado -mode batch -source run.tcl
 
-fpga:clean
+fpga:
 	vivado -mode batch -source run.tcl
 
 clean:

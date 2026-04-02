@@ -2,7 +2,7 @@ Magic 271485
 Revision Verdi_N-2017.12
 
 ; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
-viewPort 0 28 1920 445 330 65
+viewPort 0 28 1707 480 330 65
 
 ; File list:
 ; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
@@ -16,16 +16,16 @@ signalSpacing 5
 
 ; windowTimeUnit is used for zoom, cursor & marker
 ; waveform viewport range
-zoom 0.000000 5050000000.000000
-cursor 66784766.95718074590
+zoom 0.000000 1156611600.000000
+cursor 0.000000
 marker 0.000000
 
 ; user define markers
 ; userMarker time_pos marker_name color linestyle
 ; visible top row signal index
-top 0
+top 2
 ; marker line index
-markerPos 11
+markerPos 18
 
 ; event list
 ; addEvent event_name event_expression
@@ -58,7 +58,14 @@ addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/
 addGroup "exception"
 addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/ex_vld
 addSignal -h 15 -holdScope irq_vld
-addGroup "G6"
+addGroup "G7"
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_DTCM/gen_spilt_ram[0]/U_BW_SP_RAM/ram_block[3][31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[2][31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[1][31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[0][31:0]
+addGroup "G8"
+addSignal -h 15 /tb/u_dut/U_UART/tx_o
+addGroup "G9"
 
 ; getSignalForm Scope Hierarchy Status
 ; active file of getSignalForm
