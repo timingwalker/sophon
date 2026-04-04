@@ -208,7 +208,7 @@ Release页面提供预编译好的.bit/.mcs文件，可以直接烧写到FPGA开
 1. Pmod JA是JTAG调试接口，如果RTL设计中使能了RVDEBUG功能，可以将JTAG调试器连接到该接口上，然后使用openocd/gdb对软件进行调试。
 2. Pmod JB、JC、JD为GPIO接口，可以根据实际需求使用。
 
-< img src="docs/img/ARTY-A7-35T.jpeg"/>
+![Arty](docs/img/ARTY-A7-35T.jpeg)
 
 ### FPGA编译
 
@@ -251,7 +251,7 @@ make yourapp
 
 下图是串口调试软件中的设置：
 
-< img src="docs/img/uart-download.png"/>
+![uart](docs/img/uart-download.png)
 
 下载hello例程之后，串口会输出硬件配置信息。
 
