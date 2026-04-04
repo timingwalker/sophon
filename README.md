@@ -62,7 +62,7 @@ An AXI wrapper is provided to make it easier to be integrated into an AXI-based 
 #### CORE_COMPLEX
 You can use it as a stand-alone RISC-V core or a co-processor directly.
 
-< img src="docs/img/sophon_overview.png"/>
+![overview](docs/img/sophon_overview.png)
 
 Hardware parameters are defined in the following file:
 > design/config/config_feature.sv
