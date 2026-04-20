@@ -50,9 +50,9 @@
 `endif
 
 `ifdef SOPHON_EEI_GPIO
-    `ifndef SOPHON_EEI_RS_LOCK
-        `define SOPHON_EEI_RS_LOCK
-    `endif
+    // `ifndef SOPHON_EEI_RS_LOCK
+    //     `define SOPHON_EEI_RS_LOCK
+    // `endif
     `ifndef FGPIO_NUM
         `define FGPIO_NUM 24
     `endif

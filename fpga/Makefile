@@ -11,7 +11,7 @@ clean:
 	rm -rf vivado*
 	rm -rf usage_*
 	rm -rf *.txt
-	rm -rf output/
+	rm -rf output/sophon*
 	rm -rf .cache
 	rm -rf .Xil
 

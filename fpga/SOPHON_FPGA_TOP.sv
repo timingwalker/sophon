@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2026-02-04 17:48:22
+// Last Modified : 2026-04-15 17:38:53
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -310,19 +310,31 @@ module SOPHON_FPGA_TOP(
         ila_0 u_ila_sophon (
         	.clk     ( sample_clock     ) ,
         	.probe0  ( pc               ) ,
-        	.probe1  ( inst_data_1d     ) ,
-        	.probe2  ( dpc              ) ,
-        	.probe3  ( npc              ) ,
-        	.probe4  ( if_vld           ) ,
-        	.probe5  ( inst_data_1d_vld ) ,
-        	.probe6  ( retire_vld       ) ,
-        	.probe7  ( ex_vld           ) ,
-        	.probe8  ( debug_mode       ) ,
-        	.probe9  ( is_dret          ) ,
-        	.probe10 ( rvi_csr          ) ,
-        	//.probe9  ( gpio_dir[1]      ) ,
-        	//.probe10 ( gpio_out_val[1]  ) ,
-        	.probe11 ( csr_wr           ) 
+        	// .probe1  ( inst_data_1d     ) ,
+        	// .probe2  ( dpc              ) ,
+        	// .probe3  ( npc              ) ,
+        	.probe1  ( is_dret          ) ,
+        	.probe2  ( rvi_csr          ) ,
+        	.probe3  ( csr_wr           ) ,
+        	// .probe4  ( if_vld           ) ,
+        	// .probe5  ( inst_data_1d_vld ) ,
+        	// .probe6  ( retire_vld       ) ,
+        	// .probe7  ( ex_vld           ) ,
+        	// .probe8  ( debug_mode       ) ,
+        	// .probe9  ( is_dret          ) ,
+        	// .probe10 ( rvi_csr          ) ,
+        	// .probe11 ( csr_wr           ) 
+        	// .probe1  ( gpio_dir[1]       ) ,
+        	// .probe2  ( gpio_in_val[1]    ) ,
+        	// .probe3  ( gpio_out_val[1]   ) ,
+        	.probe4  ( GPIO[7]           ) ,
+        	.probe5  ( GPIO[6]           ) ,
+        	.probe6  ( GPIO[5]           ) ,
+        	.probe7  ( GPIO[4]           ) ,
+        	.probe8  ( GPIO[3]           ) ,
+        	.probe9  ( GPIO[2]           ) ,
+        	.probe10 ( GPIO[1]           ) ,
+        	.probe11 ( GPIO[0]           ) 
         );
 
     `endif

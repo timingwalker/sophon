@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2025-11-13 18:08:40
+// Last Modified : 2026-04-20 12:52:48
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ module FGPIO (
     `define REG_CLK             5'd22
 
     localparam int unsigned RSV_BIT = 32 - `FGPIO_NUM;
-    `define ITF_NUM 4
+    `define ITF_NUM 6
     `define CNT_WIDTH 5
 
     logic [`FGPIO_NUM-1:0]  gpio_dir_1d;
@@ -92,8 +92,22 @@ module FGPIO (
     assign fgpio_rs2_val = fgpio_rs_val[1];
     assign fgpio_ack     = fgpio_req;
     
-    assign gpio_dir      = clk_mask | pre_gpio_dir;
-    assign gpio_out_val  = clk_mask ^ pre_gpio_out_val;
+    // GPIO should reg out
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni) begin
+            gpio_dir     <= {`FGPIO_NUM{1'b0}};
+            gpio_out_val <= {`FGPIO_NUM{1'b0}};
+        end
+        else if ( fgpio_req ) begin
+            gpio_dir     <= clk_mask | pre_gpio_dir;
+            gpio_out_val <= clk_mask ^ pre_gpio_out_val;
+        end
+    end
+    // assign gpio_dir      = clk_mask | pre_gpio_dir;
+    // assign gpio_out_val  = clk_mask ^ pre_gpio_out_val;
+
+
+
     always_comb begin
         pre_gpio_dir     = gpio_dir_1d ;
         pre_gpio_out_val = gpio_out_val_1d ;

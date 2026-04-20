@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2026-04-02 11:52:06
+// Last Modified : 2026-04-20 15:11:04
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -1399,59 +1399,21 @@ module SOPHON (
         end
     `endif
 
-        // if extension requires eei_rs_val to keep stable during the whold negedge clock  
-        // cycle (such as fGPIO extension), eei_rs_val should be launched by filp-flop
-        `ifdef SOPHON_EEI_RS_LOCK
-            logic pre_op_is_cust0, pre_op_is_cust1;
-            assign rs_idx[0] = inst_rdata_i[19:15];
-            assign rs_idx[1] = inst_rdata_i[24:20];
-            assign pre_op_is_cust0 = inst_rdata_i[6:0]==7'b0001011;
-            assign pre_op_is_cust1 = inst_rdata_i[6:0]==7'b0101011;
-            for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
-                if ( i<2 ) begin: gen_eei_rs0_rs1_lock
-                    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-                        if (~rst_ni) 
-                            eei_rs_val_o[i] <= 32'd0;
-                        else if ( pre_op_is_cust0 )
-                            eei_rs_val_o[i] <= regfile[rs_idx[i] ];
-                        else if ( pre_op_is_cust1 )
-                        `ifdef SOPHON_EEI_NOALIGN
-                            eei_rs_val_o[i] <= regfile[i];
-                        `else
-                            eei_rs_val_o[i] <= ext_regfile[rs_idx[0]+i];
-                        `endif
-                    end
-                end
-                else begin: gen_eei_rs_extent_lock
-                    always_ff @(posedge clk_neg_i, negedge rst_ni) begin
-                        if (~rst_ni) 
-                            eei_rs_val_o[i] <= 32'd0;
-                        else if ( pre_op_is_cust1 )
-                        `ifdef SOPHON_EEI_NOALIGN
-                            eei_rs_val_o[i] <= regfile[i];
-                        `else
-                            eei_rs_val_o[i] <= ext_regfile[rs_idx[0]+i];
-                        `endif
-                    end
-                end
+        assign rs_idx[0] = rs1_idx;
+        assign rs_idx[1] = rs2_idx;
+        for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
+            if ( i<2 ) begin: gen_eei_rs0_rs1
+                assign eei_rs_val_o[i] = op_is_cust0 ? regfile [ rs_idx[i] ] 
+                           `ifdef SOPHON_EEI_NOALIGN : regfile[i];
+                           `else                     : ext_regfile[eei_batch_start_o+i];
+                           `endif
             end
-        `else
-            assign rs_idx[0] = rs1_idx;
-            assign rs_idx[1] = rs2_idx;
-            for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
-                if ( i<2 ) begin: gen_eei_rs0_rs1
-                    assign eei_rs_val_o[i] = op_is_cust0 ? regfile [ rs_idx[i] ] 
-                               `ifdef SOPHON_EEI_NOALIGN : regfile[i];
-                               `else                     : ext_regfile[eei_batch_start_o+i];
-                               `endif
-                end
-                else begin: gen_eei_rs_extent
-                    assign eei_rs_val_o[i] = `ifdef SOPHON_EEI_NOALIGN regfile[i];
-                                             `else                     ext_regfile[eei_batch_start_o+i];
-                                             `endif
-                end
+            else begin: gen_eei_rs_extent
+                assign eei_rs_val_o[i] = `ifdef SOPHON_EEI_NOALIGN regfile[i];
+                                         `else                     ext_regfile[eei_batch_start_o+i];
+                                         `endif
             end
-        `endif
+        end
 
         always_comb begin
             eei_rd_start = 5'd0;
