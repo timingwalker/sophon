@@ -1,16 +1,8 @@
+include common/toolchain.mk
 
-RISCV_PREFIX   ?= riscv64-unknown-elf
-
-RISCV_GCC      := $(RISCV_PREFIX)-gcc
-RISCV_OBJDUMP  := $(RISCV_PREFIX)-objdump
-RISCV_OBJCOPY  := $(RISCV_PREFIX)-objcopy
-
-MARCH         ?= rv32ia
-MABI          ?= ilp32
 LDS_FILE      ?= link.ld
 SW_SIMPLE_CRT ?= NO
 SW_RVE        ?= NO
-SW_ZICSR      ?= YES
 
 
 # ----------------------------------------------------------------------
@@ -27,7 +19,7 @@ clean_bootrom:
 # ----------------------------------------------------------------------
 subfold    = $(shell find * -maxdepth 0 -type d)
 MAKE_APP  := $(filter-out common build bootrom,$(subfold))
-CLEAN_APP := $(addprefix clean_,$(filter-out common,bootrom,$(subfold)))
+CLEAN_APP := $(addprefix clean_,$(filter-out common build bootrom,$(subfold)))
 
 $(MAKE_APP): %: clean_%
 	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) SW_RVE=$(SW_RVE) SW_ZICSR=$(SW_ZICSR)
@@ -54,8 +46,10 @@ bmark_subfold = $(notdir $(shell find $(BMARKS_SRC_DIR)/* -maxdepth 0 -type d))
 MAKE_BMARK   := $(filter-out common mm mt-% vec-%,$(bmark_subfold))
 CLEAN_BMARK  := $(addprefix clean_,$(MAKE_BMARK))
 
+dhrystone_CFLAGS_EXTRA := -Wno-error=implicit-int -Wno-error=implicit-function-declaration
+
 $(MAKE_BMARK): %: clean_%
-	$(MAKE) -C common PROGRAM=$* SW_DIR=../$(BMARKS_SRC_DIR)/$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE)
+	$(MAKE) -C common PROGRAM=$* SW_DIR=../$(BMARKS_SRC_DIR)/$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) CFLAGS_EXTRA="$($*_CFLAGS_EXTRA)"
 
 $(CLEAN_BMARK): clean_%:
 	rm -rf ./build/$*
@@ -69,7 +63,7 @@ clean_benchmarks : $(CLEAN_BMARK)
 # ------------------------------------------------
 rv32ui:
 	mkdir -p build/isa/
-	$(MAKE) -C $(ISA_SRC_DIR) rv32ui lds_dir=../../../sw/common/$(LDS_FILE)
+	$(MAKE) -C $(ISA_SRC_DIR) rv32ui lds_dir=../../../sw/common/$(LDS_FILE) SED=$(SED)
 	mv $(ISA_SRC_DIR)/rv32ui-* build/isa/
 
 isa:rv32ui
@@ -96,6 +90,4 @@ clean_isa:
 # ----------------------------------------------------------------------
 #  clean
 # ----------------------------------------------------------------------
-clean: clean_app clean_benchmarks clean_isa clean_coremark clean_bootrom
-
-
+clean: clean_app clean_benchmarks clean_isa clean_bootrom

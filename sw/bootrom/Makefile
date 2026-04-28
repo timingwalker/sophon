@@ -1,16 +1,8 @@
+include ../common/toolchain.mk
 
-RISCV_PREFIX   ?= riscv64-unknown-elf
-
-RISCV_GCC      := $(RISCV_PREFIX)-gcc
-RISCV_OBJDUMP  := $(RISCV_PREFIX)-objdump
-RISCV_OBJCOPY  := $(RISCV_PREFIX)-objcopy
-
-MARCH         ?= rv32ia
-MABI          ?= ilp32
 LDS_FILE      ?= link_bootrom.ld
 SW_SIMPLE_CRT ?= YES
 SW_RVE        ?= NO
-SW_ZICSR      ?= YES
 
 # ----------------------------------------------------------------------
 #  bootrom
@@ -30,4 +22,3 @@ clean:
 	rm -rf ../build/bootrom
 
 .PHONY: bootrom clean
-

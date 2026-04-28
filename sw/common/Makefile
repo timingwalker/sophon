@@ -1,13 +1,12 @@
 PROGRAM       ?= NONE
 
-MARCH         ?= rv32ia
-MABI          ?= ilp32
+include toolchain.mk
+
 DEFINE        ?= 
 LDS_FILE      ?= link.ld
 
 SW_SIMPLE_CRT ?= NO
 SW_RVE        ?= NO
-SW_ZICSR      ?= YES
 
 # ----------------------------------------------------------------------
 #  Parameters
@@ -47,8 +46,7 @@ SW_OBJC  = $(SW_SRC:.c=.sw.c.o)
 SW_OBJS  = $(SW_ASM:.S=.sw.s.o) 
 OBJ      = $(notdir $(COM_OBJC) $(COM_OBJS) $(SW_OBJC) $(SW_OBJS))
 
-CC       = riscv64-unknown-elf-gcc
-CFLAGS   = -march=$(MARCH) -mabi=$(MABI) -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR) -I $(SW_DIR) $(DEFINE)
+CFLAGS   = -march=$(MARCH) -mabi=$(MABI) -mcmodel=medany -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns -I $(COM_DIR) -I $(SW_DIR) $(DEFINE) $(CFLAGS_EXTRA)
 LDFLAGS  = -static -nostdlib -nostartfiles -lm -lgcc 
 LINKER   = ../../common/$(LDS_FILE)
 
@@ -99,7 +97,7 @@ clean:
 %.hex: %.elf
 	cd $(BUILD_DIR) && \
 	riscv64-unknown-elf-objcopy -O verilog $^ $@ &&\
-	sed -i 's/@800/@000/g' $@
+	$(SED) -i 's/@800/@000/g' $@
  
 all: $(PROGRAM).hex $(PROGRAM).dump $(PROGRAM).bin $(PROGRAM).itcm.bin $(PROGRAM).dtcm.bin $(PROGRAM).elf 
 

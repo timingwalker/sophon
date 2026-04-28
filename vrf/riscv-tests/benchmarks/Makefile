@@ -48,6 +48,7 @@ RISCV_SIM ?= spike --isa=rv32gc
 
 RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy 
 RISCV_OBJCOPY_OPTS ?= -O verilog
+SED ?= sed
 
 
 incs  += -I$(src_dir)/../env -I$(src_dir)/common $(addprefix -I$(src_dir)/, $(bmarks))
@@ -71,7 +72,7 @@ bmarks_riscv_hex  = $(addsuffix .riscv.hex,  $(bmarks))
 
 $(bmarks_riscv_hex): %.riscv.hex: %.riscv
 	$(RISCV_OBJCOPY) $< $(RISCV_OBJCOPY_OPTS)  $@
-	sed -i 's/@800/@000/g' $@
+	$(SED) -i 's/@800/@000/g' $@
 
 $(bmarks_riscv_dump): %.riscv.dump: %.riscv
 	$(RISCV_OBJDUMP) $< > $@

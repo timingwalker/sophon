@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/usr/bin/env python3
 
 import os
 import time
@@ -75,5 +75,4 @@ if __name__ == "__main__":
         file.write( end_time )
 
     os.system("cat " + f_result )
-
 

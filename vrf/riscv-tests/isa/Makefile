@@ -43,6 +43,7 @@ RISCV_SIM ?= spike
 
 RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy 
 RISCV_OBJCOPY_OPTS ?= -O verilog
+SED ?= sed
 
 vpath %.S $(src_dir)
 
@@ -54,7 +55,7 @@ vpath %.S $(src_dir)
 
 %.hex: %
 	$(RISCV_OBJCOPY) $< $(RISCV_OBJCOPY_OPTS)   $@
-	sed -i 's/@800/@000/g' $@
+	$(SED) -i 's/@800/@000/g' $@
 
 %.out: %
 	$(RISCV_SIM) --isa=rv64gc_zfh_svnapot $< 2> $@
