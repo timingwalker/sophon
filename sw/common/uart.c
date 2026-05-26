@@ -17,7 +17,8 @@ void uart_init()
     value = 217;
 #else
     clock    = 25000000; // 25M
-    baudrate = 115200; 
+    //baudrate = 115200; 
+    baudrate = 460800; 
     value = clock / baudrate;
 #endif
 

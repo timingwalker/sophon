@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2026-04-20 12:52:48
+// Last Modified : 2026-04-21 15:43:41
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
@@ -224,6 +224,10 @@ module FGPIO (
             end
             else               fgpio_rd_val[l+2] = fgpio_rs_val[l+2];
         end
+    end
+
+    for (genvar l=2+`ITF_NUM; l<`EEI_RD_MAX; l++) begin : gen_rd_val_left
+        assign fgpio_rd_val[l] = fgpio_rs_val[l];
     end
 
     // ------------------------------------------------

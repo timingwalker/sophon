@@ -40,6 +40,23 @@ typedef __u32 u32;
 #define snapreg_recover(rd,rs1,rs2)         ".insn r 0x2b,0b001,0b1000000,"#rd","#rs1","#rs2
 
 int printf(const char* fmt, ...);
+void usleep(uint32_t us);
+static inline uint64_t get_mcycle(void) {
+    uint32_t lo, hi;
+
+    asm volatile (
+        "1:\n"
+        "csrr %0, mcycleh\n"
+        "csrr %1, mcycle\n"
+        "csrr t0, mcycleh\n"
+        "bne  %0, t0, 1b\n"
+        : "=r"(hi), "=r"(lo)
+        :
+        : "t0"
+    );
+
+    return ((uint64_t)hi << 32) | lo;
+}
 
 #define HWINFO_EXT_INST   0
 #define HWINFO_EXT_DATA   1

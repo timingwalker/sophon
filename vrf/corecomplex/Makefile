@@ -3,7 +3,7 @@
 #TC := rv32ui-p-add
 #TC := hello
 #TC := bootrom
-TC := multiply
+#TC := multiply
 #TC := tc_exception
 #TC := rv32ui-p-lb
 #TC := tc_clint
@@ -11,6 +11,8 @@ TC := multiply
 #TC := freemodbus
 #TC := FreeRTOS
 #TC := towers
+#TC := fgpio_spi
+TC := nav_test
 
 MEM_MODE      ?= TCM
 LDS_FILE      ?= link.ld

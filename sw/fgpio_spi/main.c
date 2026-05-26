@@ -5,7 +5,8 @@
 char fgpio_spi_multi_itf_dma();
 char fgpio_spi_single_itf( char sent_data );
 
-#define PERF_PARALLEL
+// #define PERF_PARALLEL
+ #define PERF_PEAK
 
 int main()
 {

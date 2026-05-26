@@ -17,6 +17,20 @@ extern volatile uint32_t tohost;
 extern volatile uint32_t fromhost;
 extern volatile uint32_t hwinfo;
 
+
+#define CPU_CYCLES_PER_US 25
+
+
+void usleep(uint32_t us) {
+    uint64_t start = get_mcycle();
+    uint64_t target = start;
+
+    while (us--) {
+        target += CPU_CYCLES_PER_US;
+        while (get_mcycle() < target);
+    }
+}
+
 static uintptr_t syscall(uintptr_t which, uint64_t arg0, uint64_t arg1, uint64_t arg2)
 {
   volatile uint64_t magic_mem[8] __attribute__((aligned(64)));
