@@ -14,6 +14,14 @@ if {[string length $result] > 0} {
     set xdc "sophon_arty_a7.xdc"
 }
 
+set pattern {^`define.*ARTY_A7_100T}
+set result [regex_search_file "fpga_config.sv" $pattern]
+if {[string length $result] > 0} {
+    set fpga_board "ARTY_A7_100T"
+    set part_number "xc7a100tcsg324-1"
+    set xdc "sophon_arty_a7.xdc"
+}
+
 set pattern {^`define.*GENESYS2}
 set result [regex_search_file "fpga_config.sv" $pattern]
 if {[string length $result] > 0} {

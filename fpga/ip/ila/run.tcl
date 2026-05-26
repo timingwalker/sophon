@@ -8,6 +8,12 @@ if {[string length $result] > 0} {
     set part_number "xc7a35ticsg324-1L"
 }
 
+set pattern {^`define.*ARTY_A7_100T}
+set result [regex_search_file "../../fpga_config.sv" $pattern]
+if {[string length $result] > 0} {
+    set part_number "xc7a100tcsg324-1"
+}
+
 set pattern {^`define.*GENESYS2}
 set result [regex_search_file "../../fpga_config.sv" $pattern]
 if {[string length $result] > 0} {
@@ -24,6 +30,14 @@ create_ip -name ila -vendor xilinx.com -library ip -module_name $ipName
 
 
 if {[string equal -nocase $partNumber "xc7a35ticsg324-1L"]} {
+    set_property -dict [list  CONFIG.C_NUM_OF_PROBES {12} \
+                              CONFIG.C_PROBE0_WIDTH {32}  \
+                              CONFIG.C_DATA_DEPTH {1024}  \
+                              CONFIG.C_INPUT_PIPE_STAGES {1} \
+                        ] [get_ips $ipName]
+}
+
+if {[string equal -nocase $partNumber "xc7a100tcsg324-1"]} {
     set_property -dict [list  CONFIG.C_NUM_OF_PROBES {12} \
                               CONFIG.C_PROBE0_WIDTH {32}  \
                               CONFIG.C_DATA_DEPTH {1024}  \

@@ -1,5 +1,6 @@
 `define FPGA
-`define ARTY_A7_35T
+//`define ARTY_A7_35T
+`define ARTY_A7_100T
 //`define GENESYS2
 
 //`define PROBE

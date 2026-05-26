@@ -8,6 +8,12 @@ if {[string length $result] > 0} {
     set part_number "xc7a35ticsg324-1L"
 }
 
+set pattern {^`define.*ARTY_A7_100T}
+set result [regex_search_file "../../fpga_config.sv" $pattern]
+if {[string length $result] > 0} {
+    set part_number "xc7a100tcsg324-1"
+}
+
 set pattern {^`define.*GENESYS2}
 set result [regex_search_file "../../fpga_config.sv" $pattern]
 if {[string length $result] > 0} {
@@ -23,6 +29,17 @@ create_project $ipName . -force -part $partNumber
 create_ip -name clk_wiz -vendor xilinx.com -library ip -module_name $ipName
 
 if {[string equal -nocase $partNumber "xc7a35ticsg324-1L"]} {
+    set_property -dict [list CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} \
+                            CONFIG.PRIM_IN_FREQ {100.000} \
+                            CONFIG.CLKIN1_JITTER_PS {50.0} \
+                            CONFIG.NUM_OUT_CLKS {2} \
+                            CONFIG.CLKOUT2_USED {true} \
+                            CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {25} \
+                            CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {50} \
+                           ] [get_ips $ipName]
+}
+
+if {[string equal -nocase $partNumber "xc7a100tcsg324-1"]} {
     set_property -dict [list CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} \
                             CONFIG.PRIM_IN_FREQ {100.000} \
                             CONFIG.CLKIN1_JITTER_PS {50.0} \

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2024-01-09 10:21:26
-// Last Modified : 2026-04-15 17:38:53
+// Last Modified : 2026-05-25 17:33:19
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -25,6 +25,8 @@
 module SOPHON_FPGA_TOP(
 
 `ifdef ARTY_A7_35T
+	input SYSCLK,
+`elsif ARTY_A7_100T
 	input SYSCLK,
 `elsif GENESYS2
 	input SYSCLK_P,
@@ -259,6 +261,14 @@ module SOPHON_FPGA_TOP(
 
 
     `ifdef ARTY_A7_35T
+        clk_wiz_0 i_clk_wiz(
+        	.clk_in1   ( SYSCLK       ) ,
+        	.reset     ( ~RESETN      ) ,
+        	.locked    ( pll_locked   ) ,
+        	.clk_out1  ( clock        ) ,
+        	.clk_out2  ( sample_clock ) 
+        );
+    `elsif ARTY_A7_100T
         clk_wiz_0 i_clk_wiz(
         	.clk_in1   ( SYSCLK       ) ,
         	.reset     ( ~RESETN      ) ,
