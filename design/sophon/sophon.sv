@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2026-04-20 15:11:04
+// Last Modified : 2026-05-29 17:20:37
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -55,13 +55,10 @@ module SOPHON (
     ,output logic                        eei_ext_o
     ,output logic [2:0]                  eei_funct3_o
     ,output logic [6:0]                  eei_funct7_o
-    ,output logic [4:0]                  eei_batch_start_o
-    ,output logic [4:0]                  eei_batch_len_o
     ,output logic [31:0]                 eei_rs_val_o[`EEI_RS_MAX-1:0]
     ,input  logic                        eei_ack_i //nedege
-    ,input  logic [1:0]                  eei_rd_op_i
-    ,input  logic [4:0]                  eei_rd_len_i
     ,input  logic                        eei_error_i
+    ,input  logic [31:0]                 eei_rd_idx_onehot_i
     ,input  logic [31:0]                 eei_rd_val_i[`EEI_RD_MAX-1:0]
 `endif
 `ifdef SOPHON_CLIC
@@ -1368,83 +1365,36 @@ module SOPHON (
     //  ==== ENHANCED EXTENSION INTERFACE
     // ----------------------------------------------------------------------
     `ifdef SOPHON_EEI
-        logic        op_is_cust0, op_is_cust1;
-        logic [4:0]  rs_idx[1:0];
-        logic        retire_eei;
-        logic        wr_regfile_eei;
-        logic [REGFILE_LEN-1:0] eei_rd_idx_bit;
-        logic [4:0]  eei_rd_start, eei_rd_len_i_inner;
+        logic                   op_is_cust0, op_is_cust1;
+        logic                   retire_eei;
+        logic                   wr_regfile_eei;
 
-        assign op_is_cust0       = inst_32b & (op_6_2==5'b00010);
-        assign op_is_cust1       = inst_32b & (op_6_2==5'b01010);
-        assign rvi_cust          = op_is_cust0|op_is_cust1;
+        assign op_is_cust0      = inst_32b & (op_6_2==5'b00010);
+        assign op_is_cust1      = inst_32b & (op_6_2==5'b01010);
+        assign rvi_cust         = op_is_cust0|op_is_cust1;
 
-        assign if_stall_eei      = eei_req_o & (~eei_ack_i);
+        assign if_stall_eei     = eei_req_o & (~eei_ack_i);
 
-        assign eei_req_o         = rvi_cust & inst_data_1d_vld;
-        assign eei_ext_o         = op_is_cust1 ? 1'b1 : 1'b0;
-        assign eei_funct3_o      = funct3;
-        assign eei_funct7_o      = funct7;
-        assign eei_batch_start_o = op_is_cust0 ? 5'd0 : rs1_idx;
-        assign eei_batch_len_o   = op_is_cust0 ? 5'd2 : rs2_idx;
-        
-    `ifndef SOPHON_EEI_NOALIGN
-        localparam EXT_RF_LEN  = REGFILE_LEN + `EEI_RS_MAX -1;
-        logic  [31:0] ext_regfile[EXT_RF_LEN-1:0];
-        for (genvar i=0; i<EXT_RF_LEN; i++) begin : gen_ext_regfile
-            if ( i<REGFILE_LEN ) 
-                assign ext_regfile[i] = regfile[i];
-            else 
-                assign ext_regfile[i] = regfile[i-REGFILE_LEN];
-        end
-    `endif
+        assign eei_req_o        = rvi_cust & inst_data_1d_vld;
+        assign eei_ext_o        = op_is_cust1;
+        assign eei_funct3_o     = funct3;
+        assign eei_funct7_o     = funct7;
 
-        assign rs_idx[0] = rs1_idx;
-        assign rs_idx[1] = rs2_idx;
+        // eei rs channel
         for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
-            if ( i<2 ) begin: gen_eei_rs0_rs1
-                assign eei_rs_val_o[i] = op_is_cust0 ? regfile [ rs_idx[i] ] 
-                           `ifdef SOPHON_EEI_NOALIGN : regfile[i];
-                           `else                     : ext_regfile[eei_batch_start_o+i];
-                           `endif
+            if ( i==0 ) begin: gen_eei_rs0
+                assign eei_rs_val_o[i] = op_is_cust0 ? rs1_val : regfile[i];
+            end
+            else if ( i==1 ) begin: gen_eei_rs1
+                assign eei_rs_val_o[i] = op_is_cust0 ? rs2_val : regfile[i];
             end
             else begin: gen_eei_rs_extent
-                assign eei_rs_val_o[i] = `ifdef SOPHON_EEI_NOALIGN regfile[i];
-                                         `else                     ext_regfile[eei_batch_start_o+i];
-                                         `endif
+                assign eei_rs_val_o[i] = regfile[i];
             end
         end
 
-        always_comb begin
-            eei_rd_start = 5'd0;
-            eei_rd_len_i_inner   = 5'd0;
-            if (eei_rd_op_i==2'd1) begin
-                eei_rd_start = rd_idx;
-                eei_rd_len_i_inner   = 5'd1;
-            end
-            else if (eei_rd_op_i==2'd2) begin
-                eei_rd_start = rs1_idx;
-                eei_rd_len_i_inner   = eei_rd_len_i;
-            end
-        end
-
-        integer j;
-        //assign wr_regfile_eei = inst_data_1d_vld & eei_req_o & eei_ack_i & (~eei_error_i) & (eei_rd_op_i==2'd1 || eei_rd_op_i==2'd2);
-        assign wr_regfile_eei = inst_data_1d_vld & eei_req_o & eei_ack_i & (~eei_error_i);
-        always_comb begin
-            eei_rd_idx_bit = '0;
-            // TODO: 
-            // NOALIGN mode
-            if (eei_rd_op_i==2'd3)
-                eei_rd_idx_bit = {{2{1'b0}},{`EEI_RD_MAX{1'b1}}};
-            for (j=0; j<REGFILE_LEN; j=j+1)
-                if (eei_rd_op_i==2'd1)
-                    eei_rd_idx_bit[j] = ( rd_idx==j ) ? 1'b1 : 1'b0;
-                if (eei_rd_op_i==2'd2)
-                    eei_rd_idx_bit[j] = ( (eei_rd_start<=6'(j)) && ((eei_rd_len_i_inner+eei_rd_start)>6'(j)) ) ? 1'b1 : 1'b0;
-        end
-
-        assign retire_eei = inst_data_1d_vld & eei_req_o & eei_ack_i & (~eei_error_i);
+        assign wr_regfile_eei = eei_req_o & eei_ack_i & (~eei_error_i);
+        assign retire_eei     = eei_req_o & eei_ack_i & (~eei_error_i);
     `endif
 
 
@@ -1768,35 +1718,21 @@ module SOPHON (
                                             `ifdef SOPHON_ZICSR  | wb_csr `endif
                                            );
 
-    // regfile
-    genvar i;
-    generate
-        for (i=1; i< REGFILE_LEN; i=i+1) begin:gen_regfile
-            always_ff @(posedge clk_i, negedge rst_ni) begin
-                if(~rst_ni) begin
-                    regfile[i] <= 32'd0;
-                end
-                // Sophon write port
-                else if ( wr_regfile && (rd_idx==i) ) begin
-                    regfile[i] <= rd_val;
-                end
-            `ifdef SOPHON_EEI
-                // EEI write port
-                else if ( wr_regfile_eei && (eei_rd_idx_bit[i]==1) ) begin
-                    if (eei_rd_op_i==2'd1)
-                        regfile[i] <= eei_rd_val_i[0];
-                    else
-                `ifdef SOPHON_EEI_NOALIGN
-                    regfile[i] <= eei_rd_val_i[i];
-                `else
-                    regfile[i] <= eei_rd_val_i[i-eei_rd_start];
-                `endif
-                end
-            `endif
-            end
-        end
-    endgenerate
-    assign regfile[0] = 32'd0;
+    REGFILE #( 
+        .REGFILE_LEN ( REGFILE_LEN )
+     ) U_REGFILE(
+       . clk_i               ( clk_i               )
+       ,.rst_ni              ( rst_ni              )
+       ,.wr_regfile_i        ( wr_regfile          )
+       ,.rd_idx_i            ( rd_idx              )
+       ,.rd_val_i            ( rd_val              )
+    `ifdef SOPHON_EEI
+       ,.wr_regfile_eei_i    ( wr_regfile_eei      )
+       ,.eei_rd_idx_onehot_i ( eei_rd_idx_onehot_i )
+       ,.eei_rd_val_i        ( eei_rd_val_i        )
+    `endif
+       ,.regfile_o           ( regfile             )
+    );
 
     assign rs1_val = rs1_val_org;
     assign rs2_val = rs2_val_org;

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-12 10:22:46
-// Last Modified : 2024-07-29 11:03:34
+// Last Modified : 2026-05-29 15:54:18
 // Description   : snapshot regfile     
 // ----------------------------------------------------------------------
 
@@ -30,6 +30,7 @@ module SNAPREG(
     ,output logic                               sreg_ack   
     ,output logic                               sreg_error   
     ,output logic [31:0]                        sreg_rd_val[`EEI_RD_MAX-1:0] 
+    ,output logic [31:0]                        sreg_rd_idx_onehot
 `endif
 );
 
@@ -55,13 +56,6 @@ module SNAPREG(
         end
     end
 
-    integer j;
-    always_comb begin
-        wr_sreg_bit = 32'd0;
-        for (j=0; j<32; j=j+1)
-            wr_sreg_bit[j] = ( (sreg_batch_start<=6'(j)) && ((sreg_batch_len+sreg_batch_start)>6'(j)) ) ? 1'b1 : 1'b0;
-    end
-
     genvar i;
     generate
         for (i=1; i<32; i=i+1) begin:gen_snapreg
@@ -69,30 +63,16 @@ module SNAPREG(
                 if(~rst_ni) begin
                     snapreg[i] <= 32'd0;
                 end
-                else if ( sreg_wr && (wr_sreg_bit[i]==1) ) begin
-                    snapreg[i] <= sreg_rs_val[ i-sreg_batch_start ];
+                else if ( sreg_wr ) begin
+                    snapreg[i] <= sreg_rs_val[i];
                 end
             end
         end
     endgenerate
     assign snapreg[0] = 32'd0;
 
-
-    localparam EXT_RF_LEN  = 32 + `EEI_RD_MAX -1;
-    logic  [31:0] ext_snapreg[EXT_RF_LEN-1:0];
-    for (genvar i=0; i<EXT_RF_LEN; i++) begin : gen_ext_snapreg
-        if ( i<32 ) 
-            assign ext_snapreg[i] = snapreg[i];
-        else 
-            assign ext_snapreg[i] = snapreg[i-32];
-    end
-
-    genvar k;
-    generate
-        for (k=0; k<`EEI_RD_MAX; k=k+1) begin:gen_sreg_rd_val
-            assign sreg_rd_val[k] = ext_snapreg[k+sreg_batch_start];
-        end
-    endgenerate
+	assign sreg_rd_idx_onehot = '1;
+    assign sreg_rd_val = snapreg;
 
 `endif
 

@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2026-04-21 15:43:41
+// Last Modified : 2026-05-29 16:49:11
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
@@ -23,14 +23,12 @@ module FGPIO (
      input  logic                               clk_i
     ,input  logic                               clk_neg_i
     ,input  logic                               rst_ni
-    ,input  logic                               eei_ext
     ,input  logic                               fgpio_req
     ,input  logic [6:0]                         fgpio_funct7  
-    ,input  logic [4:0]                         fgpio_batch_len 
     ,input  logic [31:0]                        fgpio_rs_val[`EEI_RS_MAX-1:0]    
     ,output logic                               fgpio_ack     
     ,output logic                               fgpio_error   
-    ,output logic [31:0]                        fgpio_rd_val[`EEI_RD_MAX-1:0]    
+    ,output logic [31:0]                        fgpio_rd_val_o
     ,output logic [`FGPIO_NUM-1:0]              gpio_dir     
     ,input  logic [`FGPIO_NUM-1:0]              gpio_in_val  
     ,output logic [`FGPIO_NUM-1:0]              gpio_out_val 
@@ -60,6 +58,10 @@ module FGPIO (
     localparam int unsigned RSV_BIT = 32 - `FGPIO_NUM;
     `define ITF_NUM 6
     `define CNT_WIDTH 5
+
+// TODO: 
+assign eei_ext=1'b0;
+logic [31:0] fgpio_rd_val[`EEI_RD_MAX-1:0]    ;
 
     logic [`FGPIO_NUM-1:0]  gpio_dir_1d;
     logic [`FGPIO_NUM-1:0]  gpio_out_val_1d;

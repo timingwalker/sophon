@@ -10,16 +10,17 @@ read_verilog -sv ../design/config/config_others.sv
 read_verilog -sv ./fpga_config.sv
 
 read_verilog -sv ../design/sophon/sophon_pkg.sv
+read_verilog -sv ../design/sophon/regfile.sv
 read_verilog -sv ../design/sophon/sophon.sv
 read_verilog -sv ../design/sophon/boot_code.sv
 read_verilog -sv ../design/sophon/sophon_top.sv
-read_verilog -sv ../design/sophon/cust.sv
-read_verilog -sv ../design/sophon/fgpio.sv
-read_verilog -sv ../design/sophon/snapreg.sv
 read_verilog -sv ../design/sophon/inst_itf_demux.sv
 read_verilog -sv ../design/sophon/inst_itf_arbiter.sv
 read_verilog -sv ../design/sophon/data_itf_demux.sv
 read_verilog -sv ../design/sophon/data_itf_arbiter.sv
+read_verilog -sv ../design/cust/cust.sv
+read_verilog -sv ../design/cust/fgpio.sv
+read_verilog -sv ../design/cust/snapreg.sv
 read_verilog -sv ../design/common/std_wrap_ckinv.sv
 read_verilog -sv ../design/common/std_wrap_ckand.sv
 read_verilog -sv ../design/common/rst_sync.sv

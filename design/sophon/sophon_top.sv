@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2026-03-25 17:23:02
+// Last Modified : 2026-05-29 15:36:20
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -113,13 +113,10 @@ module SOPHON_TOP (
     logic                  eei_ext;
     logic [2:0]            eei_funct3;
     logic [6:0]            eei_funct7;
-    logic [4:0]            eei_batch_start;
-    logic [4:0]            eei_batch_len;
     logic [31:0]           eei_rs_val[`EEI_RS_MAX-1:0];
     logic                  eei_ack;
-    logic [1:0]            eei_rd_op;
-    logic [4:0]            eei_rd_len;
     logic                  eei_error;
+    logic [31:0]           eei_rd_idx_onehot;
     logic [31:0]           eei_rd_val[`EEI_RD_MAX-1:0];
 `endif
 
@@ -179,13 +176,10 @@ module SOPHON_TOP (
         ,.eei_ext_o           ( eei_ext              ) 
         ,.eei_funct3_o        ( eei_funct3           ) 
         ,.eei_funct7_o        ( eei_funct7           ) 
-        ,.eei_batch_start_o   ( eei_batch_start      ) 
-        ,.eei_batch_len_o     ( eei_batch_len        ) 
         ,.eei_rs_val_o        ( eei_rs_val           ) 
         ,.eei_ack_i           ( eei_ack              ) 
-        ,.eei_rd_op_i         ( eei_rd_op            ) 
-        ,.eei_rd_len_i        ( eei_rd_len           ) 
         ,.eei_error_i         ( eei_error            ) 
+        ,.eei_rd_idx_onehot_i ( eei_rd_idx_onehot    ) 
         ,.eei_rd_val_i        ( eei_rd_val           ) 
     `endif
     `ifdef SOPHON_CLIC
@@ -390,25 +384,22 @@ module SOPHON_TOP (
     `ifdef SOPHON_EEI
 
         CUST U_CUST (
-             .clk_i           ( clk_i           )
-            ,.clk_neg_i       ( clk_neg_i       ) 
-            ,.rst_ni          ( rst_soft_ni     )
-            ,.eei_req         ( eei_req         )
-            ,.eei_ext         ( eei_ext         )
-            ,.eei_funct3      ( eei_funct3      )
-            ,.eei_funct7      ( eei_funct7      )
-            ,.eei_batch_start ( eei_batch_start )
-            ,.eei_batch_len   ( eei_batch_len   )
-            ,.eei_rd_len      ( eei_rd_len      )
-            ,.eei_rs_val      ( eei_rs_val      )
-            ,.eei_ack         ( eei_ack         )
-            ,.eei_rd_op       ( eei_rd_op       )
-            ,.eei_error       ( eei_error       )
-            ,.eei_rd_val      ( eei_rd_val      )
+              .clk_i                ( clk_i               ) 
+             ,.clk_neg_i            ( clk_neg_i           ) 
+             ,.rst_ni               ( rst_soft_ni         ) 
+             ,.eei_req_i            ( eei_req             ) 
+             ,.eei_ext_i            ( eei_ext             ) 
+             ,.eei_funct3_i         ( eei_funct3          ) 
+             ,.eei_funct7_i         ( eei_funct7          ) 
+             ,.eei_rs_val_i         ( eei_rs_val          ) 
+             ,.eei_ack_o            ( eei_ack             ) 
+             ,.eei_error_o          ( eei_error           ) 
+             ,.eei_rd_idx_onehot_o  ( eei_rd_idx_onehot   ) 
+             ,.eei_rd_val_o         ( eei_rd_val          ) 
         `ifdef SOPHON_EEI_GPIO
-            ,.gpio_dir        ( gpio_dir_o      )
-            ,.gpio_in_val     ( gpio_in_val_i   )
-            ,.gpio_out_val    ( gpio_out_val_o  )
+             ,.gpio_dir_o           ( gpio_dir_o          ) 
+             ,.gpio_in_val_i        ( gpio_in_val_i       ) 
+             ,.gpio_out_val_o       ( gpio_out_val_o      ) 
         `endif
         );
 

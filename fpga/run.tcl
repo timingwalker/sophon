@@ -70,7 +70,6 @@ set_part $part_number
 set_param general.maxThreads 32
 
 synth_design -flatten_hierarchy none -top $top_module -part $part_number
-# synth_design -top SOPHON_FPGA_TOP -part xc7k325tffg900-2 
 
 write_checkpoint -force $outputDir/post_synth.dcp
 report_timing_summary -file $outputDir/post_synth_timing_summary.rpt
