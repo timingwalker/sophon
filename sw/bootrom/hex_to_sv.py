@@ -101,7 +101,7 @@ def generate_sv_array(words, output_file, array_name="mem"):
         f.write(f"  );\n\n")
 
         # 写入数组定义
-        f.write(f"const logic [31:0] {array_name} [0:{len(words)-1}] = ")
+        f.write(f"logic [31:0] {array_name} [0:{len(words)-1}] = ")
         f.write("'{\n")
 
         # 写入数据
@@ -119,16 +119,13 @@ def generate_sv_array(words, output_file, array_name="mem"):
 
         f.write("};\n\n")
 
-        f.write(f"  logic [10:0] A_Q;\n\n")
         f.write(f"  always_ff @(posedge CLK, negedge RSTN)\n")
         f.write(f"  begin\n")
         f.write(f"    if (~RSTN)\n")
-        f.write(f"      A_Q <= '0;\n")
-        f.write(f"    else\n")
-        f.write(f"      if (~CSN)\n")
-        f.write(f"        A_Q <= A;\n")
-        f.write(f"  end\n")
-        f.write(f"  assign Q = mem[A_Q];\n\n")
+        f.write(f"      Q <= '0;\n")
+        f.write(f"    else if (~CSN)\n")
+        f.write(f"      Q <= mem[A];\n")
+        f.write(f"  end\n\n")
         f.write(f"endmodule\n")
 
 

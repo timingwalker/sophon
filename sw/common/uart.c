@@ -14,12 +14,16 @@ void uart_init()
 
 #ifdef __BOOTROM
     // clock=25M, set baudrate=115200
-    value = 217;
+    //value = 217;
+    // 10M in gaoyun
+    value = 87;
 #else
     clock    = 25000000; // 25M
     //baudrate = 115200; 
     baudrate = 460800; 
-    value = clock / baudrate;
+    // TODO gaoyun workaround
+    // value = clock / baudrate;
+    value = 87;
 #endif
 
     _REG32(g_console_port, UART_REG_DLL) = value;

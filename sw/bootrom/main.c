@@ -6,6 +6,22 @@
 // set 1 to printf debug infomation
 #define DEBUG_INFO    0
 
+// Debug: trap handler to dump exception info
+// added by Claude Code
+void trap_handler(uint32_t mcause, uint32_t mepc, uint32_t mtval, uint32_t mstatus) {
+    uint32_t regs[4] = {mcause, mepc, mtval, mstatus};
+    uart_putc(g_console_port, 'X');
+    uart_putc(g_console_port, ':');
+    for (int i = 0; i < 4; i++) {
+        for (int n = 7; n >= 0; n--) {
+            uint8_t nib = (regs[i] >> (n * 4)) & 0xF;
+            uart_putc(g_console_port, nib < 10 ? '0' + nib : 'A' + nib - 10);
+        }
+        uart_putc(g_console_port, ' ');
+    }
+    uart_putc(g_console_port, '\n');
+}
+
 #define ITCM_BASE    0x80010000
 #define ITCM_SIZE    0x00080000 
 #define DTCM_BASE    0x80090100 // skip tohost section
@@ -49,6 +65,8 @@ static int xmodem_receive_block(uint8_t *buffer, uint32_t *block_num) {
     
     /* Wait for header */
     header = uart_getc(g_console_port);
+
+    //uart_putc(g_console_port, header);
     
     /* Check for EOT */
     if (header == XMODEM_EOT) {
@@ -79,6 +97,7 @@ static int xmodem_receive_block(uint8_t *buffer, uint32_t *block_num) {
         uart_putc(g_console_port, XMODEM_NAK);
         return -1;
     }
+    
     
     /* Receive 128 bytes of data */
     for (int i = 0; i < XMODEM_BLOCK_SIZE; i++) {
@@ -151,7 +170,7 @@ static int xmodem_receive(uint8_t *dest_addr, uint32_t max_size) {
     __asm__ volatile ("csrr %0, 0xB00" : "=r" (cycle_val_new));
     while( (((int) _REG32(g_console_port, UART_REG_LSR)) & 0x01) != 0x1 ) {
         __asm__ volatile ("csrr %0, 0xB00" : "=r" (cycle_val_new));
-        if ( (cycle_val_new - cycle_val_old) > 50000000 ) {
+        if ( (cycle_val_new - cycle_val_old) > 5000000 ) {
             __asm__ volatile ("csrr %0, 0xB00" : "=r" (cycle_val_old));
             uart_putc(g_console_port, 'C');  /* 0x43 */
         }
@@ -209,7 +228,7 @@ void xmodem_bootloader(void) {
     #if DEBUG_INFO == 1
         uart_putc(g_console_port, 'E');
     #endif
-        return -1;
+        return ;
     }
 
     uart_putc(g_console_port, 'd');
@@ -232,6 +251,38 @@ void xmodem_bootloader(void) {
         uart_putc(g_console_port, 'j');
         uart_putc(g_console_port, '\n');
 
+        // Debug: dump ITCM[0..31] and DTCM[0..31]
+        // added by Claude Code
+        volatile uint32_t *itcm = (volatile uint32_t *)0x80010000;
+        volatile uint32_t *dtcm = (volatile uint32_t *)0x80090100;
+        uart_putc(g_console_port, 'I');
+        uart_putc(g_console_port, ':');
+        for (int i = 0; i < 8; i++) {
+            uint32_t w = itcm[i];
+            for (int n = 7; n >= 0; n--) {
+                uint8_t nib = (w >> (n * 4)) & 0xF;
+                uart_putc(g_console_port, nib < 10 ? '0' + nib : 'A' + nib - 10);
+            }
+            uart_putc(g_console_port, ' ');
+        }
+        uart_putc(g_console_port, '\n');
+        uart_putc(g_console_port, 'D');
+        uart_putc(g_console_port, ':');
+        for (int i = 0; i < 8; i++) {
+            uint32_t w = dtcm[i];
+            for (int n = 7; n >= 0; n--) {
+                uint8_t nib = (w >> (n * 4)) & 0xF;
+                uart_putc(g_console_port, nib < 10 ? '0' + nib : 'A' + nib - 10);
+            }
+            uart_putc(g_console_port, ' ');
+        }
+        uart_putc(g_console_port, '\n');
+
+        // Debug: setup trap handler before jumping to ITCM
+        // added by Claude Code to catch exceptions
+        extern void trap_entry(void);
+        asm volatile ("csrw mtvec, %0" : : "r"(&trap_entry));
+
         asm volatile ( "li t0,0x80010000" );
         asm volatile ( "jalr ra, t0, 0" );
 
@@ -240,7 +291,7 @@ void xmodem_bootloader(void) {
     #if DEBUG_INFO == 1
         uart_putc(g_console_port, 'E');
     #endif
-        return -2;
+        return ;
     }
 
     
@@ -259,19 +310,20 @@ void xmodem_bootloader(void) {
 int _brom_main()
 {
 
-    uint32_t hw_para;
-    __asm__ volatile ("csrr %0, 0xCC0" : "=r" (hw_para));
-    char uart_enabled = hw_para & (1<<HWINFO_EXT_DATA);
-    if ( uart_enabled ) {
-        uart_init();
-    }
+    // uint32_t hw_para;
+    // __asm__ volatile ("csrr %0, 0xCC0" : "=r" (hw_para));
+    // char uart_enabled = hw_para & (1<<HWINFO_EXT_DATA);
+    // if ( uart_enabled ) {
+    //     uart_init();
+    // }
+    uart_init();
 
     // check tobrom
     if ( tobrom == 0x66688888 ) {  
-        if ( uart_enabled ) {
-            uart_putc(g_console_port, 'j');
-            uart_putc(g_console_port, '\n');
-        }
+        // if ( uart_enabled ) {
+        //   uart_putc(g_console_port, 'j');
+        //   uart_putc(g_console_port, '\n');
+        // }
         asm volatile ( "li t0,0x80010000" );
         asm volatile ( "jalr ra, t0, 0" );
     }

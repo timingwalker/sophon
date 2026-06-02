@@ -38,8 +38,8 @@ package SOPHON_PKG;
     localparam DTCM_SIZE      = 32'h0000_1000;
 `else
     localparam BROM_SIZE      = 32'h0001_0000;
-    localparam ITCM_SIZE      = 32'h0002_0000;
-    localparam DTCM_SIZE      = 32'h0001_0000;
+    localparam ITCM_SIZE      = 32'h0000_2000;
+    localparam DTCM_SIZE      = 32'h0000_2000;
 `endif
 
     // Do Not change

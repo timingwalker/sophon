@@ -35,6 +35,7 @@ endif
 ifeq ($(PROGRAM), bootrom)
 	COM_ASM = crt_bootrom.S
 	DEFINE += -D__BOOTROM=1
+	CFLAGS_EXTRA += -fno-optimize-crc
 endif
 
 SW_SRC  ?= $(wildcard $(SW_DIR)/*.c)
