@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2026-04-02 15:30:33
+// Last Modified : 2026-06-01 16:56:23
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,12 +14,13 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2026-04-02 15:30:33
+// Last Modified : 2026-06-01 16:56:23
 // Description   : 
 // ----------------------------------------------------------------------
 
 package SOPHON_PKG;
 
+    localparam REGFILE_LEN  = `ifdef SOPHON_RVE 16 `else 32 `endif;
     // ----------------------------------------------------------------------
     //  memory map
     // ----------------------------------------------------------------------

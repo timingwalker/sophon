@@ -17,11 +17,8 @@
                                 
 // SubFeature
 `ifdef SOPHON_EEI
-    `define SOPHON_EEI_NOALIGN
     `define SOPHON_EEI_SREG
     `define SOPHON_EEI_GPIO
-    `define EEI_RS_MAX 10
-    `define EEI_RD_MAX 10
 `endif
 
 // SubSubFeature

@@ -14,22 +14,20 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-12 10:22:46
-// Last Modified : 2026-05-29 15:54:18
+// Last Modified : 2026-06-01 16:46:19
 // Description   : snapshot regfile     
 // ----------------------------------------------------------------------
 
-module SNAPREG(
+module SNAPREG (
 `ifdef SOPHON_EEI_SREG
      input  logic                               clk_i
     ,input  logic                               rst_ni
     ,input  logic                               sreg_req     
     ,input  logic [6:0]                         sreg_funct7  
-    ,input  logic [4:0]                         sreg_batch_start 
-    ,input  logic [4:0]                         sreg_batch_len 
-    ,input  logic [31:0]                        sreg_rs_val[`EEI_RS_MAX-1:0]    
+    ,input  logic [31:0]                        sreg_rs_val[SOPHON_PKG::REGFILE_LEN-1:0]    
     ,output logic                               sreg_ack   
     ,output logic                               sreg_error   
-    ,output logic [31:0]                        sreg_rd_val[`EEI_RD_MAX-1:0] 
+    ,output logic [31:0]                        sreg_rd_val[SOPHON_PKG::REGFILE_LEN-1:0] 
     ,output logic [31:0]                        sreg_rd_idx_onehot
 `endif
 );
@@ -58,7 +56,7 @@ module SNAPREG(
 
     genvar i;
     generate
-        for (i=1; i<32; i=i+1) begin:gen_snapreg
+        for (i=1; i<SOPHON_PKG::REGFILE_LEN; i=i+1) begin:gen_snapreg
             always_ff @(posedge clk_i, negedge rst_ni) begin
                 if(~rst_ni) begin
                     snapreg[i] <= 32'd0;

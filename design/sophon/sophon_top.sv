@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2026-05-29 15:36:20
+// Last Modified : 2026-06-01 17:00:06
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -109,15 +109,15 @@ module SOPHON_TOP (
     SOPHON_PKG::mem_ack_t  core_brom_ack;
 
 `ifdef SOPHON_EEI
-    logic                  eei_req;
-    logic                  eei_ext;
-    logic [2:0]            eei_funct3;
-    logic [6:0]            eei_funct7;
-    logic [31:0]           eei_rs_val[`EEI_RS_MAX-1:0];
-    logic                  eei_ack;
-    logic                  eei_error;
-    logic [31:0]           eei_rd_idx_onehot;
-    logic [31:0]           eei_rd_val[`EEI_RD_MAX-1:0];
+    logic                                   eei_req;
+    logic                                   eei_ext;
+    logic [2:0]                             eei_funct3;
+    logic [6:0]                             eei_funct7;
+    logic [31:0]                            eei_rs_val[SOPHON_PKG::REGFILE_LEN-1:0];
+    logic                                   eei_ack;
+    logic                                   eei_error;
+    logic [SOPHON_PKG::REGFILE_LEN-1:0]     eei_rd_idx_onehot;
+    logic [31:0]                            eei_rd_val[SOPHON_PKG::REGFILE_LEN-1:0];
 `endif
 
 

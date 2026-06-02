@@ -14,79 +14,72 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2026-05-29 17:20:37
+// Last Modified : 2026-06-02 16:35:34
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
-module SOPHON (
-     input  logic                        clk_i
-    ,input  logic                        clk_neg_i
-    ,input  logic                        rst_ni
-    ,input  logic [31:0]                 bootaddr_i
-    ,input  logic [31:0]                 hart_id_i
+module SOPHON #(
+        parameter int unsigned TBDTBD  = 16
+)(
+     input  logic                                   clk_i
+    ,input  logic                                   clk_neg_i
+    ,input  logic                                   rst_ni
+    ,input  logic [31:0]                            bootaddr_i
+    ,input  logic [31:0]                            hart_id_i
 `ifdef SOPHON_CLINT
     // interupt 
-    ,input  logic                        irq_mei_i
-    ,input  logic                        irq_mti_i
-    ,input  logic                        irq_msi_i
+    ,input  logic                                   irq_mei_i
+    ,input  logic                                   irq_mti_i
+    ,input  logic                                   irq_msi_i
 `endif
 `ifdef SOPHON_RVDEBUG
     // debug halt request
-    ,input  logic                        dm_req_i
+    ,input  logic                                   dm_req_i
 `endif
     // instruction fetch interface
-    ,output logic                        inst_req_o
-    ,output logic [31:0]                 inst_addr_o
-    ,input  logic                        inst_ack_i
-    ,input  logic [31:0]                 inst_rdata_i
-    ,input  logic                        inst_error_i
+    ,output logic                                   inst_req_o
+    ,output logic [31:0]                            inst_addr_o
+    ,input  logic                                   inst_ack_i
+    ,input  logic [31:0]                            inst_rdata_i
+    ,input  logic                                   inst_error_i
     // lsu interface
-    ,output logic                        lsu_req_o
-    ,output logic                        lsu_we_o
-    ,output logic [31:0]                 lsu_addr_o //align to 4 bytes
-    ,output logic [31:0]                 lsu_wdata_o
-    ,output logic [3:0]                  lsu_wstrb_o
-    ,input  logic                        lsu_ack_i
-    ,input  logic                        lsu_error_i
-    ,input  logic [31:0]                 lsu_rdata_i
+    ,output logic                                   lsu_req_o
+    ,output logic                                   lsu_we_o
+    ,output logic [31:0]                            lsu_addr_o //align to 4 bytes
+    ,output logic [31:0]                            lsu_wdata_o
+    ,output logic [3:0]                             lsu_wstrb_o
+    ,input  logic                                   lsu_ack_i
+    ,input  logic                                   lsu_error_i
+    ,input  logic [31:0]                            lsu_rdata_i
 `ifdef SOPHON_EEI
     // enhanced extension interface
-    ,output logic                        eei_req_o
-    ,output logic                        eei_ext_o
-    ,output logic [2:0]                  eei_funct3_o
-    ,output logic [6:0]                  eei_funct7_o
-    ,output logic [31:0]                 eei_rs_val_o[`EEI_RS_MAX-1:0]
-    ,input  logic                        eei_ack_i //nedege
-    ,input  logic                        eei_error_i
-    ,input  logic [31:0]                 eei_rd_idx_onehot_i
-    ,input  logic [31:0]                 eei_rd_val_i[`EEI_RD_MAX-1:0]
+    ,output logic                                   eei_req_o
+    ,output logic                                   eei_ext_o
+    ,output logic [2:0]                             eei_funct3_o
+    ,output logic [6:0]                             eei_funct7_o
+    ,output logic [31:0]                            eei_rs_val_o[SOPHON_PKG::REGFILE_LEN-1:0]
+    ,input  logic                                   eei_ack_i //nedege
+    ,input  logic                                   eei_error_i
+    ,input  logic [SOPHON_PKG::REGFILE_LEN-1:0]     eei_rd_idx_onehot_i
+    ,input  logic [31:0]                            eei_rd_val_i[SOPHON_PKG::REGFILE_LEN-1:0]
 `endif
 `ifdef SOPHON_CLIC
     // CLIC interface
-    ,input  logic                        clic_irq_req_i
-    ,input  logic                        clic_irq_shv_i
-    ,input  logic [4:0]                  clic_irq_id_i
-    ,input  logic [7:0]                  clic_irq_level_i
-    ,output logic                        clic_irq_ack_o
-    ,output logic [7:0]                  clic_irq_intthresh_o
-    ,output logic                        clic_mnxti_clr_o
-    ,output logic [4:0]                  clic_mnxti_id_o
+    ,input  logic                                   clic_irq_req_i
+    ,input  logic                                   clic_irq_shv_i
+    ,input  logic [4:0]                             clic_irq_id_i
+    ,input  logic [7:0]                             clic_irq_level_i
+    ,output logic                                   clic_irq_ack_o
+    ,output logic [7:0]                             clic_irq_intthresh_o
+    ,output logic                                   clic_mnxti_clr_o
+    ,output logic [4:0]                             clic_mnxti_id_o
 `endif
 `ifdef PROBE
     // Debug signal
-    ,output logic [139:0]                probe_sophon_o
+    ,output logic [139:0]                           probe_sophon_o
 `endif
 );
 
-
-    // ----------------------------------------------------------------------
-    //  PARAMETER DEFINE
-    // ----------------------------------------------------------------------
-    `ifdef SOPHON_RVE
-        localparam REGFILE_LEN=16;
-    `else
-        localparam REGFILE_LEN=32;
-    `endif
 
 
     // ----------------------------------------------------------------------
@@ -169,7 +162,7 @@ module SOPHON (
                  npc_sel_jump, npc_sel_branch_taken;
     logic [31:0] rs1_val_org, rs2_val_org;
     logic [31:0] rs1_val, rs2_val, rd_val;
-    logic [31:0] regfile[REGFILE_LEN-1:0];
+    logic [31:0] regfile[SOPHON_PKG::REGFILE_LEN-1:0];
 
     logic [4:0]  op_6_2;
     logic [2:0]  funct3;
@@ -1367,7 +1360,7 @@ module SOPHON (
     `ifdef SOPHON_EEI
         logic                   op_is_cust0, op_is_cust1;
         logic                   retire_eei;
-        logic                   wr_regfile_eei;
+        logic                   wr_regfile_eei_single, wr_regfile_eei_batch;
 
         assign op_is_cust0      = inst_32b & (op_6_2==5'b00010);
         assign op_is_cust1      = inst_32b & (op_6_2==5'b01010);
@@ -1381,7 +1374,7 @@ module SOPHON (
         assign eei_funct7_o     = funct7;
 
         // eei rs channel
-        for (genvar i=0; i<`EEI_RS_MAX; i++) begin : gen_eei_rs_val_o
+        for (genvar i=0; i<SOPHON_PKG::REGFILE_LEN; i++) begin : gen_eei_rs_val_o
             if ( i==0 ) begin: gen_eei_rs0
                 assign eei_rs_val_o[i] = op_is_cust0 ? rs1_val : regfile[i];
             end
@@ -1393,8 +1386,11 @@ module SOPHON (
             end
         end
 
-        assign wr_regfile_eei = eei_req_o & eei_ack_i & (~eei_error_i);
-        assign retire_eei     = eei_req_o & eei_ack_i & (~eei_error_i);
+        assign retire_eei = eei_req_o & eei_ack_i & (~eei_error_i);
+
+        assign wr_regfile_eei_single = retire_eei & ~eei_ext_o;
+        assign wr_regfile_eei_batch  = retire_eei & eei_ext_o;
+
     `endif
 
 
@@ -1699,39 +1695,40 @@ module SOPHON (
 
     always_comb begin
         unique case (1)
-            wb_adder   : rd_val = adder_result[31:0];
-            wb_cmp     : rd_val = {31'b0, cmp_result};
-            wb_bit     : rd_val = bit_result;
-            wb_shifter : rd_val = shifter_result;
-            wb_lsu     : rd_val = lsu_result;
-            wb_jump    : rd_val = pc + 4;
-            `ifdef SOPHON_ZICSR
-            wb_csr     : rd_val = csr_rdata;
-            `endif
-            is_lui     : rd_val = u_u_imm[31:0];
-            default    : rd_val = 32'd0;
+            wb_cmp                : rd_val = {31'b0, cmp_result};
+            wb_bit                : rd_val = bit_result;
+            wb_shifter            : rd_val = shifter_result;
+            wb_lsu                : rd_val = lsu_result;
+            wb_jump               : rd_val = pc + 4;
+            is_lui                : rd_val = u_u_imm[31:0];
+        `ifdef SOPHON_ZICSR
+            wb_csr                : rd_val = csr_rdata;
+        `endif
+        `ifdef SOPHON_EEI
+            wr_regfile_eei_single : rd_val = eei_rd_val_i[0];
+        `endif
+            default               : rd_val = adder_result[31:0]; //for wb_adder
         endcase
     end
 
     assign wr_regfile = inst_data_1d_vld & ( wb_adder   | wb_cmp | wb_bit | wb_jump
                                            | wb_shifter | wb_lsu | is_lui
                                             `ifdef SOPHON_ZICSR  | wb_csr `endif
+                                            `ifdef SOPHON_EEI    | wr_regfile_eei_single `endif
                                            );
 
-    REGFILE #( 
-        .REGFILE_LEN ( REGFILE_LEN )
-     ) U_REGFILE(
-       . clk_i               ( clk_i               )
-       ,.rst_ni              ( rst_ni              )
-       ,.wr_regfile_i        ( wr_regfile          )
-       ,.rd_idx_i            ( rd_idx              )
-       ,.rd_val_i            ( rd_val              )
-    `ifdef SOPHON_EEI
-       ,.wr_regfile_eei_i    ( wr_regfile_eei      )
-       ,.eei_rd_idx_onehot_i ( eei_rd_idx_onehot_i )
-       ,.eei_rd_val_i        ( eei_rd_val_i        )
-    `endif
-       ,.regfile_o           ( regfile             )
+    REGFILE U_REGFILE(
+       . clk_i               ( clk_i                ) 
+       ,.rst_ni              ( rst_ni               ) 
+       ,.wr_regfile_i        ( wr_regfile           ) 
+       ,.rd_idx_i            ( rd_idx               ) 
+       ,.rd_val_i            ( rd_val               ) 
+       `ifdef SOPHON_EEI
+       ,.wr_regfile_eei_i    ( wr_regfile_eei_batch ) 
+       ,.eei_rd_idx_onehot_i ( eei_rd_idx_onehot_i  ) 
+       ,.eei_rd_val_i        ( eei_rd_val_i         ) 
+       `endif
+       ,.regfile_o           ( regfile              ) 
     );
 
     assign rs1_val = rs1_val_org;

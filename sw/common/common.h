@@ -36,8 +36,8 @@ typedef __u32 u32;
 #define io_out_batch(rd,rs1,rs2)        ".insn r 0x2b,0,0b1100000,"#rd","#rs1","#rs2
 #define io_in_batch(rd,rs1,rs2)         ".insn r 0x2b,0,0b1100001,"#rd","#rs1","#rs2
 
-#define snapreg_save(rd,rs1,rs2)         ".insn r 0x2b,0b001,0b0000000,"#rd","#rs1","#rs2
-#define snapreg_recover(rd,rs1,rs2)         ".insn r 0x2b,0b001,0b1000000,"#rd","#rs1","#rs2
+#define snapreg_save(rd,rs1,rs2)         ".insn r 0x2b,0b000,0b0000000,"#rd","#rs1","#rs2
+#define snapreg_recover(rd,rs1,rs2)         ".insn r 0x2b,0b000,0b1000000,"#rd","#rs1","#rs2
 
 int printf(const char* fmt, ...);
 void usleep(uint32_t us);

@@ -14,29 +14,27 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2026-05-28 17:02:05
-// Last Modified : 2026-05-29 17:20:58
+// Last Modified : 2026-06-01 16:58:15
 // Description   : 
 // ----------------------------------------------------------------------
 
-module REGFILE #(
-    parameter int unsigned REGFILE_LEN  = 32
-)(
-     input  logic                     clk_i
-    ,input  logic                     rst_ni
-    ,input  logic                     wr_regfile_i
-    ,input  logic  [4:0]              rd_idx_i
-    ,input  logic  [31:0]             rd_val_i
+module REGFILE (
+     input  logic                                   clk_i
+    ,input  logic                                   rst_ni
+    ,input  logic                                   wr_regfile_i
+    ,input  logic  [4:0]                            rd_idx_i
+    ,input  logic  [31:0]                           rd_val_i
 `ifdef SOPHON_EEI
-    ,input  logic                     wr_regfile_eei_i
-    ,input  logic  [REGFILE_LEN-1:0]  eei_rd_idx_onehot_i
-    ,input  logic  [31:0]             eei_rd_val_i[REGFILE_LEN-1:0]
+    ,input  logic                                   wr_regfile_eei_i
+    ,input  logic  [SOPHON_PKG::REGFILE_LEN-1:0]    eei_rd_idx_onehot_i
+    ,input  logic  [31:0]                           eei_rd_val_i[SOPHON_PKG::REGFILE_LEN-1:0]
 `endif
-    ,output logic  [31:0]             regfile_o[REGFILE_LEN-1:0]
+    ,output logic  [31:0]                           regfile_o[SOPHON_PKG::REGFILE_LEN-1:0]
 );
 
     genvar i;
     generate
-        for (i=1; i< REGFILE_LEN; i=i+1) begin:gen_regfile
+        for (i=1; i< SOPHON_PKG::REGFILE_LEN; i=i+1) begin:gen_regfile
             always_ff @(posedge clk_i, negedge rst_ni) begin
                 if(~rst_ni) begin
                     regfile_o[i] <= 32'd0;

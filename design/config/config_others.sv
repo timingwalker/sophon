@@ -40,19 +40,7 @@
     `endif
 `endif
 
-`ifdef SOPHON_EEI
-    `ifndef EEI_RS_MAX
-        `define EEI_RS_MAX 10
-    `endif
-    `ifndef EEI_RD_MAX
-        `define EEI_RD_MAX 10
-    `endif
-`endif
-
 `ifdef SOPHON_EEI_GPIO
-    // `ifndef SOPHON_EEI_RS_LOCK
-    //     `define SOPHON_EEI_RS_LOCK
-    // `endif
     `ifndef FGPIO_NUM
         `define FGPIO_NUM 24
     `endif
