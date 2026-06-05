@@ -257,7 +257,7 @@ module SOPHON_TOP (
 
     INST_ITF_DEMUX #(
         .CH0_NEG_BASE ( SOPHON_PKG::BROM_BASE     ) ,
-        .CH0_NEG_END  ( SOPHON_PKG::ITCM_END      ) ,
+        .CH0_NEG_END  ( SOPHON_PKG::BROM_END      ) ,
         .CH1_NEG_BASE ( SOPHON_PKG::ITCM_BASE     ) ,
         .CH1_NEG_END  ( SOPHON_PKG::ITCM_END      ) ,
         .CH2_POS_BASE ( SOPHON_PKG::EXT_INST_BASE ) ,

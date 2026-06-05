@@ -83,13 +83,7 @@ module TCM_WRAP
                 // addr_common: counts in byte
                 BW_SP_RAM
                 #(
-                `ifdef ECOS_202512
-                    // This shuttle does not support memory compiler, and TCMs are limited to instance number.
-                    // Simplely reduce the high region of one TCM bank. User must check the size of software.
-                    .ADDR_WIDTH ( $clog2(BANK_DEPTH/8) ), 
-                `else
                     .ADDR_WIDTH ( $clog2(BANK_DEPTH) ), 
-                `endif
                     .DATA_WIDTH ( DATA_WIDTH         )
                 )
                 U_BW_SP_RAM
@@ -141,4 +135,3 @@ module TCM_WRAP
     endgenerate
 
 endmodule
-

@@ -32,15 +32,9 @@ package SOPHON_PKG;
     localparam TCM_OFFSET     = 32'h0001_0000;
     localparam ITCM_OFFSET    = 32'h0000_0000;
     localparam DTCM_OFFSET    = 32'h0008_0000;
-`ifdef ECOS_202512
-    localparam BROM_SIZE      = 32'h0000_1000;
-    localparam ITCM_SIZE      = 32'h0000_1000;
-    localparam DTCM_SIZE      = 32'h0000_1000;
-`else
     localparam BROM_SIZE      = 32'h0001_0000;
-    localparam ITCM_SIZE      = 32'h0000_2000;
-    localparam DTCM_SIZE      = 32'h0000_2000;
-`endif
+    localparam ITCM_SIZE      = `SOPHON_ITCM_SIZE;
+    localparam DTCM_SIZE      = `SOPHON_DTCM_SIZE;
 
     // Do Not change
     localparam BROM_END       = BROM_BASE+BROM_SIZE -1;
@@ -199,4 +193,3 @@ package SOPHON_PKG;
 
 
 endpackage
-

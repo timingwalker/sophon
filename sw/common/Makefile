@@ -7,6 +7,7 @@ LDS_FILE      ?= link.ld
 
 SW_SIMPLE_CRT ?= NO
 SW_RVE        ?= NO
+SOPHON_STACK_SHIFT ?=
 
 # ----------------------------------------------------------------------
 #  Parameters
@@ -23,6 +24,9 @@ ifeq ($(SW_RVE), YES)
 endif
 ifeq ($(SW_ZICSR), YES)
 	DEFINE += -D__RVZICSR=1
+endif
+ifneq ($(SOPHON_STACK_SHIFT),)
+	DEFINE += -DSTKSHIFT=$(SOPHON_STACK_SHIFT)
 endif
 
 ifeq ($(SW_SIMPLE_CRT), YES)

@@ -20,7 +20,6 @@ extern volatile uint32_t hwinfo;
 
 #define CPU_CYCLES_PER_US 25
 
-
 void usleep(uint32_t us) {
     uint64_t start = get_mcycle();
     uint64_t target = start;

@@ -3,6 +3,7 @@ include common/toolchain.mk
 LDS_FILE      ?= link.ld
 SW_SIMPLE_CRT ?= NO
 SW_RVE        ?= NO
+SOPHON_STACK_SHIFT ?=
 
 
 # ----------------------------------------------------------------------
@@ -22,7 +23,7 @@ MAKE_APP  := $(filter-out common build bootrom,$(subfold))
 CLEAN_APP := $(addprefix clean_,$(filter-out common build bootrom,$(subfold)))
 
 $(MAKE_APP): %: clean_%
-	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) SW_RVE=$(SW_RVE) SW_ZICSR=$(SW_ZICSR)
+	$(MAKE) -C common PROGRAM=$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SW_SIMPLE_CRT=$(SW_SIMPLE_CRT) SW_RVE=$(SW_RVE) SW_ZICSR=$(SW_ZICSR) SOPHON_STACK_SHIFT=$(SOPHON_STACK_SHIFT)
 
 $(CLEAN_APP): clean_%:
 	rm -rf ./build/$*
@@ -49,7 +50,7 @@ CLEAN_BMARK  := $(addprefix clean_,$(MAKE_BMARK))
 dhrystone_CFLAGS_EXTRA := -Wno-error=implicit-int -Wno-error=implicit-function-declaration
 
 $(MAKE_BMARK): %: clean_%
-	$(MAKE) -C common PROGRAM=$* SW_DIR=../$(BMARKS_SRC_DIR)/$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) CFLAGS_EXTRA="$($*_CFLAGS_EXTRA)"
+	$(MAKE) -C common PROGRAM=$* SW_DIR=../$(BMARKS_SRC_DIR)/$* MARCH=$(MARCH) MABI=$(MABI) LDS_FILE=$(LDS_FILE) SOPHON_STACK_SHIFT=$(SOPHON_STACK_SHIFT) CFLAGS_EXTRA="$($*_CFLAGS_EXTRA)"
 
 $(CLEAN_BMARK): clean_%:
 	rm -rf ./build/$*

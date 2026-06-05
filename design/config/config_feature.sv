@@ -6,6 +6,8 @@
 `define CORE_COMPLEX_AXI_SLV
 
 `define BOOT_ADDR BROM_BASE
+`define SOPHON_ITCM_SIZE 32'h0001_0000
+`define SOPHON_DTCM_SIZE 32'h0001_0000
 
 //`define SOPHON_RVDEBUG
 `define SOPHON_EEI
@@ -25,4 +27,3 @@
 `ifdef SOPHON_EEI_GPIO
     `define FGPIO_NUM 24
 `endif
-

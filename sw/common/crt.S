@@ -100,16 +100,14 @@ _start:
   li a1, 1
 1:bgeu a0, a1, 1b
 
-#if __RV32E == 0
-    #give each core 16KB of stack + TLS
-    #define STKSHIFT 14
-#else
-    #give each core 2KB of stack + TLS
-    #define STKSHIFT 11
-#endif
-#if __SIMPLE_CRT == 1
-    #give each core 256B of stack + TLS
+#ifndef STKSHIFT
+  #if __SIMPLE_CRT == 1
     #define STKSHIFT 8
+  #elif __RV32E == 1
+    #define STKSHIFT 11
+  #else
+    #define STKSHIFT 14
+  #endif
 #endif
   add sp, a0, 1
   sll sp, sp, STKSHIFT

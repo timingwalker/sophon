@@ -251,6 +251,7 @@ void xmodem_bootloader(void) {
         uart_putc(g_console_port, 'j');
         uart_putc(g_console_port, '\n');
 
+    #if DEBUG_INFO == 1
         // Debug: dump ITCM[0..31] and DTCM[0..31]
         // added by Claude Code
         volatile uint32_t *itcm = (volatile uint32_t *)0x80010000;
@@ -277,11 +278,7 @@ void xmodem_bootloader(void) {
             uart_putc(g_console_port, ' ');
         }
         uart_putc(g_console_port, '\n');
-
-        // Debug: setup trap handler before jumping to ITCM
-        // added by Claude Code to catch exceptions
-        extern void trap_entry(void);
-        asm volatile ("csrw mtvec, %0" : : "r"(&trap_entry));
+    #endif
 
         asm volatile ( "li t0,0x80010000" );
         asm volatile ( "jalr ra, t0, 0" );
