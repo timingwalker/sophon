@@ -7,7 +7,7 @@ module SOPHON_FPGA_TOP (
     input  logic       sys_rst_n,
     input  logic       uart_rx,
     output logic       uart_tx,
-    inout  wire [23:6] gpio,
+    inout  wire [23:0] gpio,
     output logic [5:0] led
 );
 
@@ -15,12 +15,46 @@ module SOPHON_FPGA_TOP (
     logic pll_lock;
     logic core_rst_n;
 
-    GOWIN_RPLL_10M u_core_pll (
-        .clkin  ( sys_clk    ),
-        .reset  ( ~sys_rst_n ),
-        .clkout ( core_clk   ),
-        .lock   ( pll_lock   )
+    rPLL u_core_pll (
+        .CLKOUT   (             ),
+        .LOCK     ( pll_lock    ),
+        .CLKOUTP  (             ),
+        .CLKOUTD  ( core_clk    ),
+        .CLKOUTD3 (             ),
+        .RESET    ( ~sys_rst_n  ),
+        .RESET_P  ( 1'b0        ),
+        .CLKIN    ( sys_clk     ),
+        .CLKFB    ( 1'b0        ),
+        .FBDSEL   ( 6'b0        ),
+        .IDSEL    ( 6'b0        ),
+        .ODSEL    ( 6'b0        ),
+        .PSDA     ( 4'b0        ),
+        .DUTYDA   ( 4'b0        ),
+        .FDLY     ( 4'b0        )
     );
+    // 10MHz
+    defparam u_core_pll.FCLKIN = "27";
+    defparam u_core_pll.DYN_IDIV_SEL = "false";
+    defparam u_core_pll.IDIV_SEL = 2;
+    defparam u_core_pll.DYN_FBDIV_SEL = "false";
+    defparam u_core_pll.FBDIV_SEL = 19;
+    defparam u_core_pll.DYN_ODIV_SEL = "false";
+    defparam u_core_pll.ODIV_SEL = 4;
+    defparam u_core_pll.PSDA_SEL = "0000";
+    defparam u_core_pll.DYN_DA_EN = "false";
+    defparam u_core_pll.DUTYDA_SEL = "1000";
+    defparam u_core_pll.CLKOUT_FT_DIR = 1'b1;
+    defparam u_core_pll.CLKOUTP_FT_DIR = 1'b1;
+    defparam u_core_pll.CLKOUT_DLY_STEP = 0;
+    defparam u_core_pll.CLKOUTP_DLY_STEP = 0;
+    defparam u_core_pll.CLKFB_SEL = "internal";
+    defparam u_core_pll.CLKOUT_BYPASS = "false";
+    defparam u_core_pll.CLKOUTP_BYPASS = "false";
+    defparam u_core_pll.CLKOUTD_BYPASS = "false";
+    defparam u_core_pll.DYN_SDIV_SEL = 18;
+    defparam u_core_pll.CLKOUTD_SRC = "CLKOUT";
+    defparam u_core_pll.CLKOUTD3_SRC = "CLKOUT";
+    defparam u_core_pll.DEVICE = "GW1NR-9C";
 
     assign core_rst_n = sys_rst_n & pll_lock;
 
@@ -35,11 +69,10 @@ module SOPHON_FPGA_TOP (
     assign led[3] = pll_lock;
     assign led[4] = core_rst_n;
     assign led[5] = uart_tx;
-    assign gpio_in_val[5:0] = gpio_out_val[5:0];
 
     genvar i;
     generate
-        for (i = 6; i < `FGPIO_NUM; i = i + 1) begin : gen_gpio
+        for (i = 0; i < `FGPIO_NUM; i = i + 1) begin : gen_gpio
             assign gpio[i] = gpio_dir[i] ? gpio_out_val[i] : 1'bz;
             assign gpio_in_val[i] = gpio[i];
         end
@@ -52,7 +85,7 @@ module SOPHON_FPGA_TOP (
     assign led[3] = 1'b1;
     assign led[4] = uart_tx;
     assign led[5] = uart_rx;
-    assign gpio = {18{1'bz}};
+    assign gpio = {24{1'bz}};
 `endif
 
     CORE_COMPLEX u_core_complex (

@@ -1,5 +1,5 @@
-set project_name sophon_gaoyun_top
 set script_dir [file dirname [file normalize [info script]]]
+source [file join $script_dir build_config.tcl]
 
-open_project [file join $script_dir $project_name "${project_name}.gprj"]
+open_project [file join $project_dir "${project_name}.gprj"]
 run all

@@ -1,4 +1,3 @@
-set project_name sophon_gaoyun_top
 set top_module SOPHON_FPGA_TOP
 set script_dir [file dirname [file normalize [info script]]]
 set repo_dir [file normalize [file join $script_dir ../..]]
@@ -103,20 +102,17 @@ if {[string length $result] > 0} {
     set sdc tang_nano_9k.sdc
 }
 
-set pattern {^`define.*GOWIN_RESOURCE_ANALYSIS}
-set result [regex_search_file $config_file $pattern]
-if {[string length $result] > 0} {
-    set fpga_board GOWIN_RESOURCE_ANALYSIS
-    set part_number GW5AT-LV60UG225C2/I1
-    set device_version B
-    set cst ""
-    set sdc ""
-}
-
 if {[string length $fpga_board] == 0} {
     puts "ERROR: You should define the Gowin FPGA board used in fpga_config.sv!"
     exit 1
 }
+
+set date [clock format [clock seconds] -format "%Y%m%d"]
+set target "sophon_$fpga_board"
+append target "_" $date
+set output_root [file join $script_dir output]
+set output_dir [file join $output_root $target]
+set project_name $target
 
 puts "####################################"
 puts "    fpga_board    : $fpga_board"
@@ -124,9 +120,12 @@ puts "    part_number   : $part_number"
 puts "    device_version: $device_version"
 puts "    cst           : $cst"
 puts "    sdc           : $sdc"
+puts "    target        : $target"
+puts "    output_dir    : $output_dir"
 puts "####################################"
 
-create_project -name $project_name -dir . -pn $part_number -device_version $device_version -force
+file mkdir $output_root
+create_project -name $project_name -dir $output_root -pn $part_number -device_version $device_version -force
 write_gowin_config \
     [file join $script_dir 0_gowin_config.sv]
 source [file join $script_dir read_design.tcl]
@@ -152,3 +151,8 @@ set_include_paths $process_config [list \
 ]
 
 file copy -force $process_config [file join [pwd] impl project_process_config.json]
+
+set fp [open [file join $script_dir build_config.tcl] w]
+puts $fp "set project_name \"$project_name\""
+puts $fp "set project_dir \"[pwd]\""
+close $fp

@@ -1,0 +1,9 @@
+sophon_gaoyun_top/
+impl/
+project/
+*.bin
+*.fs
+*.gprj
+*.gprj.user
+*.jou
+*.log

@@ -79,5 +79,4 @@ add_file [file join $repo_dir design/open-source/apb_uart_sv/uart_tx.sv]
 add_file [file join $repo_dir design/open-source/apb_uart_sv/uart_interrupt.sv]
 add_file [file join $repo_dir design/open-source/apb_uart_sv/io_generic_fifo.sv]
 
-add_file [file join $script_dir gowin_rpll_10m.sv]
 add_file [file join $script_dir SOPHON_FPGA_TOP.sv]
