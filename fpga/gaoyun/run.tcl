@@ -1,7 +1,7 @@
 set top_module SOPHON_FPGA_TOP
 set script_dir [file dirname [file normalize [info script]]]
 set repo_dir [file normalize [file join $script_dir ../..]]
-set config_file [file join $script_dir fpga_config.sv]
+set config_file [file join $script_dir ../fpga_config.sv]
 
 set fpga_board ""
 set part_number ""
@@ -51,7 +51,7 @@ proc set_include_paths {file_path paths} {
 proc write_gowin_config {file_path} {
     set fp [open $file_path w]
     puts $fp "`include \"../../design/config/config_feature.sv\""
-    puts $fp "`include \"fpga_config.sv\""
+    puts $fp "`include \"../fpga_config.sv\""
     puts $fp "`include \"../../design/config/config_others.sv\""
     close $fp
 }

@@ -1,13 +1,14 @@
 source "utils.tcl"
 
 set top_module "SOPHON_FPGA_TOP"
+set config_file "../fpga_config.sv"
 
 set fpga_board ""
 set part_number ""
 set xdc ""
 
 set pattern {^`define.*ARTY_A7_35T}
-set result [regex_search_file "fpga_config.sv" $pattern]
+set result [regex_search_file $config_file $pattern]
 if {[string length $result] > 0} {
     set fpga_board "ARTY_A7_35T"
     set part_number "xc7a35ticsg324-1L"
@@ -15,7 +16,7 @@ if {[string length $result] > 0} {
 }
 
 set pattern {^`define.*ARTY_A7_100T}
-set result [regex_search_file "fpga_config.sv" $pattern]
+set result [regex_search_file $config_file $pattern]
 if {[string length $result] > 0} {
     set fpga_board "ARTY_A7_100T"
     set part_number "xc7a100tcsg324-1"
@@ -23,7 +24,7 @@ if {[string length $result] > 0} {
 }
 
 set pattern {^`define.*GENESYS2}
-set result [regex_search_file "fpga_config.sv" $pattern]
+set result [regex_search_file $config_file $pattern]
 if {[string length $result] > 0} {
     set fpga_board "GENESYS2"
     set part_number "xc7k325tffg900-2"

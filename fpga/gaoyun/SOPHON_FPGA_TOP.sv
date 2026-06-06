@@ -66,6 +66,7 @@ module SOPHON_FPGA_TOP (
     //assign led = ~(gpio_dir[5:0] & gpio_out_val[5:0]);
     assign led[0] = sys_clk;
     assign led[1] = core_clk;
+    assign led[2] = 1'b1;
     assign led[3] = pll_lock;
     assign led[4] = core_rst_n;
     assign led[5] = uart_tx;

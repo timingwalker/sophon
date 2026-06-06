@@ -3,19 +3,19 @@ source "../../utils.tcl"
 set part_number ""
 
 set pattern {^`define.*ARTY_A7_35T}
-set result [regex_search_file "../../fpga_config.sv" $pattern]
+set result [regex_search_file "../../../fpga_config.sv" $pattern]
 if {[string length $result] > 0} {
     set part_number "xc7a35ticsg324-1L"
 }
 
 set pattern {^`define.*ARTY_A7_100T}
-set result [regex_search_file "../../fpga_config.sv" $pattern]
+set result [regex_search_file "../../../fpga_config.sv" $pattern]
 if {[string length $result] > 0} {
     set part_number "xc7a100tcsg324-1"
 }
 
 set pattern {^`define.*GENESYS2}
-set result [regex_search_file "../../fpga_config.sv" $pattern]
+set result [regex_search_file "../../../fpga_config.sv" $pattern]
 if {[string length $result] > 0} {
     set part_number "xc7k325tffg900-2"
 }
