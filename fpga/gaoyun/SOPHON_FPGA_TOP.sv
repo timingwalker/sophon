@@ -56,7 +56,11 @@ module SOPHON_FPGA_TOP (
     defparam u_core_pll.CLKOUTD3_SRC = "CLKOUT";
     defparam u_core_pll.DEVICE = "GW1NR-9C";
 
-    assign core_rst_n = sys_rst_n & pll_lock;
+    RST_SYNC u_rst_sync (
+        .clk_i       ( core_clk    ),
+        .rst_ni      ( pll_lock    ),
+        .rstn_sync_o ( core_rst_n  )
+    );
 
 `ifdef SOPHON_EEI_GPIO
     logic [`FGPIO_NUM-1:0] gpio_dir;
