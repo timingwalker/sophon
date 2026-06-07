@@ -1,7 +1,122 @@
 # Sophon - A time-repeatable RISC-V core optimized for control latency
 
-- [English](#english)
 - [中文](#中文)
+-  [English](#english)
+
+# 中文
+
+Sophon是一个可配置的RISC-V内核，支持RV32I(E)指令集，提供EEI自定义指令接口。
+
+
+  <img src="docs/img/sophon_overview.png" alt="sophon_overview" width="600">
+
+
+# FPGA
+
+Sophon支持的FPGA开发版：
+
+- Genesys-2
+- ARTY AT-35T/100T
+- TANG NANO 9K (高云FPGA）
+
+Release页面提供预编译好的.bit/.mcs文件和demo软件，可以直接烧写到FPGA开发板测试。
+
+- ARTY AT-35T 最新Release为：v0.5.0, 主频25MHz，波特率115200。
+- TANG NANO 9K最新Release为：v0.5.1, 主频10MHz，波特率115200。
+
+### ARTY A7-35T开发板的使用
+
+1. 连接开发板左侧的USB线，同时完成供电/bitstream烧写/软件下载/串口输出的功能。
+2. FPGA烧写成功之后，下方的LED灯点亮。
+3. 右上角的复位键可以用来复位Sophon内核。
+
+
+  <img src="docs/img/ARTY-A7-35T.jpeg" alt="ARTY-A7-35T" width="600">
+
+
+### TANG NANO 9K开发板的使用
+
+1. 连接开发板左侧的USB线，同时完成供电/bitstream烧写/软件下载/串口输出的功能。
+2. FPGA烧写成功之后，上方第一颗LED灯点亮。
+3. USB接口上方的复位键可以用来复位Sophon内核。
+
+
+  <img src="docs/img/TANG-NANO-9K.jpeg" alt="TANG-NANO-9K" width="600">
+
+
+
+### FPGA编译
+
+如果硬件代码有改动，需要在`fpga` 目录重新编译bitstream。
+
+```text
+fpga/
+  Makefile          # 统一 FPGA 编译入口
+  fpga_config.sv    # FPGA 目标板和平台相关配置
+  xilinx/           # Xilinx flow
+  gaoyun/           # Gowin flow
+```
+
+`fpga` 根目录下的 `Makefile`是统一入口，会读取 `fpga_config.sv` 中定义的目标宏，
+并自动分发到对应平台的FPGA flow。
+
+`fpga_config.sv` 中必须且只能打开一个目标板宏。
+
+| 目标宏 | Flow | 开发板 |
+| --- | --- | --- |
+| `ARTY_A7_35T` | `xilinx` | Digilent Arty A7-35T |
+| `TANG_NANO_9K` | `gaoyun` | Sipeed Tang Nano 9K |
+| `ARTY_A7_100T` | `xilinx` | Digilent Arty A7-100T |
+| `GENESYS2` | `xilinx` | Digilent Genesys 2 |
+
+在 `fpga` 目录下执行：
+
+```sh
+cd fpga
+make fpga
+```
+
+如果是Xilinx flow，需要提前生成ip：
+```sh
+make gen_ip
+```
+
+# 软件
+
+### 软件编译
+
+在sw目录下新增并编译软件代码，使用hello目录作为模板：
+
+```sh
+cd sw
+cp hello yourapp
+make yourapp
+（yourapp 替换为用户程序的名称）
+```
+
+正确编译软件后，在sw/build/yourapp目录下会出现yourapp.itcm.bin和yourapp.dtcm.bin两个文件，分别对应itcm/dtcm的数据。
+
+### 软件下载
+
+通过UART接口使用xmodem协议下载软件代码。
+
+1. 按下复位按钮，从bootrom启动并进入软件下载流程。此时，串口上会持续输出字符“C”。
+2. 使用支持XModem协议的串口调试软件，先下载yourapp.itcm.bin文件 
+3. 下载成功后，串口输出“-d”字符，然后持续输出“C”，等待下载dtcm。
+4. 继续使用串口调试软件下载yourapp.dtcm.bin文件。
+5. 下载成功之后，串口输出“j”字符，之后跳转执行yourapp中的软件代码。
+
+注意：
+1. 软件下载成功后，再次按下复位键，bootrom会跳过下载流程，直接跳转到ITCM执行用户代码。
+2. 如果需要再次下载软件，需要对开发板重新上电（即：插拔一次USB线）。
+
+推荐Windows系统使用UartAssist软件；Mac OS系统使用CoolTerm
+
+下图是UartAssist中的设置：
+
+  <img src="docs/img/uart-download.png" alt="uart-download" width="800">
+
+下载hello例程之后，串口会输出硬件配置信息。
 
 # English
 
@@ -61,8 +176,6 @@ An AXI wrapper is provided to make it easier to be integrated into an AXI-based 
 
 #### CORE_COMPLEX
 You can use it as a stand-alone RISC-V core or a co-processor directly.
-
-![overview](docs/img/sophon_overview.png)
 
 Hardware parameters are defined in the following file:
 > design/config/config_feature.sv
@@ -190,76 +303,3 @@ If you are interested in Sophon and use it in your work, please cite:
 # Issues
 
 If you find any problems, please report it by creating a new issue.
-
-
-# 中文
-
-# FPGA
-
-Release页面提供预编译好的.bit/.mcs文件，可以直接烧写到FPGA开发板。
-
-### ARTY A7-35T开发板
-
-1. 只需要连接开发板左侧的USB线，就可以同时完成供电/位流文件烧写/软件下载/串口输出的功能。
-2. FPGA烧写成功之后，下方的LED灯点亮。
-3. 右上角的复位键可以用来复位Sophon内核。
-
-根据实际需要，还可以连接开发板上方的Pmod接口：
-1. Pmod JA是JTAG调试接口，如果RTL设计中使能了RVDEBUG功能，可以将JTAG调试器连接到该接口上，然后使用openocd/gdb对软件进行调试。
-2. Pmod JB、JC、JD为GPIO接口，可以根据实际需求使用。
-
-![Arty](docs/img/ARTY-A7-35T.jpeg)
-
-### FPGA编译
-
-在改动硬件设计之后，可以在FPGA目录下重新编译：
-```sh
-cd fpga
-make gen_ip
-make fpga
-```
-
-# 软件
-
-### 软件编译
-
-可以在sw目录下新增并编译软件代码：
-```sh
-cd sw
-cp hello yourapp
-make yourapp
-（yourapp 替换为用户程序的名称）
-```
-
-### UART下载
-
-在没有软件调试需求的情况下，推荐使用UART下载程序。
-
-正确编译软件后，在sw/build/yourapp目录下会出现yourapp.itcm.bin和yourapp.dtcm.bin两个文件，分别对应itcm/dtcm的数据。
-
-下载流程：
-
-1. 按下右上方的复位按钮，使RISC-V内核从bootrom启动并进入下载软件流程。正确操作的情况下，串口上会持续输出字符“C”
-2. 使用支持XModem协议的串口调试软件，如UartAssist，先下载yourapp.itcm.bin文件。
-3. 下载itcm成功后，串口输出“-d”字符，然后持续输出“C”字符，等待下载dtcm文件。
-4. 继续使用串口调试软件下载yourapp.dtcm.bin文件。
-5. 下载dtcm成功之后，串口输出“j”字符，之后跳转执行yourapp中的软件代码。
-
-注意：
-1. 软件下载成功后，再次按下复位键，bootrom会跳过下载流程，直接跳转到ITCM执行用户代码。
-2. 如果需要再次下载软件，需要对开发板重新上电（即：插拔一次USB线）。
-
-下图是串口调试软件中的设置：
-
-![uart](docs/img/uart-download.png)
-
-下载hello例程之后，串口会输出硬件配置信息。
-
-### JTAG下载
-
-通过JTAG下载并调试软件的前提是：RTL设计中开启了RVDebug功能（ 即：打开宏定义SOPHON_RVDEBUG），并正确连接开发板上的JTAG接口。
-
-之后，可以使用Openocd/gdb下载并调试软件，Openocd配置文件参考：
-```sh
-sw/common/sophon.cfg
-```
