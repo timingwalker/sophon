@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2026-06-01 17:00:06
+// Last Modified : 2026-06-08 10:31:04
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -119,6 +119,16 @@ module SOPHON_TOP (
     logic [SOPHON_PKG::REGFILE_LEN-1:0]     eei_rd_idx_onehot;
     logic [31:0]                            eei_rd_val[SOPHON_PKG::REGFILE_LEN-1:0];
 `endif
+`ifdef SOPHON_CLIC
+    logic                                   clic_irq_req;
+    logic                                   clic_irq_shv;
+    logic [4:0]                             clic_irq_id;
+    logic [7:0]                             clic_irq_level;
+    logic                                   clic_irq_ack;
+    logic [7:0]                             clic_irq_intthresh;
+    logic                                   clic_mnxti_clr;
+    logic [4:0]                             clic_mnxti_id;
+`endif
 
 
     // ----------------------------------------------------------------------
@@ -183,14 +193,14 @@ module SOPHON_TOP (
         ,.eei_rd_val_i        ( eei_rd_val           ) 
     `endif
     `ifdef SOPHON_CLIC
-       ,.clic_irq_req_i       ( clic_irq_req_i       ) 
-       ,.clic_irq_shv_i       ( clic_irq_shv_i       ) 
-       ,.clic_irq_id_i        ( clic_irq_id_i        ) 
-       ,.clic_irq_level_i     ( clic_irq_level_i     ) 
-       ,.clic_irq_ack_o       ( clic_irq_ack_o       ) 
-       ,.clic_irq_intthresh_o ( clic_irq_intthresh_o )
-       ,.clic_mnxti_clr_o     ( clic_mnxti_clr_o     )
-       ,.clic_mnxti_id_o      ( clic_mnxti_id_o      )
+       ,.clic_irq_req_i       ( clic_irq_req         ) 
+       ,.clic_irq_shv_i       ( clic_irq_shv         ) 
+       ,.clic_irq_id_i        ( clic_irq_id          ) 
+       ,.clic_irq_level_i     ( clic_irq_level       ) 
+       ,.clic_irq_ack_o       ( clic_irq_ack         ) 
+       ,.clic_irq_intthresh_o ( clic_irq_intthresh   )
+       ,.clic_mnxti_clr_o     ( clic_mnxti_clr       )
+       ,.clic_mnxti_id_o      ( clic_mnxti_id        )
     `endif
     `ifdef PROBE
        ,.probe_sophon_o       ( probe_sophon_core    )
@@ -396,6 +406,16 @@ module SOPHON_TOP (
              ,.eei_error_o          ( eei_error           ) 
              ,.eei_rd_idx_onehot_o  ( eei_rd_idx_onehot   ) 
              ,.eei_rd_val_o         ( eei_rd_val          ) 
+        `ifdef SOPHON_CLIC
+             ,.clic_irq_req_o       ( clic_irq_req        ) 
+             ,.clic_irq_shv_o       ( clic_irq_shv        ) 
+             ,.clic_irq_id_o        ( clic_irq_id         ) 
+             ,.clic_irq_level_o     ( clic_irq_level      ) 
+             ,.clic_irq_ack_i       ( clic_irq_ack        ) 
+             ,.clic_irq_intthresh_i ( clic_irq_intthresh  ) 
+             ,.clic_mnxti_clr_i     ( clic_mnxti_clr      ) 
+             ,.clic_mnxti_id_i      ( clic_mnxti_id       ) 
+        `endif
         `ifdef SOPHON_EEI_GPIO
              ,.gpio_dir_o           ( gpio_dir_o          ) 
              ,.gpio_in_val_i        ( gpio_in_val_i       ) 

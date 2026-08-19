@@ -15,12 +15,13 @@
 
 `define SOPHON_ZICSR
 `define SOPHON_CLINT
-//`define SOPHON_CLIC
+`define SOPHON_CLIC
                                 
 // SubFeature
 `ifdef SOPHON_EEI
     `define SOPHON_EEI_SREG
     `define SOPHON_EEI_GPIO
+    `define SOPHON_EEI_VSM
 `endif
 
 // SubSubFeature

@@ -6,13 +6,16 @@
 #TC := multiply
 #TC := tc_exception
 #TC := rv32ui-p-lb
+#TC := tc_clic
+#TC := tc_fgpio
+TC := fgpio_uart
 #TC := tc_clint
 #TC := median
 #TC := freemodbus
 #TC := FreeRTOS
 #TC := towers
 #TC := fgpio_spi
-TC := nav_test
+#TC := nav_test
 
 MEM_MODE      ?= TCM
 LDS_FILE      ?= link.ld

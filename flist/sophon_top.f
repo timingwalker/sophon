@@ -14,6 +14,7 @@
 ../../design/cust/cust.sv
 ../../design/cust/fgpio.sv
 ../../design/cust/snapreg.sv
+../../design/cust/vsm.sv
 
 ../../design/common/std_wrap_ckinv.sv
 ../../design/common/std_wrap_ckand.sv

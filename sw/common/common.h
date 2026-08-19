@@ -26,18 +26,35 @@ typedef __u32 u32;
 #define PLIC_CLAIM_COMPLET  0x200004
 
 
-// regular EEI instructions
-#define io_in_raw(rd,rs1,rs2)           ".insn r 0x0b,0,0b0000000,"#rd","#rs1","#rs2
-#define io_in_bit(rd,rs1,rs2)       ".insn r 0x0b,0,0b0000001,"#rd","#rs1","#rs2
-#define io_out_raw(rd,rs1,rs2)          ".insn r 0x0b,0,0b1000000,"#rd","#rs1","#rs2
-#define io_out_bit(rd,rs1,rs2)      ".insn r 0x0b,0,0b1000001,"#rd","#rs1","#rs2
-#define io_cfg_reg(rd,rs1,rs2)         ".insn r 0x0b,0,0b1111111,"#rd","#rs1","#rs2
-// enhanced EEI instructions
-#define io_out_batch(rd,rs1,rs2)        ".insn r 0x2b,0,0b1100000,"#rd","#rs1","#rs2
-#define io_in_batch(rd,rs1,rs2)         ".insn r 0x2b,0,0b1100001,"#rd","#rs1","#rs2
 
-#define snapreg_save(rd,rs1,rs2)         ".insn r 0x2b,0b000,0b0000000,"#rd","#rs1","#rs2
-#define snapreg_recover(rd,rs1,rs2)         ".insn r 0x2b,0b000,0b1000000,"#rd","#rs1","#rs2
+// ── custom0: opcode=0x0B ──
+#define CUSTOM0_R(funct3, funct7, rd,  rs1, rs2)  \
+        __asm__ volatile(                         \
+        ".insn r 0x0B, " #funct3 ", " #funct7     \
+        ", x" #rd ", x" #rs1 ", x" #rs2           \
+    )
+// ── custom1: opcode=0x2B ──
+#define CUSTOM1_R(funct3, funct7, rd,  rs1, rs2)  \
+        __asm__ volatile(                         \
+        ".insn r 0x2B, " #funct3 ", " #funct7     \
+        ", x" #rd ", x" #rs1 ", x" #rs2           \
+    )
+
+#define IO_IN_RAW(rd, rs1, rs2)   CUSTOM0_R(0, 0x0, rd,  rs1, rs2)
+#define IO_IN_BIT(rd, rs1, rs2)   CUSTOM0_R(0, 0x1, rd,  rs1, rs2)
+#define IO_OUT_RAW(rd, rs1, rs2)  CUSTOM0_R(0, 0x40, rd,  rs1, rs2)
+#define IO_OUT_BIT(rd, rs1, rs2)  CUSTOM0_R(0, 0x41, rd,  rs1, rs2)
+#define IO_CFG_REG(rd, rs1, rs2)  CUSTOM0_R(0, 0x7F, rd,  rs1, rs2)
+
+#define SREG_SAVE(rd, rs1, rs2)    CUSTOM1_R(0, 0x0, rd,  rs1, rs2)
+#define SREG_RECOVER(rd, rs1, rs2) CUSTOM1_R(0, 0x40, rd,  rs1, rs2)
+
+#define VSM_START(rd, rs1, rs2)   CUSTOM0_R(1, 0x0, rd,  rs1, rs2)
+#define VSM_STOP(rd, rs1, rs2)   CUSTOM0_R(1, 0x1, rd,  rs1, rs2)
+#define VSM_SET_CMP(rd, rs1, rs2)   CUSTOM0_R(1, 0x2, rd,  rs1, rs2)
+#define VSM_SET_SM(rd, rs1, rs2)   CUSTOM0_R(1, 0x3, rd,  rs1, rs2)
+
+
 
 int printf(const char* fmt, ...);
 void usleep(uint32_t us);

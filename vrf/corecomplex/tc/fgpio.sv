@@ -7,7 +7,7 @@
 
     uart_bus
     #(
-        .BAUD_RATE ( 4166667 ) , // 50M/12
+        .BAUD_RATE ( 115200  ) , // 50M/12
         .PARITY_EN ( 0       ) 
     )
     u_fgpio_uart_bus
@@ -20,7 +20,6 @@
     assign fgpio_uart_rx  = gpio_dir[1] ? gpio_out_val[1] : 1'b1;
     assign gpio_in_val[0] = gpio_dir[0] ? gpio_out_val[0] : fgpio_uart_tx;
 
-
     assign gpio_in_val[1] = 1'b1;
     assign gpio_in_val[2] = 1'b0;
     assign gpio_in_val[3] = 1'b1;
@@ -28,29 +27,55 @@
         assign gpio_in_val[h] = 1'b1;
     end
 
+
+
     task fgpio_uart;
     begin
     
         #0.2ms;
+
+    `ifdef CORE_COMPLEX_AXI_SLV
+        // DMA tx
+        axi_rand_master.run_write_word(32'h8009_0008, 64'h0000_0000_8009_0100, 8'd0, 3'b010);
+        axi_rand_master.run_write_word(32'h8009_0100, 64'h0000_0000_0000_003D, 8'd0, 3'b010);
+        axi_rand_master.run_write_word(32'h8009_0104, 64'h0000_0000_0000_0031, 8'd0, 3'b010);
+        axi_rand_master.run_write_word(32'h8009_0108, 64'h0000_0000_0000_003E, 8'd0, 3'b010);
+        axi_rand_master.run_write_word(32'h8009_0000, 64'h0000_0000_0000_0003, 8'd0, 3'b010);
+    `else
+        $display("====== interface CORE_COMPLEX_AXI_SLV is not enabled.\n");
+    `endif
     
-        #50us;
+        // rx in gpio 0
+        #0.6ms;
         u_fgpio_uart_bus.send_char("h");
-        #50us;
         u_fgpio_uart_bus.send_char("e");
-        #50us;
         u_fgpio_uart_bus.send_char("l");
-        #50us;
         u_fgpio_uart_bus.send_char("l");
-        #50us;
         u_fgpio_uart_bus.send_char("o");
-        #50us;
         u_fgpio_uart_bus.send_char("!");
-        #50us;
         u_fgpio_uart_bus.send_char("<");
-        #50us;
+        #0.2ms;
+        u_fgpio_uart_bus.send_char("h");
+        u_fgpio_uart_bus.send_char("a");
+        u_fgpio_uart_bus.send_char("p");
+        u_fgpio_uart_bus.send_char("p");
+        u_fgpio_uart_bus.send_char("y");
+        u_fgpio_uart_bus.send_char("!");
+        u_fgpio_uart_bus.send_char("!");
+
+    //  `ifdef CORE_COMPLEX_AXI_SLV
+    //      // DMA tx
+    //      axi_rand_master.run_write_word(32'h8009_0008, 64'h0000_0000_8009_0100, 8'd0, 3'b010);
+    //      axi_rand_master.run_write_word(32'h8009_0100, 64'h0000_0000_0000_00AA, 8'd0, 3'b010);
+    //      axi_rand_master.run_write_word(32'h8009_0000, 64'h0000_0000_0000_0001, 8'd0, 3'b010);
+    //  `else
+    //      $display("====== interface CORE_COMPLEX_AXI_SLV is not enabled.\n");
+    //  `endif
         
     end
     endtask
+
+
 
     task fgpio_spi;
     begin
@@ -103,6 +128,8 @@
    
     end
     endtask
+
+
 
     task fgpio;
     begin
