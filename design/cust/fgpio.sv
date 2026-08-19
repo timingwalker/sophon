@@ -14,32 +14,34 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 18:00:39
-// Last Modified : 2026-06-01 17:07:40
+// Last Modified : 2026-08-07 11:12:50
 // Description   : fast gpio control instruction extention  
 // ----------------------------------------------------------------------
 
 module FGPIO (
 `ifdef SOPHON_EEI_GPIO
-     input  logic                               clk_i
-    ,input  logic                               clk_neg_i
-    ,input  logic                               rst_ni
-    ,input  logic                               fgpio_req
-    ,input  logic [6:0]                         fgpio_funct7  
-    ,input  logic [31:0]                        fgpio_rs_val[SOPHON_PKG::REGFILE_LEN-1:0]    
-    ,output logic                               fgpio_ack     
-    ,output logic                               fgpio_error   
-    ,output logic [31:0]                        fgpio_rd_val
-    ,output logic [`FGPIO_NUM-1:0]              gpio_dir     
-    ,input  logic [`FGPIO_NUM-1:0]              gpio_in_val  
-    ,output logic [`FGPIO_NUM-1:0]              gpio_out_val 
+     input  logic                             clk_i
+    ,input  logic                             clk_neg_i
+    ,input  logic                             rst_ni
+    ,input  logic                             fgpio_req
+    ,input  logic [6:0]                       fgpio_funct7  
+    ,input  logic [31:0]                      fgpio_rs_val[SOPHON_PKG::REGFILE_LEN-1:0]    
+    ,output logic                             fgpio_ack     
+    ,output logic                             fgpio_error   
+    ,output logic [31:0]                      fgpio_rd_val
+    ,output logic [`FGPIO_NUM-1:0]            gpio_dir     
+    ,input  logic [`FGPIO_NUM-1:0]            gpio_in_val  
+    ,output logic [`FGPIO_NUM-1:0]            gpio_out_val 
 `endif
 );
+
 
 `ifdef SOPHON_EEI_GPIO
 
     // regular EEI instructions
     `define IO_IN_RAW            ( fgpio_funct7==7'b0000000 ) 
     `define IO_IN_BIT            ( fgpio_funct7==7'b0000001 ) 
+    // TBD R-imm?
     `define IO_OUT_RAW           ( fgpio_funct7==7'b1000000 ) 
     `define IO_OUT_BIT           ( fgpio_funct7==7'b1000001 ) 
     `define IO_CFG_REG           ( fgpio_funct7==7'b1111111 ) 

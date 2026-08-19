@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-10-31 10:42:04
-// Last Modified : 2026-06-02 16:35:34
+// Last Modified : 2026-08-10 15:17:32
 // Description   : SOPHON: A time-repeatable and low-latency RISC-V core
 // ----------------------------------------------------------------------
 
@@ -1963,10 +1963,11 @@ module SOPHON #(
                                            ((inst_req_o && !inst_ack_i) |=> $stable(inst_addr_o)) ) 
                                 else $fatal(1,"Instruction fetcing interface unstable!");
     
-        inst_lsu_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
-                                           ((lsu_req_o && !lsu_ack_i) |=> $stable({lsu_we_o, lsu_addr_o, lsu_wdata_o, lsu_wstrb_o})) ) 
-                                else $fatal(1,"LSU interface unstable!");
-    
+      //inst_lsu_stable: assert property ( @(posedge clk_neg_i) disable iff (~rst_ni) 
+      inst_lsu_stable: assert property ( @(posedge clk_i) disable iff (~rst_ni) 
+                                         ((lsu_req_o && !lsu_ack_i) |=> $stable({lsu_we_o, lsu_addr_o, lsu_wdata_o, lsu_wstrb_o})) ) 
+                              else $fatal(1,"LSU interface unstable!");
+
     `endif
 
 

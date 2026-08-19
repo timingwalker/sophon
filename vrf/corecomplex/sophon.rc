@@ -2,7 +2,7 @@ Magic 271485
 Revision Verdi_N-2017.12
 
 ; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
-viewPort 0 28 1707 480 330 65
+viewPort 0 28 2048 648 540 65
 
 ; File list:
 ; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
@@ -16,16 +16,27 @@ signalSpacing 5
 
 ; windowTimeUnit is used for zoom, cursor & marker
 ; waveform viewport range
-zoom 0.000000 1156611600.000000
-cursor 0.000000
-marker 0.000000
+zoom 0.000000 8810654409.007912
+cursor 295640000.000000
+marker 508220000.000000
 
 ; user define markers
 ; userMarker time_pos marker_name color linestyle
 ; visible top row signal index
-top 2
+top 0
 ; marker line index
-markerPos 18
+markerPos 26
+
+; rename signal list
+; addRenameSig new_name org_name
+activeDirFile "" "/home/huangzhe/projects/tw/sophon/vrf/corecomplex/test.fsdb"
+
+addRenameSig "/tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/ra - regfile[1][31:0]" "/tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[1][31:0]"
+
+; rename signal list
+; addRenameSig new_name org_name
+
+addRenameSig "/tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/sp - regfile[2][31:0]" "/tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[2][31:0]"
 
 ; event list
 ; addEvent event_name event_expression
@@ -42,7 +53,7 @@ COMPLEX_EVENT_END
 
 ; toolbar current search type
 ; curSTATUS search_type
-curSTATUS ByChange
+curSTATUS ByValue
 
 
 addGroup "instruction"
@@ -51,20 +62,28 @@ addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/
 addSignal -h 15 -holdScope retire_vld
 addSignal -h 15 -UNSIGNED -HEX -holdScope inst_data_1d[31:0]
 addSignal -h 15 -holdScope inst_data_1d_vld
-addGroup "ra"
-addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[1][31:0]
-addGroup "sp"
-addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/regfile[2][31:0]
+addGroup "lsu"
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/lsu_req_o
+addSignal -h 15 -UNSIGNED -HEX -holdScope lsu_addr_o[31:0]
+addSignal -h 15 -holdScope lsu_ack_i
+addGroup "regfile"
+addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/ra - regfile[1][31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope sp - regfile[2][31:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope regfile[31:0]
 addGroup "exception"
 addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_SOPHON/ex_vld
 addSignal -h 15 -holdScope irq_vld
-addGroup "G7"
+addSignal -h 15 -UNSIGNED -UDEC -holdScope clic_irq_id_i[4:0]
+addSignal -h 15 -holdScope exit_irq_ex
+addGroup "flag" -e FALSE
 addSignal -h 15 -UNSIGNED -HEX /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/U_DTCM/gen_spilt_ram[0]/U_BW_SP_RAM/ram_block[3][31:0]
 addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[2][31:0]
 addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[1][31:0]
 addSignal -h 15 -UNSIGNED -HEX -holdScope ram_block[0][31:0]
-addGroup "G8"
+addGroup "io"
 addSignal -h 15 /tb/u_dut/U_UART/tx_o
+addSignal -h 15 /tb/u_dut/U_SOPHON_AXI_TOP/U_SOPHON_TOP/gpio_in_val_i[0]
+addSignal -h 15 -holdScope gpio_out_val_o[1]
 addGroup "G9"
 
 ; getSignalForm Scope Hierarchy Status

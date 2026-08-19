@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 16:52:34
-// Last Modified : 2026-06-01 17:02:28
+// Last Modified : 2026-06-09 16:24:24
 // Description   : Custom execution units
 // ----------------------------------------------------------------------
 
@@ -36,6 +36,16 @@ module CUST (
     ,output logic [`FGPIO_NUM-1:0]                  gpio_dir_o
     ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
     ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
+`endif
+`ifdef SOPHON_CLIC
+    ,output logic                                   clic_irq_req_o
+    ,output logic                                   clic_irq_shv_o
+    ,output logic [4:0]                             clic_irq_id_o
+    ,output logic [7:0]                             clic_irq_level_o
+    ,input  logic                                   clic_irq_ack_i
+    ,input  logic [7:0]                             clic_irq_intthresh_i
+    ,input  logic                                   clic_mnxti_clr_i
+    ,input  logic [4:0]                             clic_mnxti_id_i
 `endif
 `endif
 );
@@ -69,6 +79,43 @@ module CUST (
             .gpio_dir        ( gpio_dir_o     ) ,
             .gpio_in_val     ( gpio_in_val_i  ) ,
             .gpio_out_val    ( gpio_out_val_o ) 
+        );
+
+    `endif
+
+
+    // ----------------------------------------------------------------------
+    //  virtual state machine instruction extention
+    // ----------------------------------------------------------------------
+
+    `ifdef SOPHON_EEI_VSM
+
+        logic               vsm_req;
+        logic               vsm_ack;
+        logic               vsm_error;
+        logic [31:0]        vsm_rd_val;
+
+        assign vsm_req = eei_req_i & ~eei_ext_i & ( eei_funct3_i==3'b001 ) ;
+
+        VSM U_VSM (
+             .clk_i                ( clk_i                ) 
+            ,.rst_ni               ( rst_ni               ) 
+            ,.vsm_req              ( vsm_req              ) 
+            ,.vsm_funct7           ( eei_funct7_i         ) 
+            ,.vsm_rs_val           ( eei_rs_val_i         ) 
+            ,.vsm_ack              ( vsm_ack              ) 
+            ,.vsm_error            ( vsm_error            ) 
+            ,.vsm_rd_val           ( vsm_rd_val           ) 
+        `ifdef SOPHON_CLIC
+            ,.clic_irq_req_o       ( clic_irq_req_o       ) 
+            ,.clic_irq_shv_o       ( clic_irq_shv_o       ) 
+            ,.clic_irq_id_o        ( clic_irq_id_o        ) 
+            ,.clic_irq_level_o     ( clic_irq_level_o     ) 
+            ,.clic_irq_ack_i       ( clic_irq_ack_i       ) 
+            ,.clic_irq_intthresh_i ( clic_irq_intthresh_i ) 
+            ,.clic_mnxti_clr_i     ( clic_mnxti_clr_i     ) 
+            ,.clic_mnxti_id_i      ( clic_mnxti_id_i      )
+        `endif
         );
 
     `endif

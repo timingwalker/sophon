@@ -237,10 +237,82 @@ int16_handle:
 int17_handle:
 1:
     j 1b
+.weak int18_handle
+int18_handle:
+1:
+    j 1b
+.weak int19_handle
+int19_handle:
+1:
+    j 1b
+.weak int20_handle
+int20_handle:
+1:
+    j 1b
+.weak int21_handle
+int21_handle:
+1:
+    j 1b
+.weak int22_handle
+int22_handle:
+1:
+    j 1b
+.weak int23_handle
+int23_handle:
+1:
+    j 1b
+.weak int24_handle
+int24_handle:
+1:
+    j 1b
+.weak int25_handle
+int25_handle:
+1:
+    j 1b
+.weak int26_handle
+int26_handle:
+1:
+    j 1b
+.weak int27_handle
+int27_handle:
+1:
+    j 1b
+.weak int28_handle
+int28_handle:
+1:
+    j 1b
+.weak int29_handle
+int29_handle:
+1:
+    j 1b
+
+.weak int30_handle
+int30_handle:
+1:
+    j 1b
+.weak int31_handle
+int31_handle:
+1:
+    j 1b
+.weak int32_handle
+int32_handle:
+1:
+    j 1b
+.weak int33_handle
+int33_handle:
+1:
+    j 1b
+.weak int34_handle
+int34_handle:
+1:
+    j 1b
+
 
 .global __dummy
 __dummy:
     j __dummy
+
+
 
 .section .data
 .align 6
@@ -250,6 +322,23 @@ vector_table:
     .endr
     .long int16_handle
     .long int17_handle
+    .long int18_handle
+    .long int19_handle
+    .long int20_handle
+    .long int21_handle
+    .long int22_handle
+    .long int23_handle
+    .long int24_handle
+    .long int25_handle
+    .long int26_handle
+    .long int27_handle
+    .long int28_handle
+    .long int29_handle
+    .long int30_handle
+    .long int31_handle
+    .long int32_handle
+    .long int33_handle
+    .long int34_handle
 
 
 .section ".tohost","aw",@progbits
