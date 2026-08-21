@@ -57,6 +57,9 @@ if __name__ == "__main__":
 
         with open(cfg_file, "w") as file:
             file.write( "// hw regress test\n")
+            # Always boot from ITCM, skip bootrom
+            # workaround for UART missing in bootcode
+            file.write( "`define BOOT_ADDR ITCM_BASE\n")
 
         hw_feature = always_on_hw_feature + " " + hw_feature
 

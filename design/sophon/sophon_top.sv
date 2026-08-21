@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-01 11:10:35
-// Last Modified : 2026-06-08 10:31:04
+// Last Modified : 2026-08-21 13:18:55
 // Description   : Top module of the SOPHON core        
 //                 - Core
 //                 - L1 Inst RAM
@@ -129,6 +129,16 @@ module SOPHON_TOP (
     logic                                   clic_mnxti_clr;
     logic [4:0]                             clic_mnxti_id;
 `endif
+`ifdef SOPHON_EEI_VSM
+    logic                                   vsm_clic_irq_req;
+    logic                                   vsm_clic_irq_shv;
+    logic [4:0]                             vsm_clic_irq_id;
+    logic [7:0]                             vsm_clic_irq_level;
+    logic                                   vsm_clic_irq_ack;
+    logic [7:0]                             vsm_clic_irq_intthresh;
+    logic                                   vsm_clic_mnxti_clr;
+    logic [4:0]                             vsm_clic_mnxti_id;
+`endif
 
 
     // ----------------------------------------------------------------------
@@ -209,6 +219,29 @@ module SOPHON_TOP (
     assign inst_req.we    = '0;
     assign inst_req.wdata = '0;
     assign inst_req.wstrb = '0;
+
+    `ifdef SOPHON_CLIC
+    // TODO: workaroude for clic regress test
+    // VSM should be modify to fit clic interface better
+
+        assign clic_irq_req   = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? vsm_clic_irq_req   : `endif clic_irq_req_i   ; 
+        assign clic_irq_shv   = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? vsm_clic_irq_shv   : `endif clic_irq_shv_i   ; 
+        assign clic_irq_id    = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? vsm_clic_irq_id    : `endif clic_irq_id_i    ; 
+        assign clic_irq_level = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? vsm_clic_irq_level : `endif clic_irq_level_i ; 
+
+        assign clic_irq_ack_o       = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? '0 : `endif clic_irq_ack       ; 
+        assign clic_irq_intthresh_o = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? '0 : `endif clic_irq_intthresh ; 
+        assign clic_mnxti_clr_o     = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? '0 : `endif clic_mnxti_clr     ; 
+        assign clic_mnxti_id_o      = `ifdef SOPHON_EEI_VSM vsm_clic_irq_req ? '0 : `endif clic_mnxti_id      ; 
+
+    `ifdef SOPHON_EEI_VSM
+        assign vsm_clic_irq_ack       = vsm_clic_irq_req ? clic_irq_ack       : '0;
+        assign vsm_clic_irq_intthresh = vsm_clic_irq_req ? clic_irq_intthresh : '0;
+        assign vsm_clic_mnxti_clr     = vsm_clic_irq_req ? clic_mnxti_clr     : '0;
+        assign vsm_clic_mnxti_id      = vsm_clic_irq_req ? clic_mnxti_id      : '0;
+    `endif
+
+    `endif
 
 
     // ----------------------------------------------------------------------
@@ -394,32 +427,32 @@ module SOPHON_TOP (
     `ifdef SOPHON_EEI
 
         CUST U_CUST (
-              .clk_i                ( clk_i               ) 
-             ,.clk_neg_i            ( clk_neg_i           ) 
-             ,.rst_ni               ( rst_soft_ni         ) 
-             ,.eei_req_i            ( eei_req             ) 
-             ,.eei_ext_i            ( eei_ext             ) 
-             ,.eei_funct3_i         ( eei_funct3          ) 
-             ,.eei_funct7_i         ( eei_funct7          ) 
-             ,.eei_rs_val_i         ( eei_rs_val          ) 
-             ,.eei_ack_o            ( eei_ack             ) 
-             ,.eei_error_o          ( eei_error           ) 
-             ,.eei_rd_idx_onehot_o  ( eei_rd_idx_onehot   ) 
-             ,.eei_rd_val_o         ( eei_rd_val          ) 
-        `ifdef SOPHON_CLIC
-             ,.clic_irq_req_o       ( clic_irq_req        ) 
-             ,.clic_irq_shv_o       ( clic_irq_shv        ) 
-             ,.clic_irq_id_o        ( clic_irq_id         ) 
-             ,.clic_irq_level_o     ( clic_irq_level      ) 
-             ,.clic_irq_ack_i       ( clic_irq_ack        ) 
-             ,.clic_irq_intthresh_i ( clic_irq_intthresh  ) 
-             ,.clic_mnxti_clr_i     ( clic_mnxti_clr      ) 
-             ,.clic_mnxti_id_i      ( clic_mnxti_id       ) 
+              .clk_i                ( clk_i                     ) 
+             ,.clk_neg_i            ( clk_neg_i                 ) 
+             ,.rst_ni               ( rst_soft_ni               ) 
+             ,.eei_req_i            ( eei_req                   ) 
+             ,.eei_ext_i            ( eei_ext                   ) 
+             ,.eei_funct3_i         ( eei_funct3                ) 
+             ,.eei_funct7_i         ( eei_funct7                ) 
+             ,.eei_rs_val_i         ( eei_rs_val                ) 
+             ,.eei_ack_o            ( eei_ack                   ) 
+             ,.eei_error_o          ( eei_error                 ) 
+             ,.eei_rd_idx_onehot_o  ( eei_rd_idx_onehot         ) 
+             ,.eei_rd_val_o         ( eei_rd_val                ) 
+        `ifdef SOPHON_EEI_VSM
+             ,.clic_irq_req_o       ( vsm_clic_irq_req          ) 
+             ,.clic_irq_shv_o       ( vsm_clic_irq_shv          ) 
+             ,.clic_irq_id_o        ( vsm_clic_irq_id           ) 
+             ,.clic_irq_level_o     ( vsm_clic_irq_level        ) 
+             ,.clic_irq_ack_i       ( vsm_clic_irq_ack          ) 
+             ,.clic_irq_intthresh_i ( vsm_clic_irq_intthresh    ) 
+             ,.clic_mnxti_clr_i     ( vsm_clic_mnxti_clr        ) 
+             ,.clic_mnxti_id_i      ( vsm_clic_mnxti_id         ) 
         `endif
         `ifdef SOPHON_EEI_GPIO
-             ,.gpio_dir_o           ( gpio_dir_o          ) 
-             ,.gpio_in_val_i        ( gpio_in_val_i       ) 
-             ,.gpio_out_val_o       ( gpio_out_val_o      ) 
+             ,.gpio_dir_o           ( gpio_dir_o                ) 
+             ,.gpio_in_val_i        ( gpio_in_val_i             ) 
+             ,.gpio_out_val_o       ( gpio_out_val_o            ) 
         `endif
         );
 

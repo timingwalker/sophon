@@ -81,7 +81,7 @@ char uart_rd_lsr(void* uartctrl)
 void __attribute__ ((naked)) int30_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
     IO_IN_BIT(10,0,UART_RX);
     asm volatile("bne x10, x0, exit_int30\n");
@@ -91,7 +91,7 @@ void __attribute__ ((naked)) int30_handle(void)
     VSM_SET_SM(0,6,7);
 
     asm volatile("exit_int30:" );
-    SREG_RECOVER(0,1,30);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 
 }
@@ -99,36 +99,35 @@ void __attribute__ ((naked)) int30_handle(void)
 void __attribute__ ((naked)) int31_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
     // read this bit
-    IO_IN_BIT(28,0,UART_RX); // t3=x28
-    asm volatile("slli t3, t3, 7 \n");
+    IO_IN_BIT(3,0,UART_RX); 
+    asm volatile("slli x3, x3, 7 \n");
 
     // load ctrl block
-    asm volatile("la     t0, sys_uart_rx_ctrl\n"  );
-    asm volatile("lbu    t1, 2(t0)\n"     ); // ovf, used as r_data
-    asm volatile("lbu    t2, 3(t0)\n"     ); // cnt
+    asm volatile("la     x1, sys_uart_rx_ctrl\n"  );
+    asm volatile("lbu    x2, 2(x1)\n"     ); // ovf, used as r_data
     // merge to data
-    asm volatile("srli   t1, t1, 1 \n");
-    asm volatile("or     t3, t3, t1 \n");
-    asm volatile("sb     t3, 2(t0)\n"  );
+    asm volatile("srli   x2, x2, 1 \n");
+    asm volatile("or     x3, x3, x2 \n");
+    asm volatile("sb     x3, 2(x1)\n"  );
     // add cnt
-    asm volatile("lbu    t1, 3(t0)\n"    );
-    asm volatile("addi   t1, t1, 1\n"    );
-    asm volatile("sb     t1, 3(t0)\n"  );
+    asm volatile("lbu    x3, 3(x1)\n"    );
+    asm volatile("addi   x3, x3, 1\n"    );
+    asm volatile("sb     x3, 3(x1)\n"  );
 
     // send_cnt >= 8
-    asm volatile("li     t4, 8\n"    );
-    asm volatile("blt    t1, t4, exit_int31\n"     );
+    asm volatile("li     x2, 8\n"    );
+    asm volatile("blt    x3, x2, exit_int31\n"     );
+    asm volatile("sb     zero, 3(x1)\n"  ); // cnt=0
     // next state
-    asm volatile("li t5, 28 \n");
-    asm volatile("li t6, 1 \n");
-    VSM_SET_SM(0,30,31);
-    asm volatile("sb     zero, 3(t0)\n"  );
+    asm volatile("li x1, 28 \n");
+    asm volatile("li x2, 1 \n");
+    VSM_SET_SM(0,1,2);
 
     asm volatile("exit_int31:"  );
-    SREG_RECOVER(0,1,30);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 
 }
@@ -137,21 +136,21 @@ void __attribute__ ((naked)) int31_handle(void)
 void __attribute__ ((naked)) int28_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
     /* inline push (buf at ctrl+4, no pointer load) --- */
-    asm volatile("la    t0, sys_uart_rx_ctrl");
-    asm volatile("lbu   t1, 0(t0)");          /* wr */
-    asm volatile("lbu   t2, 1(t0)");          /* rd */
-    asm volatile("lbu   a0, 2(t0)\n"    );    // data (ovf)
-    asm volatile("addi  t3, t1, 1");
-    asm volatile("andi  t3, t3, 7");          /* BUF_MASK=7 */
-    asm volatile("beq   t3, t2, 1f");         /* full -> overflow */
+    asm volatile("la    x3, sys_uart_rx_ctrl");
+    asm volatile("lbu   x1, 0(x3)");          /* wr */
+    asm volatile("lbu   x2, 1(x3)");          /* rd */
+    asm volatile("lbu   x5, 2(x3)\n"    );    // data (ovf)
+    asm volatile("addi  x4, x1, 1");
+    asm volatile("andi  x4, x4, 7");          /* BUF_MASK=7 */
+    asm volatile("beq   x4, x2, 1f");         /* full -> overflow */
     
-    // asm volatile("slli  t4, t1, 2");          /* wr * 4 */
-    asm volatile("add   t4, t0, t1");
-    asm volatile("sb    a0, 4(t4)");          /* buf[wr] (+4 folded into immediate) */
-    asm volatile("sb    t3, 0(t0)");          /* wr = next */
+    // asm volatile("slli  x6, x1, 2");          /* wr * 4 */
+    asm volatile("add   x6, x3, x1");
+    asm volatile("sb    x5, 4(x6)");          /* buf[wr] (+4 folded into immediate) */
+    asm volatile("sb    x4, 0(x3)");          /* wr = next */
     asm volatile("j     2f");
     
     asm volatile("1:");                        /* --- overflow: count ovf only --- */
@@ -159,10 +158,10 @@ void __attribute__ ((naked)) int28_handle(void)
 
     asm volatile("2:");                        /* --- exit --- */
     // next state
-    asm volatile("li x6, 30 \n");
-    asm volatile("li x7, 1 \n");
-    VSM_SET_SM(0,6,7);
-    SREG_RECOVER(0,1,30);
+    asm volatile("li x1, 30 \n");
+    asm volatile("li x2, 1 \n");
+    VSM_SET_SM(0,1,2);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 
 }
@@ -176,32 +175,32 @@ void __attribute__ ((naked)) int28_handle(void)
 void __attribute__ ((naked)) int21_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
     /* --- inline pop (ISR is the TX consumer) --- */
-    asm volatile("la    t0, sys_uart_tx_ctrl");
-    asm volatile("lbu   t1, 0(t0)");          /* wr (written by main) */
-    asm volatile("lbu   t2, 1(t0)");          /* rd (written by ISR) */
-    asm volatile("beq   t1, t2, 1f");         /* empty -> disable TX irq */
+    asm volatile("la    x3, sys_uart_tx_ctrl");
+    asm volatile("lbu   x1, 0(x3)");          /* wr (written by main) */
+    asm volatile("lbu   x2, 1(x3)");          /* rd (written by ISR) */
+    asm volatile("beq   x1, x2, 1f");         /* empty -> disable TX irq */
     
-    asm volatile("add   t3, t0, t2");
-    asm volatile("lbu   a0, 4(t3)");          /* buf[rd] */
-    asm volatile("addi  t2, t2, 1");
-    asm volatile("andi  t2, t2, 7");
-    asm volatile("sb    t2, 1(t0)");          /* rd = next */
+    asm volatile("add   x4, x3, x2");
+    asm volatile("lbu   x5, 4(x4)");          /* buf[rd] */
+    asm volatile("addi  x2, x2, 1");
+    asm volatile("andi  x2, x2, 7");
+    asm volatile("sb    x2, 1(x3)");          /* rd = next */
     
     /* --- mv to data(ovf) to be shifted out --- */
-    asm volatile("sb    a0, 2(t0)");
+    asm volatile("sb    x5, 2(x3)");
     
     // start bit
-    asm volatile("li x6, %0" :: "i"(UART_TX));
-    IO_OUT_RAW(0,0,6);
+    asm volatile("li x1, %0" :: "i"(UART_TX));
+    IO_OUT_RAW(0,0,1);
     // next state
-    asm volatile("li x6, 18 \n");
-    VSM_SET_SM(0,6,0);
+    asm volatile("li x1, 18 \n");
+    VSM_SET_SM(0,1,0);
 
     asm volatile("1:");           
-    SREG_RECOVER(0,1,30);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 
 }
@@ -210,41 +209,41 @@ void __attribute__ ((naked)) int21_handle(void)
 void __attribute__ ((naked)) int18_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
-    asm volatile("la     t4, sys_uart_tx_ctrl\n"  );
-    asm volatile("lbu    t5, 2(t4)\n"     ); // ovf, used as r_data
+    asm volatile("la     x3, sys_uart_tx_ctrl\n"  );
+    asm volatile("lbu    x5, 2(x3)\n"     ); // ovf, used as r_data
 
-    asm volatile("slli t6, t5, %0" :: "i"(UART_TX_SHIFT));
+    asm volatile("slli x6, x5, %0" :: "i"(UART_TX_SHIFT));
     asm volatile("li x7, %0" :: "i"(UART_TX));
-    IO_OUT_RAW(0,31,7); // t6=x31
+    IO_OUT_RAW(0,6,7); 
 
-    asm volatile("srli   t5, t5, 1\n"    );
-    asm volatile("sb     t5, 2(t4)\n"    );
+    asm volatile("srli   x5, x5, 1\n"    );
+    asm volatile("sb     x5, 2(x3)\n"    );
 
     // read send_cnt
-    asm volatile("lbu     t1, 3(t4)\n"    );
+    asm volatile("lbu     x1, 3(x3)\n"    );
     // send_cnt++
-    asm volatile("addi   t1, t1, 1\n"    );
-    asm volatile("sb     t1, 3(t4)\n"  );
+    asm volatile("addi   x1, x1, 1\n"    );
+    asm volatile("sb     x1, 3(x3)\n"  );
     // check if exit
-    asm volatile("li     t2, 8\n"    );
-    asm volatile("blt    t1, t2, exit_int18\n"     );
+    asm volatile("li     x2, 8\n"    );
+    asm volatile("blt    x1, x2, exit_int18\n"     );
     // send_cnt >= 8
-    asm volatile("sb     zero, 3(t4)\n"  );
+    asm volatile("sb     zero, 3(x3)\n"  );
     // set next state 
-    asm volatile("li x6, 19 \n");
-    VSM_SET_SM(0,6,0);
+    asm volatile("li x1, 19 \n");
+    VSM_SET_SM(0,1,0);
 
     asm volatile("exit_int18:\n");  
-    SREG_RECOVER(0,1,30);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 }
 
 void __attribute__ ((naked)) int19_handle(void)
 {
 
-    SREG_SAVE(0,1,30);
+    SREG_SAVE(0,1,15);
 
     // stop bit
     asm volatile("li x5,  0x1 \n");
@@ -256,7 +255,7 @@ void __attribute__ ((naked)) int19_handle(void)
     asm volatile("li x6, 21 \n");
     VSM_SET_SM(0,6,0);
 
-    SREG_RECOVER(0,1,30);
+    SREG_RECOVER(0,1,15);
     asm volatile( "mret" );
 
 }

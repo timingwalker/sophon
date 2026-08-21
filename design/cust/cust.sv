@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2023-01-11 16:52:34
-// Last Modified : 2026-06-09 16:24:24
+// Last Modified : 2026-08-21 13:02:28
 // Description   : Custom execution units
 // ----------------------------------------------------------------------
 
@@ -37,7 +37,7 @@ module CUST (
     ,input  logic [`FGPIO_NUM-1:0]                  gpio_in_val_i
     ,output logic [`FGPIO_NUM-1:0]                  gpio_out_val_o
 `endif
-`ifdef SOPHON_CLIC
+`ifdef SOPHON_EEI_VSM
     ,output logic                                   clic_irq_req_o
     ,output logic                                   clic_irq_shv_o
     ,output logic [4:0]                             clic_irq_id_o
@@ -106,7 +106,6 @@ module CUST (
             ,.vsm_ack              ( vsm_ack              ) 
             ,.vsm_error            ( vsm_error            ) 
             ,.vsm_rd_val           ( vsm_rd_val           ) 
-        `ifdef SOPHON_CLIC
             ,.clic_irq_req_o       ( clic_irq_req_o       ) 
             ,.clic_irq_shv_o       ( clic_irq_shv_o       ) 
             ,.clic_irq_id_o        ( clic_irq_id_o        ) 
@@ -115,7 +114,6 @@ module CUST (
             ,.clic_irq_intthresh_i ( clic_irq_intthresh_i ) 
             ,.clic_mnxti_clr_i     ( clic_mnxti_clr_i     ) 
             ,.clic_mnxti_id_i      ( clic_mnxti_id_i      )
-        `endif
         );
 
     `endif
@@ -200,7 +198,8 @@ module CUST (
 		end
 
 		always_comb begin
-			eei_rd_idx_onehot_o = sreg_rd_idx_onehot;
+			//eei_rd_idx_onehot_o = sreg_rd_idx_onehot;
+			eei_rd_idx_onehot_o = `ifdef SOPHON_EEI_SREG sreg_rd_idx_onehot `else '0 `endif;
 		`ifdef SOPHON_EEI_YOUR_CUST
 		    if ( your_cust_req )
 		    	eei_rd_val_o[i] = your_cust_rd_val[i];

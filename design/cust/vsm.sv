@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2026-06-09 15:40:00
-// Last Modified : 2026-08-10 18:11:28
+// Last Modified : 2026-08-21 13:21:41
 // Description   : virtual state machine through CLIC interface
 // ----------------------------------------------------------------------
 
@@ -28,7 +28,6 @@ module VSM(
     ,output logic                             vsm_ack     
     ,output logic                             vsm_error   
     ,output logic [31:0]                      vsm_rd_val
-`ifdef SOPHON_CLIC
     ,output logic                             clic_irq_req_o
     ,output logic                             clic_irq_shv_o
     ,output logic [4:0]                       clic_irq_id_o
@@ -37,7 +36,6 @@ module VSM(
     ,input  logic [7:0]                       clic_irq_intthresh_i
     ,input  logic                             clic_mnxti_clr_i
     ,input  logic [4:0]                       clic_mnxti_id_i
-`endif
 `endif
 );
 
@@ -118,11 +116,9 @@ for (genvar i=0; i<HW_NUM; i++) begin
 
 end
 
-`endif
 
 
 
-`ifdef SOPHON_CLIC
 
     assign clic_irq_level_o = 5'd255;
 
@@ -149,9 +145,9 @@ end
         end
     end
 
+
+
 `endif
-
-
 
 endmodule
 

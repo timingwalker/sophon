@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// Last Modified : 2026-06-01 16:56:23
+// Last Modified : 2026-08-21 16:58:30
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2022-11-03 15:20:49
-// Last Modified : 2026-06-01 16:56:23
+// Last Modified : 2026-08-21 16:58:30
 // Description   : 
 // ----------------------------------------------------------------------
 
@@ -33,8 +33,16 @@ package SOPHON_PKG;
     localparam ITCM_OFFSET    = 32'h0000_0000;
     localparam DTCM_OFFSET    = 32'h0008_0000;
     localparam BROM_SIZE      = 32'h0001_0000;
+`ifdef SOPHON_ITCM_SIZE
     localparam ITCM_SIZE      = `SOPHON_ITCM_SIZE;
+`else
+    localparam ITCM_SIZE      = 32'h0001_0000;
+`endif
+`ifdef SOPHON_DTCM_SIZE
     localparam DTCM_SIZE      = `SOPHON_DTCM_SIZE;
+`else
+    localparam DTCM_SIZE      = 32'h0001_0000;
+`endif
 
     // Do Not change
     localparam BROM_END       = BROM_BASE+BROM_SIZE -1;
