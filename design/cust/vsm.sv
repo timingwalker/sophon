@@ -14,7 +14,7 @@
 // limitations under the License.
 // ----------------------------------------------------------------------
 // Create Date   : 2026-06-09 15:40:00
-// Last Modified : 2026-08-21 13:21:41
+// Last Modified : 2026-08-26 15:24:51
 // Description   : virtual state machine through CLIC interface
 // ----------------------------------------------------------------------
 
@@ -42,9 +42,10 @@ module VSM(
 
 `ifdef SOPHON_EEI_VSM
 
-    localparam HW_NUM = 6;
+    localparam HW_NUM = 16;
 
     logic [31:0]               mtime;
+    logic [31:0]               mtime_cnt_over;
     logic [31:0]               mtimecmp[HW_NUM-1:0];
     logic [4:0]                state[HW_NUM-1:0];
     logic                      is_vsm_start;
@@ -52,6 +53,8 @@ module VSM(
     logic                      is_vsm_set_cmp;
     logic                      is_vsm_set_sm;
     logic                      vsm_counting;
+    logic                      clic_irq_req_next;
+    logic [4:0]                clic_irq_id_next;   
 
     // regular EEI instructions
     `define VSM_START           ( vsm_funct7==7'b0000000 ) 
@@ -79,20 +82,27 @@ module VSM(
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
+            mtime_cnt_over  <= 32'd1;
+        end
+        // rs1=255 is used to set count over valud of the timer
+        else if ( is_vsm_set_cmp && (vsm_rs_val[1]==32'd255) )begin
+            mtime_cnt_over  <= vsm_rs_val[0]; 
+        end
+    end
+
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if(~rst_ni) begin
             mtime  <= 32'd1;
         end
-        else if ( is_vsm_start )begin
-            mtime  <= 32'd1;
-        end
-        // TODO: 
-        //else if ( mtime==mtimecmp )begin
-        else if ( mtime==32'd217 )begin
+        else if ( mtime == mtime_cnt_over )begin
             mtime  <= 32'd1;
         end
         else if ( vsm_counting )begin
             mtime  <= mtime + 1;
         end
     end
+
+
 
 for (genvar i=0; i<HW_NUM; i++) begin
 
@@ -101,7 +111,7 @@ for (genvar i=0; i<HW_NUM; i++) begin
             mtimecmp[i]  <= '1;
         end
         else if ( is_vsm_set_cmp && (vsm_rs_val[1]==i) )begin
-            mtimecmp[i]  <= vsm_rs_val[0]; // TODO: 
+            mtimecmp[i]  <= vsm_rs_val[0]; 
         end
     end
 
@@ -110,7 +120,7 @@ for (genvar i=0; i<HW_NUM; i++) begin
             state[i]  <= '1;
         end
         else if ( is_vsm_set_sm && (vsm_rs_val[1]==i) )begin
-            state[i]  <= vsm_rs_val[0]; // TODO: 
+            state[i]  <= vsm_rs_val[0]; 
         end
     end
 
@@ -118,30 +128,36 @@ end
 
 
 
-
-
     assign clic_irq_level_o = 5'd255;
+    assign clic_irq_shv_o   = 1'b1;
+
+
+
+
+    always_comb begin
+        clic_irq_req_next = 1'b0;
+        clic_irq_id_next  = '0;
+        for (int i=0; i<HW_NUM; i++) begin
+            if (mtime == mtimecmp[i]) begin
+                clic_irq_req_next = 1'b1;
+                clic_irq_id_next  = state[i];
+            end
+        end
+    end
+
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if(~rst_ni) begin
             clic_irq_req_o <= '0;
-            clic_irq_shv_o <= '0;
-            clic_irq_id_o <= '0;
+            clic_irq_id_o  <= '0;
         end
         else if ( clic_irq_ack_i ) begin
             clic_irq_req_o <= '0;
-            clic_irq_shv_o <= clic_irq_shv_o;
-            clic_irq_id_o <= clic_irq_id_o;
+            clic_irq_id_o  <= clic_irq_id_o;
         end
-        else if ( mtime==mtimecmp[0] ) begin
-            clic_irq_req_o <= '1;
-            clic_irq_shv_o <= 1'b1;
-            clic_irq_id_o <= state[0];
-        end
-        else if ( mtime==mtimecmp[1] ) begin
-            clic_irq_req_o <= '1;
-            clic_irq_shv_o <= 1'b1;
-            clic_irq_id_o <= state[1];
+        else begin
+            clic_irq_req_o <= clic_irq_req_next;
+            clic_irq_id_o  <= clic_irq_id_next;
         end
     end
 

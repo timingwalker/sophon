@@ -1,7 +1,7 @@
 //`define ARTY_A7_35T
 //`define ARTY_A7_100T
-//`define GENESYS2
-`define TANG_NANO_9K
+`define GENESYS2
+//`define TANG_NANO_9K
 
 //`define PROBE
 
@@ -16,7 +16,7 @@
     `define SOPHON_DTCM_SIZE 32'h0000_2000
 `endif
 
-`undef SOPHON_EEI
-`undef SOPHON_EEI_SREG
-`undef SOPHON_EEI_GPIO
+//`undef SOPHON_EEI
+//`undef SOPHON_EEI_SREG
+//`undef SOPHON_EEI_GPIO
 

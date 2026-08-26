@@ -21,6 +21,7 @@ read_verilog -sv ../../design/sophon/data_itf_arbiter.sv
 read_verilog -sv ../../design/cust/cust.sv
 read_verilog -sv ../../design/cust/fgpio.sv
 read_verilog -sv ../../design/cust/snapreg.sv
+read_verilog -sv ../../design/cust/vsm.sv
 read_verilog -sv ../../design/common/std_wrap_ckinv.sv
 read_verilog -sv ../../design/common/std_wrap_ckand.sv
 read_verilog -sv ../../design/common/rst_sync.sv

@@ -14,9 +14,9 @@ void uart_init()
 
 #ifdef __BOOTROM
     // clock=25M, set baudrate=115200
-    //value = 217;
+    value = 217;
     // 10M in gaoyun
-    value = 87;
+    //value = 87;
 #else
     clock    = 25000000; // 25M
     baudrate = 115200; 
@@ -294,6 +294,13 @@ void sys_uart_init(void)
     asm volatile("slli x6, x5, %0" :: "i"(UART_TX_SHIFT));
     asm volatile("li x7, %0" :: "i"(UART_TX));
     IO_OUT_RAW(0,6,7);
+
+    // rs1=255 is used to set count over valud of the timer
+    asm volatile("li x7, 255 \n");
+    asm volatile("li x6, 217 \n");
+    VSM_SET_CMP(0,6,7);
+
+
 }
 
 void sys_uart_enabled(void)
